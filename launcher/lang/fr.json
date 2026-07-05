@@ -8,6 +8,7 @@
   "btn_download_all": "Télécharger Tous les Modèles",
   "btn_start": "Démarrer",
   "btn_stop": "Arrêter",
+  "btn_force_kill": "Forcer l'Arrêt",
   "btn_open_browser": "Ouvrir dans le Navigateur",
   "btn_refresh": "Actualiser",
   "btn_delete": "Supprimer Sélectionné",

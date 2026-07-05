@@ -8,6 +8,7 @@
   "btn_download_all": "下载所有模型",
   "btn_start": "启动",
   "btn_stop": "停止",
+  "btn_force_kill": "强制关闭",
   "btn_open_browser": "在浏览器中打开",
   "btn_refresh": "刷新",
   "btn_delete": "删除已选",

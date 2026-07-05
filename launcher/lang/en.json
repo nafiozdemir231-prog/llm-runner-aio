@@ -8,6 +8,7 @@
   "btn_download_all": "Download All Models",
   "btn_start": "Start",
   "btn_stop": "Stop",
+  "btn_force_kill": "Force Kill",
   "btn_open_browser": "Open in Browser",
   "btn_refresh": "Refresh",
   "btn_delete": "Delete Selected",

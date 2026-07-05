@@ -8,6 +8,7 @@
   "btn_download_all": "すべてのモデルをダウンロード",
   "btn_start": "開始",
   "btn_stop": "停止",
+  "btn_force_kill": "強制終了",
   "btn_open_browser": "ブラウザで開く",
   "btn_refresh": "更新",
   "btn_delete": "選択したものを削除",

@@ -176,6 +176,34 @@ class ServerWorker(QThread):
             self._status = "stopped"
             self.finished_signal.emit(0)
 
+    def force_kill(self):
+        """Process'i ACILEN öldür — graceful termination YOK, direkt kill!"""
+        self._running = False
+        import psutil
+        
+        self.log_signal.emit(f"[FORCE KILL] Aggressively killing process {self._process.pid if self._process else 'unknown'}...")
+        
+        try:
+            # 1. Popen referansından direkt kill
+            if self._process and self._process.poll() is None:
+                pid = self._process.pid
+                self._process.kill()  # Direkt kill, terminate DEĞİL!
+                self.log_signal.emit(f"[FORCE KILL] Killed Popen PID {pid}")
+                self._process = None
+            
+            # 2. Port bazlı fallback — eğer process hala çalışıyorsa
+            #    ama _process referansı kaybolmuşsa
+            time.sleep(0.5)  # Windows'un file handle'larını salması için
+            
+        except Exception as e:
+            self.log_signal.emit(f"[FORCE KILL] Error during kill: {str(e)}")
+        
+        finally:
+            self._process = None
+            self._status = "stopped"
+            self.log_signal.emit("[FORCE KILL] Process terminated.")
+            self.finished_signal.emit(-1)  # -1 = zorla sonlandırıldı
+
 
 class SearXNGWorker(ServerWorker):
     """SearXNG özel başlatma — app.py mantığını INLINE olarak çalıştırır"""
@@ -486,6 +514,55 @@ class OpenWebUIWorker(ServerWorker):
                 pass
         return result
 
+    def force_kill(self):
+        """OpenWebUI'yi ACILEN öldür — python process ve tüm children!"""
+        import psutil
+        
+        self.log_signal.emit(f"[FORCE KILL] Aggressively killing OpenWebUI...")
+        
+        try:
+            port = self._start_args.get("port", 3000)
+            
+            # 1. Popen referansından direkt kill
+            if self._process and self._process.poll() is None:
+                pid = self._process.pid
+                parent = psutil.Process(pid)
+                children = parent.children(recursive=True)
+                
+                # Önce çocukları öldür
+                for child in children:
+                    try:
+                        child.kill()
+                        self.log_signal.emit(f"[FORCE KILL] Killed child PID {child.pid}")
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        pass
+                
+                # Sonra ana process'i öldür
+                parent.kill()
+                self.log_signal.emit(f"[FORCE KILL] Killed parent PID {pid}")
+                self._process = None
+            
+            # 2. Port bazlı fallback — tüm python process'leri bul ve öldür
+            time.sleep(0.5)
+            remaining = self._find_by_port(port)
+            if remaining:
+                self.log_signal.emit(f"[FORCE KILL] Found {len(remaining)} remaining processes by port scan")
+                for proc in remaining:
+                    try:
+                        if proc.pid != self._launcher_pid:
+                            proc.kill()
+                            self.log_signal.emit(f"[FORCE KILL] Emergency kill PID {proc.pid}")
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        pass
+            
+        except Exception as e:
+            self.log_signal.emit(f"[FORCE KILL] Error during force kill: {str(e)}")
+        
+        finally:
+            self._status = "stopped"
+            self.log_signal.emit("[FORCE KILL] OpenWebUI terminated.")
+            self.finished_signal.emit(-1)
+
 
 class LlamaCppWorker(ServerWorker):
     """llama.cpp sunucu başlatma"""
@@ -674,6 +751,56 @@ class VaneWorker(ServerWorker):
         
         self._status = "stopped"
 
+    def force_kill(self):
+        """Vane'i ACILEN öldür — npm, node ve tüm ilgili process'ler!"""
+        import psutil
+        
+        self.log_signal.emit(f"[FORCE KILL] Aggressively killing Vane...")
+        
+        try:
+            port = self._start_args.get("port", 3001)
+            
+            # 1. Popen referansından direkt kill
+            if self._process and self._process.poll() is None:
+                pid = self._process.pid
+                subprocess.Popen(
+                    ["taskkill", "/F", "/T", "/PID", str(pid)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                self.log_signal.emit(f"[FORCE KILL] Killed Vane Popen PID {pid}")
+                self._process = None
+            
+            # 2. Port bazlı fallback — tüm node/python process'lerini bul ve öldür
+            time.sleep(0.5)
+            try:
+                result = subprocess.run(
+                    ["netstat", "-ano"],
+                    capture_output=True, text=True, timeout=5
+                )
+                for line in result.stdout.splitlines():
+                    if f":{port}" in line:
+                        parts = line.strip().split()
+                        if parts:
+                            pid = parts[-1]
+                            if pid.isdigit() and pid != "0":
+                                subprocess.run(
+                                    ["taskkill", "/F", "/PID", pid],
+                                    stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL,
+                                )
+                                self.log_signal.emit(f"[FORCE KILL] Emergency kill PID {pid} by port scan")
+            except Exception:
+                pass
+            
+        except Exception as e:
+            self.log_signal.emit(f"[FORCE KILL] Error during force kill: {str(e)}")
+        
+        finally:
+            self._status = "stopped"
+            self.log_signal.emit("[FORCE KILL] Vane terminated.")
+            self.finished_signal.emit(-1)
+
 
 INI_DIR = ROOT
 BAT_DIR = ROOT
@@ -682,7 +809,7 @@ BAT_DIR = ROOT
 class ServerSection(QWidget):
     """Tekrar kullanılabilir sunucu bölümü widget'ı"""
 
-    def __init__(self, title, start_callback, stop_callback, get_status_callback,
+    def __init__(self, title, start_callback, stop_callback, force_kill_callback, get_status_callback,
                  open_browser_callback, parent=None):
         super().__init__(parent)
         self._lang = AppManager().lang
@@ -690,6 +817,7 @@ class ServerSection(QWidget):
         self._title = title
         self._start_cb = start_callback
         self._stop_cb = stop_callback
+        self._force_kill_cb = force_kill_callback
         self._status_cb = get_status_callback
         self._browser_cb = open_browser_callback
         self._is_running = False
@@ -775,6 +903,19 @@ class ServerSection(QWidget):
         self.stop_btn.clicked.connect(self._stop_cb)
         btn_layout.addWidget(self.stop_btn)
 
+        # Force Kill butonu — kırmızı-siyah, ⚡ ikon
+        self.force_kill_btn = QPushButton("⚡ " + self._lang.get("btn_force_kill", "Force Kill"))
+        self.force_kill_btn.setMinimumHeight(32)
+        self.force_kill_btn.setEnabled(False)
+        self.force_kill_btn.setStyleSheet(
+            "QPushButton { background-color: #7f1d1d; color: yellow; "
+            "border-radius: 4px; font-weight: bold; } "
+            "QPushButton:hover { background-color: #991b1b; } "
+            "QPushButton:disabled { background-color: #374151; color: #6b7280; }"
+        )
+        self.force_kill_btn.clicked.connect(self._force_kill_cb)
+        btn_layout.addWidget(self.force_kill_btn)
+
         self.browser_btn = QPushButton(self._lang.get("btn_open_browser", "Open Browser"))
         self.browser_btn.setMinimumHeight(32)
         self.browser_btn.setEnabled(False)
@@ -821,6 +962,7 @@ class ServerSection(QWidget):
         )
         self.start_btn.setText(lang.get("btn_start", "Start"))
         self.stop_btn.setText(lang.get("btn_stop", "Stop"))
+        self.force_kill_btn.setText("⚡ " + lang.get("btn_force_kill", "Force Kill"))
         self.browser_btn.setText(lang.get("btn_open_browser", "Open Browser"))
 
     def set_status(self, running):
@@ -838,6 +980,7 @@ class ServerSection(QWidget):
             )
             self.start_btn.setEnabled(False)
             self.stop_btn.setEnabled(True)
+            self.force_kill_btn.setEnabled(True)  # Force Kill aktif
             self.browser_btn.setEnabled(True)
         else:
             self.status_dot.setStyleSheet(
@@ -851,6 +994,7 @@ class ServerSection(QWidget):
             )
             self.start_btn.setEnabled(True)
             self.stop_btn.setEnabled(False)
+            self.force_kill_btn.setEnabled(False)  # Force Kill pasif
             self.browser_btn.setEnabled(False)
 
     def add_log(self, message):
@@ -1019,6 +1163,7 @@ class ServersTab(QWidget):
             "SearXNG",
             self._start_searxng,
             self._stop_searxng,
+            lambda: self._force_kill_searxng(),
             lambda: self._searxng_worker.get_status() if self._searxng_worker and self._searxng_worker.isRunning() else "stopped",
             lambda: self._open_browser(f"http://127.0.0.1:{self.searxng_port.value()}")
         )
@@ -1069,6 +1214,7 @@ class ServersTab(QWidget):
             "llama.cpp",
             self._start_llamacpp,
             self._stop_llamacpp,
+            lambda: self._force_kill_llamacpp(),
             lambda: self._llamacpp_worker.get_status() if self._llamacpp_worker and self._llamacpp_worker.isRunning() else "stopped",
             lambda: self._open_browser(f"http://127.0.0.1:{self.lc_port.value()}")
         )
@@ -1159,6 +1305,7 @@ class ServersTab(QWidget):
             "OpenWebUI",
             self._start_openwebui,
             self._stop_openwebui,
+            lambda: self._force_kill_openwebui(),
             lambda: self._openwebui_worker.get_status() if self._openwebui_worker and self._openwebui_worker.isRunning() else "stopped",
             lambda: self._open_browser(f"http://127.0.0.1:{self.ow_port.value()}")
         )
@@ -1214,6 +1361,7 @@ class ServersTab(QWidget):
             "Vane",
             self._start_vane,
             self._stop_vane,
+            lambda: self._force_kill_vane(),
             lambda: self._vane_worker.get_status() if self._vane_worker and self._vane_worker.isRunning() else "stopped",
             lambda: self._open_browser(f"http://127.0.0.1:{self.vane_port.value()}")
         )
@@ -1404,6 +1552,37 @@ class ServersTab(QWidget):
             if section:
                 section.set_status(False)
 
+    def _force_kill_searxng(self):
+        """SearXNG process'ini ACILEN öldür — zorla sonlandırma!"""
+        import psutil
+        section = self._get_section("searxng")
+        
+        if not self._searxng_worker:
+            # Worker yoksa port bazlı scan yap
+            port = self.searxng_port.value()
+            try:
+                for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                    try:
+                        if 'python' in proc.info['name'].lower() and proc.info['cmdline']:
+                            cmdline_str = ' '.join(proc.info['cmdline'])
+                            if f':{port}' in cmdline_str or 'searxng' in cmdline_str.lower():
+                                pid = proc.info['pid']
+                                psutil.Process(pid).kill()
+                                self.log("searxng", f"[FORCE KILL] Killed python PID {pid} by port scan")
+                    except (psutil.NoSuchProcess, psutil.AccessDenied, AttributeError):
+                        pass
+            except Exception as e:
+                self.log("searxng", f"[ERROR] Force kill error: {str(e)}")
+            
+            if section:
+                section.set_status(False)
+            return
+        
+        # Worker varsa force_kill metodunu çağır
+        self._searxng_worker.force_kill()
+        if section:
+            section.set_status(False)
+
     def _server_finished(self, name, code):
         """Server process bittiğinde çağrılır"""
         section = self._get_section(name)
@@ -1491,6 +1670,37 @@ class ServersTab(QWidget):
             if section:
                 section.set_status(False)
 
+    def _force_kill_openwebui(self):
+        """OpenWebUI process'ini ACILEN öldür — python ve tüm children!"""
+        import psutil
+        section = self._get_section("openwebui")
+        
+        if not self._openwebui_worker:
+            # Worker yoksa port bazlı scan yap
+            port = self.ow_port.value()
+            try:
+                for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                    try:
+                        if 'python' in proc.info['name'].lower() and proc.info['cmdline']:
+                            cmdline_str = ' '.join(proc.info['cmdline'])
+                            if f':{port}' in cmdline_str or 'openwebui' in cmdline_str.lower():
+                                pid = proc.info['pid']
+                                psutil.Process(pid).kill()
+                                self.log("openwebui", f"[FORCE KILL] Killed python PID {pid} by port scan")
+                    except (psutil.NoSuchProcess, psutil.AccessDenied, AttributeError):
+                        pass
+            except Exception as e:
+                self.log("openwebui", f"[ERROR] Force kill error: {str(e)}")
+            
+            if section:
+                section.set_status(False)
+            return
+        
+        # Worker varsa force_kill metodunu çağır
+        self._openwebui_worker.force_kill()
+        if section:
+            section.set_status(False)
+
     def _start_llamacpp(self):
         port = self.lc_port.value()
         host = str(self.lc_bind.currentData())  # Bug: Bind address al
@@ -1565,6 +1775,43 @@ class ServersTab(QWidget):
         else:
             if section:
                 section.set_status(False)
+
+    def _force_kill_llamacpp(self):
+        """llama.cpp process'ini ACILEN öldür — direkt taskkill!"""
+        import subprocess
+        section = self._get_section("llamacpp")
+        
+        if not self._llamacpp_worker:
+            # Worker yoksa port bazlı scan yap
+            port = self.lc_port.value()
+            try:
+                result = subprocess.run(
+                    ["netstat", "-ano"],
+                    capture_output=True, text=True, timeout=5
+                )
+                for line in result.stdout.splitlines():
+                    if f":{port}" in line:
+                        parts = line.strip().split()
+                        if parts:
+                            pid = parts[-1]
+                            if pid.isdigit() and pid != "0":
+                                subprocess.run(
+                                    ["taskkill", "/F", "/PID", pid],
+                                    stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL,
+                                )
+                                self.log("llamacpp", f"[FORCE KILL] Killed PID {pid} by netstat scan")
+            except Exception as e:
+                self.log("llamacpp", f"[ERROR] Force kill error: {str(e)}")
+            
+            if section:
+                section.set_status(False)
+            return
+        
+        # Worker varsa force_kill metodunu çağır
+        self._llamacpp_worker.force_kill()
+        if section:
+            section.set_status(False)
 
     def _update_log(self, server, message):
         """Log mesajını ilgili section'a ekle"""
@@ -1732,6 +1979,43 @@ class ServersTab(QWidget):
             if section:
                 section.set_status(False)
 
+    def _force_kill_vane(self):
+        """Vane process'ini ACILEN öldür — npm, node ve tüm ilgili process'ler!"""
+        import subprocess
+        section = self._get_section("vane")
+        
+        if not self._vane_worker:
+            # Worker yoksa port bazlı scan yap
+            port = self.vane_port.value()
+            try:
+                result = subprocess.run(
+                    ["netstat", "-ano"],
+                    capture_output=True, text=True, timeout=5
+                )
+                for line in result.stdout.splitlines():
+                    if f":{port}" in line:
+                        parts = line.strip().split()
+                        if parts:
+                            pid = parts[-1]
+                            if pid.isdigit() and pid != "0":
+                                subprocess.run(
+                                    ["taskkill", "/F", "/PID", pid],
+                                    stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL,
+                                )
+                                self.log("vane", f"[FORCE KILL] Killed PID {pid} by netstat scan")
+            except Exception as e:
+                self.log("vane", f"[ERROR] Force kill error: {str(e)}")
+            
+            if section:
+                section.set_status(False)
+            return
+        
+        # Worker varsa force_kill metodunu çağır
+        self._vane_worker.force_kill()
+        if section:
+            section.set_status(False)
+
     def _on_searxng_port_changed(self, port):
         """SearXNG port degistiginde OpenWebUI env guncelle"""
         if port < 1024:
@@ -1777,28 +2061,6 @@ class ServersTab(QWidget):
             )
             return
         
-        # ✅ ÖNEMLİ: Windows'ta dosya kilitliyse işlem yapılamaz!
-        # OpenWebUI çalışıyorsa ÖNCE durdur
-        was_running = False
-        if self._openwebui_worker and self._openwebui_worker.get_status() == "running":
-            was_running = True
-            self.log("openwebui", "[INFO] Stopping OpenWebUI before database load...")
-            self._stop_openwebui()
-            # Process'in tamamen durması için bekle
-            from PyQt6.QtCore import QTimer
-            def _continue_load():
-                time.sleep(1)  # Windows file lock'un salmasını bekle
-                self._perform_database_load(file_path)
-            QTimer.singleShot(1500, _continue_load)
-            return
-        
-        # OpenWebUI zaten kapalıysa direkt yükle
-        self._perform_database_load(file_path)
-    
-    def _perform_database_load(self, file_path):
-        """Database yükleme işlemini gerçekleştir"""
-        import shutil
-        
         # OpenWebUI database dizini — openwebui/ klasörünün içine
         project_root = ROOT
         db_dir = project_root / "openwebui"
@@ -1808,29 +2070,30 @@ class ServersTab(QWidget):
         if old_db.exists():
             backup_path = db_dir / "openwebui.db.backup"
             if backup_path.exists():
-                try:
-                    backup_path.unlink()
-                except PermissionError:
-                    # Dosya kilitliyse timestamp ekle
-                    import datetime
-                    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                    backup_path = db_dir / f"openwebui.db.backup_{ts}"
+                backup_path.unlink()
             old_db.rename(backup_path)
             self.log("openwebui", f"[INFO] Old database backed up to: {backup_path}")
         
         # Yeni database'i kopyala — openwebui/ klasörüne
+        import shutil
         dest_db = db_dir / "openwebui.db"
         shutil.copy2(file_path, str(dest_db))
         
         self.log("openwebui", f"[INFO] Database loaded from: {file_path}")
         self.log("openwebui", f"[INFO] Database saved to: {dest_db}")
         
-        # Bilgi mesajı
-        QMessageBox.information(
-            self,
-            self._lang.get("info_database_loaded", "Database Loaded"),
-            self._lang.get("info_db_restart_msg", "Database loaded successfully.\nStart OpenWebUI to use it.")
-        )
+        # OpenWebUI'yi yeniden başlat
+        if self._openwebui_worker and self._openwebui_worker.get_status() == "running":
+            self.log("openwebui", "[INFO] Restarting OpenWebUI to apply new database...")
+            self._stop_openwebui()
+            from PyQt6.QtCore import QTimer
+            QTimer.singleShot(2000, self._start_openwebui)
+        else:
+            QMessageBox.information(
+                self,
+                self._lang.get("info_database_loaded", "Database Loaded"),
+                self._lang.get("info_db_restart_msg", "Database loaded successfully.\nStart OpenWebUI to use it.")
+            )
 
     def _on_llamacpp_port_changed(self, port):
         """llama.cpp port degistiginde kaydet"""

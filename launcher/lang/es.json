@@ -8,6 +8,7 @@
   "btn_download_all": "Descargar Todos los Modelos",
   "btn_start": "Iniciar",
   "btn_stop": "Detener",
+  "btn_force_kill": "Forzar Cierre",
   "btn_open_browser": "Abrir en Navegador",
   "btn_refresh": "Actualizar",
   "btn_delete": "Eliminar Seleccionado",
