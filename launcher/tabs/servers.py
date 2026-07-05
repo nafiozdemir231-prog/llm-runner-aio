@@ -1777,6 +1777,28 @@ class ServersTab(QWidget):
             )
             return
         
+        # ✅ ÖNEMLİ: Windows'ta dosya kilitliyse işlem yapılamaz!
+        # OpenWebUI çalışıyorsa ÖNCE durdur
+        was_running = False
+        if self._openwebui_worker and self._openwebui_worker.get_status() == "running":
+            was_running = True
+            self.log("openwebui", "[INFO] Stopping OpenWebUI before database load...")
+            self._stop_openwebui()
+            # Process'in tamamen durması için bekle
+            from PyQt6.QtCore import QTimer
+            def _continue_load():
+                time.sleep(1)  # Windows file lock'un salmasını bekle
+                self._perform_database_load(file_path)
+            QTimer.singleShot(1500, _continue_load)
+            return
+        
+        # OpenWebUI zaten kapalıysa direkt yükle
+        self._perform_database_load(file_path)
+    
+    def _perform_database_load(self, file_path):
+        """Database yükleme işlemini gerçekleştir"""
+        import shutil
+        
         # OpenWebUI database dizini — openwebui/ klasörünün içine
         project_root = ROOT
         db_dir = project_root / "openwebui"
@@ -1786,30 +1808,29 @@ class ServersTab(QWidget):
         if old_db.exists():
             backup_path = db_dir / "openwebui.db.backup"
             if backup_path.exists():
-                backup_path.unlink()
+                try:
+                    backup_path.unlink()
+                except PermissionError:
+                    # Dosya kilitliyse timestamp ekle
+                    import datetime
+                    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    backup_path = db_dir / f"openwebui.db.backup_{ts}"
             old_db.rename(backup_path)
             self.log("openwebui", f"[INFO] Old database backed up to: {backup_path}")
         
         # Yeni database'i kopyala — openwebui/ klasörüne
-        import shutil
         dest_db = db_dir / "openwebui.db"
         shutil.copy2(file_path, str(dest_db))
         
         self.log("openwebui", f"[INFO] Database loaded from: {file_path}")
         self.log("openwebui", f"[INFO] Database saved to: {dest_db}")
         
-        # OpenWebUI'yi yeniden başlat
-        if self._openwebui_worker and self._openwebui_worker.get_status() == "running":
-            self.log("openwebui", "[INFO] Restarting OpenWebUI to apply new database...")
-            self._stop_openwebui()
-            from PyQt6.QtCore import QTimer
-            QTimer.singleShot(2000, self._start_openwebui)
-        else:
-            QMessageBox.information(
-                self,
-                self._lang.get("info_database_loaded", "Database Loaded"),
-                self._lang.get("info_db_restart_msg", "Database loaded successfully.\nStart OpenWebUI to use it.")
-            )
+        # Bilgi mesajı
+        QMessageBox.information(
+            self,
+            self._lang.get("info_database_loaded", "Database Loaded"),
+            self._lang.get("info_db_restart_msg", "Database loaded successfully.\nStart OpenWebUI to use it.")
+        )
 
     def _on_llamacpp_port_changed(self, port):
         """llama.cpp port degistiginde kaydet"""
