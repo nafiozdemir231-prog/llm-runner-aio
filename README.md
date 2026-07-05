@@ -58,8 +58,7 @@ This package brings together four powerful open-source components into one seaml
 |-------------|---------|-------------|
 | **OS** | Windows 10/11 | Windows 11 |
 | **RAM** | 8 GB | 16 GB+ |
-| **GPU** | CPU Only | NVIDIA RTX 3060+ |
-| **VRAM** | N/A | 6 GB+ |
+| **VRAM** | N/A | 4 GB+ |
 | **Python** | 3.11 (bundled) | 3.11 (bundled) |
 | **Node.js** | 18+ (bundled) | 20+ (bundled) |
 
@@ -119,4 +118,5 @@ For questions, bug reports, or feature requests:
 ## Disclaimer
 
 This software is provided "as is" without warranty of any kind. The developer (AIHubLocal) is not responsible for any data loss, system issues, or hardware strain resulting from use. Running local LLMs consumes significant system resources — users assume all risks associated with usage.
+
 
