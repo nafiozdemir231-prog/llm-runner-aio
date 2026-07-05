@@ -1,0 +1,50 @@
+======================================================================
+LLM Runner AIO (All-In-One) - License and Terms of Use
+Official Website: https://aihublocal.com/llm-runner-aio
+======================================================================
+
+This software package aims to simplify the installation, integration, and use of local artificial intelligence (Local LLM) tools, search engines, and development environments. This package is completely FREE and has been shared with the community without any expectation of commercial revenue.
+
+1. COMPONENTS AND LICENSES
+----------------------------------------------------------------------
+This application has been created by bringing together and configuring world-renowned open-source projects. The main projects included in the package and their respective legal licenses are as follows:
+
+* llama.cpp   -> MIT License (Copyright (c) 2023 Georgi Gerganov)
+* Open WebUI  -> MIT License (Copyright (c) 2023 Open WebUI)
+* SearXNG     -> GNU GPLv3 License (Copyright (c) SearXNG Contributors)
+* Vae Search  -> Open Source Community License
+* Pi Coding   -> Open Source Community License
+
+We thank the original developers of these projects for their tremendous contributions to the community. The license terms of the original projects remain valid in their respective subfolders or associated open-source repositories.
+
+2. LICENSE FOR THIS PACKAGE (MIT LICENSE)
+----------------------------------------------------------------------
+This bundled distribution (LLM Runner AIO) is provided under the MIT License:
+
+Copyright (c) 2026 AIHubLocal (https://aihublocal.com)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+3. DISCLAIMER OF LIABILITY
+----------------------------------------------------------------------
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. THE DEVELOPER (AIHubLocal) SHALL NOT BE HELD LIABLE FOR ANY DIRECT OR INDIRECT DAMAGES, DATA LOSS, PORT CONFLICTS, SYSTEM ERRORS, OR HARDWARE/VRAM STRAIN ARISING FROM THE USE OF THIS SOFTWARE.
+
+Users acknowledge that running local LLMs consumes significant hardware resources (CPU/GPU/VRAM) and accept that all risks associated with this process are their own responsibility.
+
+4. TERMS OF USE
+----------------------------------------------------------------------
+* This software may only be used for legal and ethical purposes.
+* Illegal content generation, copyright infringement, or malicious use is strictly prohibited.
+* Users are responsible for complying with the license terms of any local LLM models they use.
+
+5. UPDATES AND SUPPORT
+----------------------------------------------------------------------
+This project is community-driven. For updates, bug reports, and suggestions, please visit our official website.
+
+Contact & Updates: https://aihublocal.com
+
+======================================================================
+Thank you for your support and feedback!
+======================================================================
