@@ -1,8 +1,8 @@
-current_step: Electron Migration — Faz 1-6 %80 tamamlandı
+current_step: Faz 6.3 tamamlandı (README.md Electron + Development Guide eklendi)
 status: in_progress
 verdict: PASS
-last_action: .gitignore güncellendi + electron-builder.json commit edildi
-next_action: README.md Electron kurulum talimatlarıyla güncellenecek veya mevcut PyQt6 yapısı korunacak
+last_action: README.md güncellendi — Electron kurulum, build talimatları, Development Guide eklendi
+next_action: Faz 6.4 — Test dağıtımı senaryoları tanımlama / Faz 6.5 — Legacy launcher temizliği
 blocked: false
 
 ## 📊 TOPLAM İLERLEME RAPORU

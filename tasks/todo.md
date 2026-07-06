@@ -50,11 +50,11 @@
 ## Faz 6: Paketleme & Dağıtım (Sonraki)
 - [x] 6.1. `electron-builder.json` konfigürasyonu ✅
 - [x] 6.2. `.gitignore` güncelleme (node_modules/, dist/, *.log) ✅
-- [ ] 6.3. README.md güncelleme (Electron kurulum talimatları)
+- [x] 6.3. README.md güncelleme (Electron kurulum talimatları + Development Guide) ✅
 - [ ] 6.4. Test dağıtımı — farklı dizinlerde portability test
 - [ ] 6.5. Legacy Python launcher kaldırma (run.bat, main.py, import_functions.py)
 
-**Faz 6 Durum: 2/5 tamamlandı**
+**Faz 6 Durum: 3/5 tamamlandı**
 - [ ] 6.2. `.gitignore` güncelleme (node_modules/, dist/, *.log)
 - [ ] 6.3. README.md güncelleme (Electron kurulum talimatları)
 - [ ] 6.4. Test dağıtımı — farklı dizinlerde portability test

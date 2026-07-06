@@ -66,6 +66,45 @@ This package brings together four powerful open-source components into one seaml
 
 ## Quick Start
 
+### Electron Version (Recommended)
+
+1. **Clone** the repository:
+   ```bash
+   git clone https://github.com/nafiozdemir231-prog/llm-runner-aio.git
+   cd llm-runner-aio
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Run the app**:
+   ```bash
+   npm start
+   # Or for development mode:
+   npm run dev
+   ```
+
+4. **Open** your browser and go to `http://localhost:3000`
+5. **Start chatting** with your local AI!
+
+### Building Distribution Package
+
+To create a distributable `.exe` package:
+
+```bash
+npm run build:win    # Windows x64 NSIS installer
+npm run build:mac    # macOS DMG (Intel + Apple Silicon)
+npm run build:linux  # Linux AppImage
+```
+
+The built packages will be in the `dist/` directory.
+
+### Legacy Python Version
+
+For the Python/PyQt6 version:
+
 1. **Download** `LLM-Runner-AIO.exe` (2.5 GB)
 2. **Double-click** to run
 3. **Open** your browser and go to `http://localhost:3000`
@@ -82,6 +121,74 @@ The interface supports 8 languages:
 - 🇵🇹 Portuguese (Português)
 - 🇨🇳 Chinese (中文)
 - 🇯🇵 Japanese (日本語)
+
+## Development Guide
+
+### Architecture Overview
+
+The Electron version consists of:
+
+```
+electron/
+├── main.js          # Main process (app lifecycle, IPC handlers)
+└── preload.js       # Context bridge (secure API exposure)
+
+src/
+├── index.html       # UI structure
+├── css/style.css    # Styles (dark/light themes)
+├── renderer.js      # Renderer process (UI logic)
+├── utils/           # Core utilities
+│   ├── config.js    # Configuration management
+│   ├── i18n.js      # Internationalization (8 languages)
+│   ├── helpers.js   # Port check, SHA256, etc.
+│   └── logger.js    # Log rotation handler
+└── workers/         # Background workers
+    ├── server-manager.js     # Server orchestration
+    ├── process-manager.js    # Process tree management
+    ├── models.js             # Model management
+    └── vane-integration.js   # Vane Next.js integration
+```
+
+### Key Technologies
+
+| PyQt6 Feature | Electron Equivalent |
+|---------------|---------------------|
+| QMainWindow/QWidget | BrowserWindow + HTML/CSS/JS |
+| QThread | worker_threads / child_process.spawn |
+| pyqtSignal | EventEmitter |
+| psutil | child_process + tree-kill |
+| SQLite (better-sqlite3) | better-sqlite3 (native module) |
+| NSIS installer | electron-builder NSIS target |
+
+### Running in Development Mode
+
+```bash
+# Install dependencies
+npm install
+
+# Start with hot reload
+npm run dev
+
+# Build for production
+npm run build
+```
+
+### Adding New Features
+
+1. **New Tab**: Add to `src/index.html`, create in `src/tabs/`, register in `renderer.js`
+2. **New Worker**: Create in `src/workers/`, expose via IPC in `main.js`
+3. **New Language**: Add to `src/lang/*.json` (follow existing format)
+4. **New Server**: Update `server-manager.js` spawn logic
+
+### Testing
+
+```bash
+# Run linting
+npm run lint
+
+# Test build
+npm run build:test
+```
 
 ## Data Privacy
 
