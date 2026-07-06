@@ -13,27 +13,16 @@ where node >nul 2>&1 || (
 )
 echo [OK] Node.js found
 echo.
-if not exist "node_modules\" (
-    echo ========================================
-    echo   Step 1/2 - Installing Dependencies
-    echo ========================================
+echo Installing dependencies...
+call npm install || (
+    echo [ERROR] npm install failed!
     echo.
-    call npm install || (
-        echo [ERROR] npm install failed!
-        echo.
-        pause
-        exit /b 1
-    )
-    echo [OK] Dependencies installed
-    echo.
-) else (
-    echo [SKIP] node_modules already exists
-    echo.
+    pause
+    exit /b 1
 )
-echo ========================================
-echo   Step 2/2 - Compiling Native Modules
-echo ========================================
+echo [OK] Dependencies installed
 echo.
+echo Compiling native modules...
 call npm run rebuild || (
     echo [WARNING] better-sqlite3 compile skipped
     echo Run "npm run rebuild" manually if needed.
