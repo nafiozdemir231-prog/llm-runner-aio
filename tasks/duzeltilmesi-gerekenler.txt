@@ -1,0 +1,150 @@
+1)System Detection sekmesi
+
+(icon)LLM Runner AIO                                                                       O      X
+LLM Runner AIO                                                               Support Me    Settings
+
+System Detection  Servers  Pi Coding   Models
+
+Detect Hardware(butona tiklandiginda sistem vram , ram tespitine gore .ini secimi)
+
+Settings
+
+GPU: NVIDIA GeForce RTX 5080 Laptop GPU
+VRAM: 15.9208984375 GB
+
+RAM: 63.7 GB
+
+Models Configuration
+
+Select INI:
+
+Config: gpu1vram 16ram32models.ini
+
+Download Models
+
+Download All Models
+
+[qwen3.6]
+[qwen3.6-vision]
+.......
+
+Download Progress
+
+Start Configuration
+
+Auto-generated start_auto.bat after download
+
+[OK] models_gpu1vram16ram32.ini created with 6 sections
+[OK] models_gpu1vram16ram32.ini created with 6 sections
+TOK1 models gpu1vram16ram32. ini created with 6 sections
+
+
+2)Servers Sekmesi
+
+(icon)LLM Runner AIO                                                                                        O      X
+LLM Runner AIO                                                                                 Support Me    Settings
+
+System Detection  Servers  Pi Coding   Models
+
+
+SearXNG - Private Search                                       Ilama.cpp - Al Engine
+
+Port: 8080                            i Description            Port: 1234   Context Size: 131072          i Description
+                                     
+Bind to: This PC Only                                          Bind to: Local Network
+
+SearXNG  Stopped                                               llama.cpp  .Running
+
+Start  Stop   Open in Browser  Log                             Start  Stop  Open in Browser  Log
+
+
+
+
+Open WebUI - Chat Interface                                    Vane - Al Answer Engine
+
+
+Port: 3000 CPU Threads: 4             i Description            Port: 3001                                   i Description
+
+Bind to: Local Network       Load Database                     Bind to: Local Network
+
+OpenWebUI   · Stopped                                          Vane  . Stopped
+
+Start  Stop  Open in Browser  Log                              Start  Stop   Open in Browser  Log
+
+
+3)pi coding sekmesi
+
+(icon)LLM Runner AIO                                                                                        O      X
+LLM Runner AIO                                                                                 Support Me    Settings
+
+System Detection  Servers  Pi Coding   Models
+
+Working Directory
+
+(Detected: requirements.txt, launcher)
+
+Detect Project  Add to PATH
+
+Instructions
+
+                                       Instructions
+
+Pi Coding Agent - Setup and Usage Instructions:
+
+1) Click 'Detect Project' button, then click 'Add to PATH' button.
+
+2) Open any folder where you want to create a project:
+- Navigate to that folder in File Explorer
+- Type 'cmd' in the address bar and press Enter
+- A terminal will open in that location
+
+3) In the opened terminal, type 'pi' to start the application.
+
+.....................................................
+
+MCP Advisor Settings
+
+Advisor URL:  http://localhost:3000/api/chat/completions
+API Key:  ....
+Model Name:  NIM-nvidia.moonshotai/kimi-k2.6
+
+                                   Save Advisor Settings
+
+
+4)models sekmesi
+
+
+(icon)LLM Runner AIO                                                                                        O      X
+LLM Runner AIO                                                                                 Support Me    Settings
+
+System Detection  Servers  Pi Coding   Models
+
+Refresh  Delete Selected
+
+Qwen3.6-35B-A3B-APEX-I-Compact.gguf | 16.11 GB | qwen3.6
+gemma-4-26B-it-mmproj.gguf | 1.11 GB | gemma-4
+gemma-4-26B_q4_0-it.gguf | 13.45 GB | gemma-4
+mmproj.gguf | 0.84 GB | qwen3.6
+
+
+4 models | 31.5 GB total
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

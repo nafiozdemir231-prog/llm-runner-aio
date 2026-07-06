@@ -93,15 +93,55 @@
                         
                         <!-- INI Config Selection -->
                         <fieldset>
-                            <legend>Configuration Profile</legend>
+                            <legend>Models Configuration</legend>
                             
                             <div class="form-row">
-                                <label for="ini-select">GPU Config File:</label>
+                                <label for="ini-select">Select INI:</label>
                                 <select id="ini-select">
                                     <option value="">Auto-Detect or Select...</option>
                                 </select>
                                 <button id="btn-load-ini" class="secondary-btn">Load</button>
                             </div>
+                            
+                            <div id="ini-info" class="help-text">(Run Detect Hardware to auto-select)</div>
+                        </fieldset>
+                        
+                        <!-- Download Models Section -->
+                        <fieldset>
+                            <legend>Download Models</legend>
+                            
+                            <div class="download-all-section">
+                                <button id="btn-download-all" class="primary-btn">⬇ Download All Models</button>
+                            </div>
+                            
+                            <div id="model-list-container">
+                                <ul id="system-model-list" class="model-list">
+                                    <li class="empty-message">Select an INI file first, then click "Download All Models".</li>
+                                </ul>
+                            </div>
+                        </fieldset>
+                        
+                        <!-- Download Progress -->
+                        <fieldset>
+                            <legend>Download Progress</legend>
+                            
+                            <div id="download-status" class="help-text">No downloads in progress.</div>
+                            
+                            <div class="progress-container">
+                                <div id="download-progress-bar-system" class="progress-bar">
+                                    <div id="download-progress-fill-system" class="progress-fill" style="width: 0%"></div>
+                                </div>
+                                <span id="download-percent-system">0%</span>
+                            </div>
+                        </fieldset>
+                        
+                        <!-- Start Configuration -->
+                        <fieldset>
+                            <legend>Start Configuration</legend>
+                            
+                            <p class="help-text">Auto-generated start_auto.bat after download</p>
+                            
+                            <div id="auto-log" class="log-area small" readonly placeholder="Configuration logs..."></div>
                         </fieldset>
                         
                         <!-- Log Output — PyQt6 QTextEdit karşılığı -->
@@ -123,7 +163,11 @@
                     <!-- SearXNG Section -->
                     <div class="server-section">
                         <fieldset>
-                            <legend>🔎 SearXNG (Search Engine)</legend>
+                            <legend>🔎 SearXNG - Private Search</legend>
+                            
+                            <div class="server-info">
+                                <span class="info-desc">Private search engine for web results</span>
+                            </div>
                             
                             <div class="server-controls">
                                 <div class="form-row">
@@ -131,15 +175,16 @@
                                     <input type="number" id="searxng-port" value="8080" min="1" max="65535">
                                 </div>
                                 <div class="form-row">
-                                    <label>Bind Address:</label>
+                                    <label>Bind to:</label>
                                     <select id="searxng-host">
-                                        <option value="0.0.0.0">All Interfaces (0.0.0.0)</option>
-                                        <option value="127.0.0.1">Localhost Only (127.0.0.1)</option>
+                                        <option value="127.0.0.1">This PC Only</option>
+                                        <option value="0.0.0.0">Local Network</option>
                                     </select>
                                 </div>
                                 <div class="btn-group">
                                     <button id="btn-start-searxng" class="start-btn">▶ Start</button>
                                     <button id="btn-stop-searxng" class="stop-btn" disabled>⏹ Stop</button>
+                                    <button id="btn-open-searxng" class="browser-btn" disabled>🌐 Open in Browser</button>
                                 </div>
                             </div>
                             
@@ -154,7 +199,11 @@
                     <!-- OpenWebUI Section -->
                     <div class="server-section">
                         <fieldset>
-                            <legend>💬 OpenWebUI (Chat Interface)</legend>
+                            <legend>💬 Open WebUI - Chat Interface</legend>
+                            
+                            <div class="server-info">
+                                <span class="info-desc">Web-based chat interface with AI integration</span>
+                            </div>
                             
                             <div class="server-controls">
                                 <div class="form-row">
@@ -162,15 +211,20 @@
                                     <input type="number" id="openwebui-port" value="3000" min="1" max="65535">
                                 </div>
                                 <div class="form-row">
-                                    <label>Bind Address:</label>
+                                    <label>CPU Threads:</label>
+                                    <input type="number" id="openwebui-threads" value="4" min="1" max="64">
+                                </div>
+                                <div class="form-row">
+                                    <label>Bind to:</label>
                                     <select id="openwebui-host">
-                                        <option value="0.0.0.0">All Interfaces (0.0.0.0)</option>
-                                        <option value="127.0.0.1">Localhost Only (127.0.0.1)</option>
+                                        <option value="127.0.0.1">This PC Only</option>
+                                        <option value="0.0.0.0">Local Network</option>
                                     </select>
                                 </div>
                                 <div class="btn-group">
                                     <button id="btn-start-openwebui" class="start-btn">▶ Start</button>
                                     <button id="btn-stop-openwebui" class="stop-btn" disabled>⏹ Stop</button>
+                                    <button id="btn-open-openwebui" class="browser-btn" disabled>🌐 Open in Browser</button>
                                 </div>
                             </div>
                             
@@ -185,7 +239,11 @@
                     <!-- llama.cpp Section -->
                     <div class="server-section">
                         <fieldset>
-                            <legend>🦙 llama.cpp (Inference Server)</legend>
+                            <legend>🦙 llama.cpp - AI Engine</legend>
+                            
+                            <div class="server-info">
+                                <span class="info-desc">Local LLM inference server with GGUF support</span>
+                            </div>
                             
                             <div class="server-controls">
                                 <div class="form-row">
@@ -193,19 +251,20 @@
                                     <input type="number" id="llamacpp-port" value="1234" min="1" max="65535">
                                 </div>
                                 <div class="form-row">
-                                    <label>Bind Address:</label>
-                                    <select id="llamacpp-host">
-                                        <option value="0.0.0.0">All Interfaces (0.0.0.0)</option>
-                                        <option value="127.0.0.1">Localhost Only (127.0.0.1)</option>
-                                    </select>
+                                    <label>Context Size:</label>
+                                    <input type="number" id="llamacpp-ctx" value="8192" min="512" max="131072" step="512">
                                 </div>
                                 <div class="form-row">
-                                    <label>Model:</label>
-                                    <input type="text" id="llamacpp-model" placeholder="models/your-model.gguf">
+                                    <label>Bind to:</label>
+                                    <select id="llamacpp-host">
+                                        <option value="127.0.0.1">This PC Only</option>
+                                        <option value="0.0.0.0">Local Network</option>
+                                    </select>
                                 </div>
                                 <div class="btn-group">
                                     <button id="btn-start-llamacpp" class="start-btn">▶ Start</button>
                                     <button id="btn-stop-llamacpp" class="stop-btn" disabled>⏹ Stop</button>
+                                    <button id="btn-open-llamacpp" class="browser-btn" disabled>🌐 Open in Browser</button>
                                 </div>
                             </div>
                             
@@ -220,23 +279,28 @@
                     <!-- Vane Section -->
                     <div class="server-section">
                         <fieldset>
-                            <legend>🌐 Vane (AI Answer Engine)</legend>
+                            <legend>🌐 Vane - AI Answer Engine</legend>
+                            
+                            <div class="server-info">
+                                <span class="info-desc">AI-powered answer engine with web search integration</span>
+                            </div>
                             
                             <div class="server-controls">
                                 <div class="form-row">
                                     <label>Port:</label>
-                                    <input type="number" id="vane-port" value="8090" min="1" max="65535">
+                                    <input type="number" id="vane-port" value="3001" min="1" max="65535">
                                 </div>
                                 <div class="form-row">
-                                    <label>Bind Address:</label>
+                                    <label>Bind to:</label>
                                     <select id="vane-host">
-                                        <option value="0.0.0.0">All Interfaces (0.0.0.0)</option>
-                                        <option value="127.0.0.1">Localhost Only (127.0.0.1)</option>
+                                        <option value="127.0.0.1">This PC Only</option>
+                                        <option value="0.0.0.0">Local Network</option>
                                     </select>
                                 </div>
                                 <div class="btn-group">
                                     <button id="btn-start-vane" class="start-btn">▶ Start</button>
                                     <button id="btn-stop-vane" class="stop-btn" disabled>⏹ Stop</button>
+                                    <button id="btn-open-vane" class="browser-btn" disabled>🌐 Open in Browser</button>
                                 </div>
                             </div>
                             
@@ -259,31 +323,67 @@
             <!-- Tab 3: PiCoding -->
             <div id="tab-picoding" class="tab-panel">
                 <div class="panel-header">
-                    <h2>PiCoding IDE</h2>
+                    <h2>PiCoding Agent</h2>
                 </div>
                 
                 <div class="panel-body">
+                    <!-- Working Directory Section -->
                     <div class="section-group">
                         <fieldset>
-                            <legend>PiCoding Configuration</legend>
+                            <legend>Working Directory</legend>
                             
-                            <div class="form-row">
-                                <label for="picoding-path">Installation Path:</label>
-                                <input type="text" id="picoding-path" placeholder="/path/to/picoding">
-                                <button id="btn-browse-picoding" class="secondary-btn">📁 Browse</button>
+                            <div id="picoding-path-display" class="help-text">No path set</div>
+                            
+                            <div class="btn-group">
+                                <button id="btn-detect-project" class="secondary-btn">🔍 Detect Project</button>
+                                <button id="btn-add-to-path" class="secondary-btn">➕ Add to PATH</button>
                             </div>
-                            
-                            <div class="form-row">
-                                <label for="mcp-config">MCP Config File:</label>
-                                <input type="text" id="mcp-config" placeholder="config.json">
-                            </div>
-                            
-                            <button id="btn-load-picoding" class="primary-btn">💻 Load PiCoding</button>
                         </fieldset>
-                        
+                    </div>
+                    
+                    <!-- Instructions Section -->
+                    <div class="section-group">
                         <fieldset>
-                            <legend>Terminal Output</legend>
-                            <textarea id="picoding-log" class="log-area" readonly placeholder="PiCoding terminal output..."></textarea>
+                            <legend>Instructions</legend>
+                            
+                            <button id="toggle-instructions" class="secondary-btn">📖 Show Instructions</button>
+                            
+                            <div id="instructions-content" class="log-area small hidden" style="margin-top: 10px;">
+Pi Coding Agent - Setup and Usage Instructions:
+
+1) Click 'Detect Project' button, then click 'Add to PATH' button.
+
+2) Open any folder where you want to create a project:
+- Navigate to that folder in File Explorer
+- Type 'cmd' in the address bar and press Enter
+- A terminal will open in that location
+
+3) In the opened terminal, type 'pi' to start the application.
+                            </div>
+                        </fieldset>
+                    </div>
+                    
+                    <!-- MCP Advisor Settings -->
+                    <div class="section-group">
+                        <fieldset>
+                            <legend>MCP Advisor Settings</legend>
+                            
+                            <div class="form-row">
+                                <label for="advisor-url">Advisor URL:</label>
+                                <input type="text" id="advisor-url" placeholder="http://localhost:3000/api/chat/completions">
+                            </div>
+                            
+                            <div class="form-row">
+                                <label for="advisor-key">API Key:</label>
+                                <input type="password" id="advisor-key" placeholder="eyJhbGciOiJIUzI1NiIs...">
+                            </div>
+                            
+                            <div class="form-row">
+                                <label for="advisor-model">Model Name:</label>
+                                <input type="text" id="advisor-model" placeholder="🟢NIM-nvidia.moonshotai/kimi-k2.6">
+                            </div>
+                            
+                            <button id="btn-save-advisor" class="primary-btn">💾 Save Advisor Settings</button>
                         </fieldset>
                     </div>
                 </div>
@@ -296,65 +396,36 @@
                 </div>
                 
                 <div class="panel-body">
-                    <div class="section-group">
-                        <fieldset>
-                            <legend>Storage</legend>
-                            
-                            <div class="info-grid">
-                                <div class="info-item">
-                                    <label>Models Directory:</label>
-                                    <span id="models-path-display" class="info-value">models/</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>Total Size:</label>
-                                    <span id="models-total-size" class="info-value">Calculating...</span>
-                                </div>
-                            </div>
-                        </fieldset>
+                    <!-- Storage Info -->
+                    <fieldset>
+                        <legend>Storage</legend>
                         
-                        <!-- Model List — PyQt6 QListWidget karşılığı -->
-                        <fieldset>
-                            <legend>Available Models (.gguf)</legend>
-                            
-                            <div class="model-list-controls">
-                                <button id="btn-scan-models" class="secondary-btn">🔄 Scan Models</button>
-                                <button id="btn-delete-selected" class="danger-btn" disabled>Delete Selected</button>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>Total Models:</label>
+                                <span id="models-count" class="info-value">0 models</span>
                             </div>
-                            
-                            <ul id="model-list" class="model-list">
-                                <!-- Models will be populated dynamically -->
-                                <li class="empty-message">Click "Scan Models" to discover GGUF files.</li>
-                            </ul>
-                        </fieldset>
+                            <div class="info-item">
+                                <label>Total Size:</label>
+                                <span id="models-total-size" class="info-value">Calculating...</span>
+                            </div>
+                        </div>
+                    </fieldset>
+                    
+                    <!-- Model List — PyQt6 QListWidget karşılığı -->
+                    <fieldset>
+                        <legend>Available Models (.gguf)</legend>
                         
-                        <!-- Recommended Models — VRAM'e göre -->
-                        <fieldset>
-                            <legend>Recommended Models (Based on Your GPU)</legend>
-                            
-                            <div id="recommended-models" class="model-recommendations">
-                                <p class="help-text">Run "Detect Hardware" first to see recommendations.</p>
-                            </div>
-                        </fieldset>
+                        <div class="model-list-controls">
+                            <button id="btn-refresh-models" class="secondary-btn">🔄 Refresh</button>
+                            <button id="btn-delete-selected" class="danger-btn" disabled>🗑 Delete Selected</button>
+                        </div>
                         
-                        <!-- Custom Download Section -->
-                        <fieldset>
-                            <legend>Custom Download</legend>
-                            
-                            <div class="form-row">
-                                <label for="download-url">HuggingFace URL:</label>
-                                <input type="text" id="download-url" placeholder="https://huggingface.co/...">
-                            </div>
-                            
-                            <div class="progress-container">
-                                <div id="download-progress-bar" class="progress-bar">
-                                    <div id="download-progress-fill" class="progress-fill" style="width: 0%"></div>
-                                </div>
-                                <span id="download-percent">0%</span>
-                            </div>
-                            
-                            <button id="btn-download" class="primary-btn">⬇ Download</button>
-                        </fieldset>
-                    </div>
+                        <ul id="model-list" class="model-list">
+                            <!-- Models will be populated dynamically -->
+                            <li class="empty-message">Click "Refresh" to discover GGUF files.</li>
+                        </ul>
+                    </fieldset>
                 </div>
             </div>
         </div>

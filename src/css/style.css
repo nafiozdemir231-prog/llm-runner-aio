@@ -839,3 +839,74 @@ input[type="checkbox"] {
     padding: 6px 12px;
     font-size: 12px;
 }
+
+/* ============================================ */
+/* Server Info Description                      */
+/* ============================================ */
+
+.server-info {
+    margin-bottom: 8px;
+}
+
+.info-desc {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.browser-btn {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.browser-btn:hover {
+    background-color: #2563eb;
+}
+
+.browser-btn:disabled {
+    background-color: var(--border);
+    color: var(--text-secondary);
+}
+
+/* Download All Section */
+.download-all-section {
+    margin-bottom: 12px;
+}
+
+/* Auto Log Area */
+#auto-log {
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    min-height: 80px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+/* Instructions Toggle */
+#instructions-content {
+    white-space: pre-wrap;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.hidden {
+    display: none;
+}
+
+/* Picoding Path Display */
+#picoding-path-display {
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}

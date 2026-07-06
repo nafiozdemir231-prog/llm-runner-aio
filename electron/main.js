@@ -311,6 +311,190 @@ function setupIPC() {
         
         return presets.sort();
     });
+    
+    // Picoding - Detect Project
+    ipcMain.handle('picoding-detect-project', async () => {
+        const projectRoot = PROJECT_DIR;
+        const markers = ['package.json', 'requirements.txt', 'pyproject.toml', '.git', 'launcher'];
+        
+        const foundMarkers = markers.filter(m => fs.existsSync(path.join(projectRoot, m)));
+        
+        if (foundMarkers.length > 0) {
+            return { success: true, path: projectRoot, markers: foundMarkers };
+        }
+        
+        return { success: false, path: null };
+    });
+    
+    // Picoding - Add to PATH
+    ipcMain.handle('picoding-add-to-path', async () => {
+        const picodingPath = path.join(PROJECT_DIR, 'picoding');
+        
+        if (!fs.existsSync(picodingPath)) {
+            return { success: false, error: 'picoding directory not found' };
+        }
+        
+        // Windows PATH'e ekle
+        if (process.platform === 'win32') {
+            try {
+                const { execSync } = require('child_process');
+                const currentPath = execSync('echo %PATH%', { encoding: 'utf8' }).trim();
+                
+                if (currentPath.includes(picodingPath)) {
+                    return { success: true, message: 'Already in PATH' };
+                }
+                
+                execSync(`setx PATH "%PATH%;${picodingPath}"`, { stdio: 'pipe' });
+                return { success: true, message: 'Added to PATH successfully' };
+            } catch (err) {
+                return { success: false, error: err.message };
+            }
+        }
+        
+        return { success: false, error: 'Platform not supported' };
+    });
+    
+    // Picoding - Save Advisor Settings
+    ipcMain.handle('picoding-save-advisor', async (event, advisorData) => {
+        const configPath = path.join(PROJECT_DIR, 'launcher', 'config.json');
+        let config = {};
+        
+        try {
+            if (fs.existsSync(configPath)) {
+                config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            }
+        } catch (e) {
+            console.error('[IPC] Failed to read config:', e.message);
+        }
+        
+        config.mcp_advisor = {
+            url: advisorData.url,
+            key: advisorData.key,
+            model: advisorData.model
+        };
+        
+        try {
+            const tempPath = configPath + '.tmp';
+            fs.writeFileSync(tempPath, JSON.stringify(config, null, 2), 'utf8');
+            fs.renameSync(tempPath, configPath);
+            return { success: true };
+        } catch (e) {
+            return { success: false, error: e.message };
+        }
+    });
+    
+    // Picoding - Get Advisor Settings
+    ipcMain.handle('picoding-get-advisor', async () => {
+        const configPath = path.join(PROJECT_DIR, 'launcher', 'config.json');
+        
+        try {
+            if (fs.existsSync(configPath)) {
+                const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+                return config.mcp_advisor || {};
+            }
+        } catch (e) {
+            console.error('[IPC] Failed to read advisor settings:', e.message);
+        }
+        
+        return {};
+    });
+    
+    // Model - Get Models from INI
+    ipcMain.handle('model-get-models-from-ini', async (event, iniName) => {
+        const iniPath = path.join(PROJECT_DIR, iniName);
+        
+        if (!fs.existsSync(iniPath)) {
+            return [];
+        }
+        
+        try {
+            const iniContent = fs.readFileSync(iniPath, 'utf8');
+            const models = [];
+            let currentSection = '';
+            
+            const lines = iniContent.split('\n');
+            for (const line of lines) {
+                const sectionMatch = line.match(/^\[(.+)\]$/);
+                if (sectionMatch) {
+                    currentSection = sectionMatch[1];
+                    continue;
+                }
+                
+                if (line.startsWith('model') && line.includes('=')) {
+                    const url = line.split('=')[1]?.trim()?.replace(/"/g, '');
+                    models.push({ name: currentSection, model_url: url });
+                } else if (line.startsWith('mmproj') && line.includes('=')) {
+                    const url = line.split('=')[1]?.trim()?.replace(/"/g, '');
+                    if (models.length > 0) {
+                        models[models.length - 1].mmproj_url = url;
+                    }
+                }
+            }
+            
+            return models;
+        } catch (err) {
+            console.error('[INI] Failed to parse INI:', err.message);
+            return [];
+        }
+    });
+    
+    // Model - Generate Local INI
+    ipcMain.handle('model-generate-local-ini', async (event, iniName) => {
+        const iniPath = path.join(PROJECT_DIR, iniName);
+        
+        if (!fs.existsSync(iniPath)) {
+            return { success: false, error: 'INI file not found' };
+        }
+        
+        try {
+            const iniContent = fs.readFileSync(iniPath, 'utf8');
+            const config = parseINI(iniContent);
+            
+            // Local INI adı oluştur: gpu1vram4ram16models.ini -> models_gpu1vram4ram16.ini
+            const baseName = iniName.replace('models.ini', '').replace('.ini', '');
+            const localIniName = `models_${baseName}.ini`;
+            const localIniPath = path.join(PROJECT_DIR, localIniName);
+            
+            const localConfig = {};
+            
+            for (const section of Object.keys(config)) {
+                if (section === '*') continue;
+                
+                const modelUrl = config[section].model || '';
+                const mmprojUrl = config[section].mmproj || '';
+                
+                let localModel = modelUrl;
+                let localMmproj = mmprojUrl;
+                
+                if (modelUrl.startsWith('http')) {
+                    const filename = modelUrl.split('/').pop();
+                    const folderName = section.replace('-vision', '').replace('-Vision', '');
+                    localModel = `models/${folderName}/${filename}`;
+                }
+                
+                if (mmprojUrl.startsWith('http')) {
+                    const filename = mmprojUrl.split('/').pop();
+                    const folderName = section.replace('-vision', '').replace('-Vision', '');
+                    localMmproj = `models/${folderName}/${filename}`;
+                }
+                
+                localConfig[section] = { model: localModel };
+                if (localMmproj) {
+                    localConfig[section].mmproj = localMmproj;
+                }
+            }
+            
+            fs.writeFileSync(localIniPath, stringifyINI(localConfig), 'utf8');
+            
+            return {
+                success: true,
+                log: `${localIniName} created with ${Object.keys(config).filter(s => s !== '*').length} sections`
+            };
+        } catch (err) {
+            console.error('[INI] Failed to generate local INI:', err.message);
+            return { success: false, error: err.message };
+        }
+    });
 }
 
 // ============================================
@@ -596,8 +780,62 @@ async function stopServer(serverType) {
 }
 
 // ============================================
-// Utility Functions
+// Simple INI Parser (no external dependency)
 // ============================================
+function parseINI(content) {
+    const result = {};
+    let currentSection = '';
+    
+    const lines = content.split('\n');
+    for (const line of lines) {
+        const trimmed = line.trim();
+        
+        // Skip comments and empty lines
+        if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith(';')) {
+            continue;
+        }
+        
+        // Section header
+        const sectionMatch = trimmed.match(/^\[(.+)\]$/);
+        if (sectionMatch) {
+            currentSection = sectionMatch[1];
+            if (!result[currentSection]) {
+                result[currentSection] = {};
+            }
+            continue;
+        }
+        
+        // Key=value pair
+        const kvMatch = trimmed.match(/^(.+?)=(.*)$/);
+        if (kvMatch && currentSection) {
+            const key = kvMatch[1].trim();
+            let value = kvMatch[2].trim();
+            // Remove quotes
+            value = value.replace(/^['"]|['"]$/g, '');
+            result[currentSection][key] = value;
+        }
+    }
+    
+    return result;
+}
+
+function stringifyINI(obj) {
+    let output = '';
+    
+    for (const [section, keys] of Object.entries(obj)) {
+        output += `[${section}]\n`;
+        for (const [key, value] of Object.entries(keys)) {
+            output += `${key} = ${value}\n`;
+        }
+        output += '\n';
+    }
+    
+    return output;
+}
+
+// ============================================
+// Utility Functions
+// ========================================
 function checkPortInUse(port) {
     return new Promise((resolve) => {
         const net = require('net');

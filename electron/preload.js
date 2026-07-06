@@ -145,6 +145,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
         getINIPresets: () => ipcRenderer.invoke('get-llama-ini-presets'),
         
         /**
+         * INI dosyasından model listesini al
+         * PyQt6'da: _load_ini_models()
+         */
+        getModelsFromINI: (iniName) => ipcRenderer.invoke('model-get-models-from-ini', iniName),
+        
+        /**
+         * Yerel INI oluştur (URL'leri yerel yollara çevir)
+         * PyQt6'da: _create_local_ini()
+         */
+        generateLocalINI: (iniName) => ipcRenderer.invoke('model-generate-local-ini', iniName),
+        
+        /**
          * Models klasörünü tara (.gguf dosyaları)
          * PyQt6'da: scan_models() fonksiyonu
          */
@@ -167,8 +179,37 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     
     // ============================================
-    // System Cleanup (orphan process temizliği)
+    // PiCoding Agent (picoding.py karşılığı)
     // ============================================
+    picoding: {
+        /**
+         * Proje dizinini tespit et
+         * PyQt6'da: _detect_project()
+         */
+        detectProject: () => ipcRenderer.invoke('picoding-detect-project'),
+        
+        /**
+         * PATH'e ekle
+         * PyQt6'da: _add_to_path()
+         */
+        addToPath: () => ipcRenderer.invoke('picoding-add-to-path'),
+        
+        /**
+         * MCP Advisor ayarlarını kaydet
+         * PyQt6'da: _save_advisor_config()
+         */
+        saveAdvisor: (advisorData) => ipcRenderer.invoke('picoding-save-advisor', advisorData),
+        
+        /**
+         * MCP Advisor ayarlarını yükle
+         * PyQt6'da: _load_advisor_config()
+         */
+        getAdvisor: () => ipcRenderer.invoke('picoding-get-advisor')
+    },
+    
+    // ============================================
+    // System Cleanup (orphan process temizliği)
+    // ========================================
     cleanup: {
         /**
          * Geride kalan process'leri temizle

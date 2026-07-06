@@ -266,6 +266,9 @@ function setupEventListeners() {
     // INI preset callbacks
     setupINICallbacks();
     
+    // System Detection model controls
+    setupSystemModelControls();
+    
     // Listen for server logs from main process
     window.electronAPI.server.onLog((data) => {
         appendToLog(data.type, data.message);
@@ -410,6 +413,14 @@ async function detectHardware() {
         // VRAM'e göre model önerileri göster
         renderModelRecommendations(hw.vramGb);
         
+        // INI bilgisi güncelle
+        if (hw.iniMatch) {
+            const iniInfo = document.getElementById('ini-info');
+            if (iniInfo) {
+                iniInfo.textContent = `Config: ${hw.iniMatch}`;
+            }
+        }
+        
         showNotification('Detection Complete', `Found: ${hw.gpuName || 'No GPU'} (${hw.vramGb}GB VRAM)`);
     } catch (err) {
         appendToLog('system', `Detection failed: ${err.message}`, true);
@@ -423,24 +434,26 @@ async function detectHardware() {
 function setupServerControls() {
     // Individual server start/stop buttons
     const servers = [
-        { type: 'searxng', startId: 'btn-start-searxng', stopId: 'btn-stop-searxng', portId: 'searxng-port', hostId: 'searxng-host', statusId: 'searxng-status', logId: 'searxng-log' },
-        { type: 'openwebui', startId: 'btn-start-openwebui', stopId: 'btn-stop-openwebui', portId: 'openwebui-port', hostId: 'openwebui-host', statusId: 'openwebui-status', logId: 'openwebui-log' },
+        { type: 'searxng', startId: 'btn-start-searxng', stopId: 'btn-stop-searxng', browserId: 'btn-open-searxng', portId: 'searxng-port', hostId: 'searxng-host', statusId: 'searxng-status', logId: 'searxng-log' },
+        { type: 'openwebui', startId: 'btn-start-openwebui', stopId: 'btn-stop-openwebui', browserId: 'btn-open-openwebui', portId: 'openwebui-port', hostId: 'openwebui-host', statusId: 'openwebui-status', logId: 'openwebui-log' },
         { 
             type: 'llamacpp', 
             startId: 'btn-start-llamacpp', 
             stopId: 'btn-stop-llamacpp', 
+            browserId: 'btn-open-llamacpp',
             portId: 'llamacpp-port', 
             hostId: 'llamacpp-host', 
             iniSelectId: 'ini-select',
             statusId: 'llamacpp-status', 
             logId: 'llamacpp-log' 
         },
-        { type: 'vane', startId: 'btn-start-vane', stopId: 'btn-stop-vane', portId: 'vane-port', hostId: 'vane-host', statusId: 'vane-status', logId: 'vane-log' }
+        { type: 'vane', startId: 'btn-start-vane', stopId: 'btn-stop-vane', browserId: 'btn-open-vane', portId: 'vane-port', hostId: 'vane-host', statusId: 'vane-status', logId: 'vane-log' }
     ];
     
     servers.forEach(server => {
         const startBtn = document.getElementById(server.startId);
         const stopBtn = document.getElementById(server.stopId);
+        const browserBtn = document.getElementById(server.browserId);
         
         if (startBtn) {
             startBtn.addEventListener('click', async () => {
@@ -468,6 +481,7 @@ function setupServerControls() {
                     state.servers[server.type].host = host;
                     
                     updateServerStatus(server.type, true);
+                    updateBrowserButton(server.browserId, true, `http://${host === '0.0.0.0' ? '127.0.0.1' : host}:${port}`);
                     appendToLog(server.type, `Started successfully! PID: ${result.pid}`);
                     showNotification('Success', `${server.type} started on port ${port}`);
                 } else {
@@ -490,6 +504,7 @@ function setupServerControls() {
                 if (result.success) {
                     state.servers[server.type].running = false;
                     updateServerStatus(server.type, false);
+                    updateBrowserButton(server.browserId, false, '');
                     appendToLog(server.type, 'Stopped.');
                 } else {
                     appendToLog(server.type, `Stop failed: ${result.error}`, true);
@@ -497,6 +512,15 @@ function setupServerControls() {
                 
                 startBtn.disabled = false;
                 stopBtn.disabled = false;
+            });
+        }
+        
+        if (browserBtn) {
+            browserBtn.addEventListener('click', () => {
+                const port = parseInt(document.getElementById(server.portId)?.value || server.port);
+                const host = state.servers[server.type].host || '127.0.0.1';
+                const url = `http://${host === '0.0.0.0' ? '127.0.0.1' : host}:${port}`;
+                window.electronAPI.shell.openExternal(url);
             });
         }
     });
@@ -569,6 +593,18 @@ function updateServerStatus(type, running) {
     if (stopBtn) stopBtn.disabled = !running;
 }
 
+function updateBrowserButton(btnId, enabled, url) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    
+    btn.disabled = !enabled;
+    if (enabled && url) {
+        btn.onclick = () => {
+            window.electronAPI.shell.openExternal(url);
+        };
+    }
+}
+
 function appendToLog(type, message, isError = false) {
     const logId = `${type === 'system' ? 'log-output' : type}-log`;
     const logArea = document.getElementById(logId);
@@ -593,20 +629,15 @@ function appendToLog(type, message, isError = false) {
 // Model Management Controls
 // ============================================
 function setupModelControls() {
-    const scanBtn = document.getElementById('btn-scan-models');
+    const refreshBtn = document.getElementById('btn-refresh-models');
     const deleteBtn = document.getElementById('btn-delete-selected');
-    const downloadBtn = document.getElementById('btn-download');
     
-    if (scanBtn) {
-        scanBtn.addEventListener('click', scanModels);
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', scanModels);
     }
     
     if (deleteBtn) {
         deleteBtn.addEventListener('click', deleteSelectedModel);
-    }
-    
-    if (downloadBtn) {
-        downloadBtn.addEventListener('click', downloadModel);
     }
 }
 
@@ -619,8 +650,14 @@ async function scanModels() {
         
         renderModelList(models.files);
         
-        // Update total size
+        // Update count and total size
+        const countDisplay = document.getElementById('models-count');
         const sizeDisplay = document.getElementById('models-total-size');
+        
+        if (countDisplay) {
+            countDisplay.textContent = `${models.files.length} model${models.files.length !== 1 ? 's' : ''}`;
+        }
+        
         if (sizeDisplay) {
             sizeDisplay.textContent = formatBytes(models.totalSize);
         }
@@ -858,35 +895,219 @@ function setupINICallbacks() {
 // PiCoding Controls
 // ============================================
 function setupPicodingControls() {
-    const browseBtn = document.getElementById('btn-browse-picoding');
-    const loadBtn = document.getElementById('btn-load-picoding');
-    
-    if (browseBtn) {
-        browseBtn.addEventListener('click', async () => {
-            const result = await window.electronAPI.dialog.openFolder({
-                title: 'Select PiCoding Directory'
-            });
-            
-            if (result.canceled === false && result.filePath) {
-                document.getElementById('picoding-path').value = result.filePath;
+    // Detect Project button
+    const detectBtn = document.getElementById('btn-detect-project');
+    if (detectBtn) {
+        detectBtn.addEventListener('click', async () => {
+            const result = await window.electronAPI.picoding.detectProject();
+            if (result.success) {
+                document.getElementById('picoding-path-display').textContent = result.path || 'Detected project found';
+                showNotification('Success', `Project detected at: ${result.path}`);
+            } else {
+                showNotification('Warning', 'No project detected. Please select a folder manually.');
             }
         });
     }
     
-    if (loadBtn) {
-        loadBtn.addEventListener('click', () => {
-            const path = document.getElementById('picoding-path')?.value;
-            if (path) {
-                appendToLog('picoding', `Loading PiCoding from: ${path}`);
-                showNotification('Info', `PiCoding loading from: ${path}`);
+    // Add to PATH button
+    const addPathBtn = document.getElementById('btn-add-to-path');
+    if (addPathBtn) {
+        addPathBtn.addEventListener('click', async () => {
+            const confirmed = await window.electronAPI.notification.confirm(
+                'Add to PATH',
+                'Add picoding folder to Windows PATH? This allows you to type "pi" in any terminal.'
+            );
+            
+            if (confirmed) {
+                const result = await window.electronAPI.picoding.addToPath();
+                if (result.success) {
+                    showNotification('Success', 'picoding added to PATH successfully!');
+                } else {
+                    showNotification('Error', `Failed to add to PATH: ${result.error}`);
+                }
             }
         });
+    }
+    
+    // Instructions toggle
+    const toggleInstrBtn = document.getElementById('toggle-instructions');
+    const instrContent = document.getElementById('instructions-content');
+    if (toggleInstrBtn && instrContent) {
+        toggleInstrBtn.addEventListener('click', () => {
+            instrContent.classList.toggle('hidden');
+            toggleInstrBtn.textContent = instrContent.classList.contains('hidden') 
+                ? '📖 Show Instructions' 
+                : '📖 Hide Instructions';
+        });
+    }
+    
+    // Save Advisor Settings
+    const saveAdvisorBtn = document.getElementById('btn-save-advisor');
+    if (saveAdvisorBtn) {
+        saveAdvisorBtn.addEventListener('click', async () => {
+            const advisorUrl = document.getElementById('advisor-url')?.value;
+            const apiKey = document.getElementById('advisor-key')?.value;
+            const modelName = document.getElementById('advisor-model')?.value;
+            
+            if (!advisorUrl || !apiKey || !modelName) {
+                showNotification('Warning', 'Please fill in all MCP Advisor fields.');
+                return;
+            }
+            
+            const result = await window.electronAPI.picoding.saveAdvisor({
+                url: advisorUrl,
+                key: apiKey,
+                model: modelName
+            });
+            
+            if (result.success) {
+                showNotification('Success', 'MCP Advisor settings saved!');
+            } else {
+                showNotification('Error', `Failed to save: ${result.error}`);
+            }
+        });
+    }
+    
+    // Load saved advisor settings on init
+    loadAdvisorSettings();
+}
+
+async function loadAdvisorSettings() {
+    try {
+        const settings = await window.electronAPI.picoding.getAdvisor();
+        if (settings.url) document.getElementById('advisor-url').value = settings.url;
+        if (settings.key) document.getElementById('advisor-key').value = settings.key;
+        if (settings.model) document.getElementById('advisor-model').value = settings.model;
+    } catch (err) {
+        console.error('[PiCoding] Failed to load advisor settings:', err);
+    }
+}
+
+// ============================================
+// System Detection Model Controls
+// ============================================
+function setupSystemModelControls() {
+    // Download All Models button
+    const downloadAllBtn = document.getElementById('btn-download-all');
+    if (downloadAllBtn) {
+        downloadAllBtn.addEventListener('click', async () => {
+            const iniSelect = document.getElementById('ini-select');
+            const selectedIni = iniSelect?.value;
+            
+            if (!selectedIni) {
+                showNotification('Warning', 'Please select an INI file first.');
+                return;
+            }
+            
+            // INI'dan modelleri yükle
+            const models = await window.electronAPI.model.getModelsFromINI(selectedIni);
+            
+            if (!models || models.length === 0) {
+                showNotification('Info', 'No models found in this INI file.');
+                return;
+            }
+            
+            // Model listesini göster
+            renderSystemModelList(models);
+            
+            // İndirme işlemini başlat
+            await downloadAllModels(models);
+        });
+    }
+}
+
+function renderSystemModelList(models) {
+    const listEl = document.getElementById('system-model-list');
+    if (!listEl) return;
+    
+    listEl.innerHTML = models.map((model, index) => `
+        <li data-index="${index}">
+            <span>[${model.name}]</span>
+            <span class="muted">${model.model_url ? '✓ Ready' : '✗ No URL'}</span>
+        </li>
+    `).join('');
+}
+
+async function downloadAllModels(models) {
+    const modelsDir = window.electronAPI.paths.getModelsDir();
+    let completed = 0;
+    let total = models.length;
+    
+    for (const model of models) {
+        if (!model.model_url && !model.mmproj_url) continue;
+        
+        const folderName = model.name.replace('-vision', '').replace('-Vision', '');
+        const modelFolder = `${modelsDir}/${folderName}`;
+        
+        // Ana model
+        if (model.model_url) {
+            const fileName = model.model_url.split('/').pop();
+            const destPath = `${modelFolder}/${fileName}`;
+            
+            updateDownloadStatus(`Downloading ${model.name}...`);
+            
+            const result = await window.electronAPI.model.download(model.model_url, destPath);
+            
+            if (result.success) {
+                completed++;
+                updateDownloadProgress(result.percent || 100, result.downloaded, result.total);
+                appendToLog('system', `Completed: ${model.name}`);
+            } else {
+                appendToLog('system', `Error downloading ${model.name}: ${result.error}`, true);
+            }
+        }
+        
+        // mmproj
+        if (model.mmproj_url) {
+            const fileName = model.mmproj_url.split('/').pop();
+            const destPath = `${modelFolder}/${fileName}`;
+            
+            const result = await window.electronAPI.model.download(model.mmproj_url, destPath);
+            
+            if (result.success) {
+                completed++;
+                appendToLog('system', `Completed: ${model.name} mmproj`);
+            }
+        }
+    }
+    
+    updateDownloadStatus(`All downloads complete! (${completed}/${total} models)`);
+    
+    // Auto-generated INI oluştur
+    await generateLocalINI();
+}
+
+function updateDownloadStatus(text) {
+    const statusEl = document.getElementById('download-status');
+    if (statusEl) {
+        statusEl.textContent = text;
+    }
+}
+
+async function generateLocalINI() {
+    const iniSelect = document.getElementById('ini-select');
+    const selectedIni = iniSelect?.value;
+    
+    if (!selectedIni) return;
+    
+    try {
+        const result = await window.electronAPI.model.generateLocalINI(selectedIni);
+        
+        if (result.success && result.log) {
+            const autoLog = document.getElementById('auto-log');
+            if (autoLog) {
+                autoLog.value += `[OK] ${result.log}\n`;
+                autoLog.scrollTop = autoLog.scrollHeight;
+            }
+        }
+    } catch (err) {
+        console.error('[INI] Failed to generate local INI:', err);
     }
 }
 
 // ============================================
 // Notification Helpers
-// ============================================
+// ========================================
 async function showNotification(title, message, type = 'info') {
     try {
         if (type === 'error') {
