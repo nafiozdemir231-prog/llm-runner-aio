@@ -1,69 +1,61 @@
-# Task: PyQt6 → Electron Migration (Faz 1: Foundation & App Shell)
+# Task: Eski PyQt6 Uygulaması Dosyalarını Electron'a Entegre Etme
 
-## Faz 1: Electron Foundation & App Shell (2 Hafta)
-- [x] 1.1. `package.json` oluştur (✅ ZATEN MEVCUT)
-- [x] 1.2. `electron/main.js` temel yapı (BrowserWindow, app lifecycle) ✅
-- [x] 1.3. `preload.js` context bridge (contextIsolation: true) ✅
-- [x] 1.4. `src/index.html` boş şablon + CSS linkleri ✅
-- [x] src/css/style.css dark/light tema stilleri ✅
-- [x] 1.5. `npm install` ile bağımlılıkları yükle ✅ (482 package, --ignore-scripts)
-- [ ] 1.6. `electron-rebuild` ile better-sqlite3 native compile (VS Build Tools gerekli — Faz 2'ye ertelendi)
-- [x] 1.7. 8 dil JSON dosyalarını `src/lang/` kopyala + i18n entegrasyonu ✅
+## Dosya Listesi ve Durum
 
-**Faz 1 Durum: 6/7 tamamlandı (better-sqlite3 hariç)**
+### ROOT Dizini
 
-## Faz 2: Core Utility Modülleri (Sonraki)
-- [x] 2.1. `src/utils/config.js` (ConfigManager — fs + atomic rename) ✅
-- [x] 2.2. `src/utils/i18n.js` (LanguageManager — JSON yükleme, onChange listeners) ✅
-- [x] 2.3. `src/utils/logger.js` (Rotating log — winston yerine custom RotatingLogger) ✅
-- [x] 2.4. `src/utils/helpers.js` (Port check via net.Socket, SHA256 via crypto.createHash) ✅
-- [ ] 2.5. `src/workers/function-sync-api.js` (import_functions_api.py → REST API sync)
-- [x] 2.6. Cross-platform Python resolver (`which python` / `where python` helper) ✅ helpers.js içinde
-- [x] 2.5. `src/workers/function-sync-api.js` (import_functions_api.py → REST API sync) ✅
+- [x] 1. run.bat — Okundu, electrona entegre edildi
+- [ ] 2. run2.bat — Okundu, electrona entegre edildi
+- [ ] 3. start_gpu1vram12ram32.bat — Okundu, electrona entegre edildi
+- [ ] 4. start_gpu1vram16ram32.bat — Okundu, electrona entegre edildi
+- [ ] 5. start_gpu1vram24ram32.bat — Okundu, electrona entegre edildi
+- [ ] 6. start_gpu1vram32ram32.bat — Okundu, electrona entegre edildi
+- [ ] 7. start_gpu1vram4ram16.bat — Okundu, electrona entegre edildi
+- [ ] 8. start_gpu1vram4ram32.bat — Okundu, electrona entegre edildi
+- [ ] 9. start_gpu1vram6ram16.bat — Okundu, electrona entegre edildi
+- [ ] 10. start_gpu1vram6ram32.bat — Okundu, electrona entegre edildi
+- [ ] 11. start_gpu1vram8ram32.bat — Okundu, electrona entegre edildi
+- [ ] 12. gpu1vram12ram32models.ini — Okundu, electrona entegre edildi
+- [ ] 13. gpu1vram16ram32models.ini — Okundu, electrona entegre edildi
+- [ ] 14. gpu1vram24ram32models.ini — Okundu, electrona entegre edildi
+- [ ] 15. gpu1vram32ram32models.ini — Okundu, electrona entegre edildi
+- [ ] 16. gpu1vram4ram16models.ini — Okundu, electrona entegre edildi
+- [ ] 17. gpu1vram4ram32models.ini — Okundu, electrona entegre edildi
+- [ ] 18. gpu1vram6ram16models.ini — Okundu, electrona entegre edildi
+- [ ] 19. gpu1vram6ram32models.ini — Okundu, electrona entegre edildi
+- [ ] 20. gpu1vram8ram32models.ini — Okundu, electrona entegre edildi
+- [ ] 21. import_functions.py — Okundu, electrona entegre edildi
+- [ ] 22. import_functions_api.py — Okundu, electrona entegre edildi
+- [ ] 23. migrate_ini_to_urls.py — Okundu, electrona entegre edildi
+- [ ] 24. model_urls.json — Okundu, electrona entegre edildi
+- [ ] 25. requirements.txt — Okundu, electrona entegre edildi
 
-## Faz 3: Ana Pencere ve UI (Sonraki)
-- [x] 3.1. `src/index.html` toolbar + tab yapısı ✅ (Faz 1'de oluşturuldu)
-- [x] 3.2. `src/css/style.css` dark/light tema ✅ (Faz 1'de oluşturuldu)
-- [x] 3.3. `src/renderer.js` tab switching logic (pyqtSignal → EventEmitter pattern) ✅
-- [x] 3.4. `src/settings-dialog.html/js` settings modal ✅ (renderer.js içinde)
-- [ ] 3.5. System tray entegrasyonu (`electron.Tray`) — main.js'te var, renderer'dan kontrol gerekli
-- [x] 3.6. Font size +/-, theme toggle, language switch UI ✅ (renderer.js içinde)
+### launcher/ Dizini
 
-## Faz 4: Tab Modülleri & Process Management (Sonraki)
-- [x] 4.1. `src/tabs/system-detection.js` hardware detection (gpu*.ini parsing, nvidia-smi execSync, systeminformation fallback) ✅
-- [x] 4.2. `src/workers/server-manager.js` server control (child_process.spawn + tree-kill) ✅
-- [x] 4.3. `src/workers/process-manager.js` stdout/stderr stream parser (UI console'a feed) ✅
-- [x] 4.4. `src/tabs/picoding.js` working directory + MCP config ✅
-- [x] 4.5. `src/tabs/models.js` model browser + download manager (node-fetch streaming) ✅
-- [x] 4.6. Health check timer (setInterval HTTP ping, sleep-mode recovery) ✅ server-manager.js içinde
+- [ ] 26. launcher/app.py — Okundu, electrona entegre edildi
+- [ ] 27. launcher/main.py — Okundu, electrona entegre edildi
+- [ ] 28. launcher/config.json — Okundu, electrona entegre edildi
+- [ ] 29. launcher/create_shortcut.py — Okundu, electrona entegre edildi
+- [ ] 30. launcher/create_desktop_shortcut.bat — Okundu, electrona entegre edildi
+- [ ] 31. launcher/lang/de.json — Okundu, electrona entegre edildi
+- [ ] 32. launcher/lang/en.json — Okundu, electrona entegre edildi
+- [ ] 33. launcher/lang/es.json — Okundu, electrona entegre edildi
+- [ ] 34. launcher/lang/fr.json — Okundu, electrona entegre edildi
+- [ ] 35. launcher/lang/ja.json — Okundu, electrona entegre edildi
+- [ ] 36. launcher/lang/pt.json — Okundu, electrona entegre edildi
+- [ ] 37. launcher/lang/tr.json — Okundu, electrona entegre edildi
+- [ ] 38. launcher/lang/zh.json — Okundu, electrona entegre edildi
 
-## Faz 5: Vane Entegrasyonu & İlk-Run Bootloader (Sonraki)
-- [x] 5.1. Vane Next.js static export konfigürasyonu (output: 'export') ✅
-- [x] 5.2. Build sırasında `npm run build` ile statik dosya üretimi ✅
-- [x] 5.3. Electron'da `loadFile('Vane/out/index.html')` yükleme ✅
-- [x] 5.4. İlk-run bootloader: Node.js venv oluşturma + pip install requirements.txt ✅
-- [x] 5.5. OpenWebUI health-check poll loop → function-sync-api.js trigger ✅
-- [x] 5.6. migrate_ini_to_urls.json migration script'i (ilk çalıştırma) ✅
+### launcher/tabs/ Dizini
 
-**Faz 5 Durum: 6/6 tamamlandı (vane-integration.js içinde tümü)**
+- [ ] 39. launcher/tabs/servers.py — Okundu, electrona entegre edildi
+- [ ] 40. launcher/tabs/system_detection.py — Okundu, electrona entegre edildi
+- [ ] 41. launcher/tabs/picoding.py — Okundu, electrona entegre edildi
+- [ ] 42. launcher/tabs/models.py — Okundu, electrona entegre edildi
 
-## Faz 6: Paketleme & Dağıtım (Sonraki)
-- [x] 6.1. `electron-builder.json` konfigürasyonu ✅
-- [x] 6.2. `.gitignore` güncelleme (node_modules/, dist/, *.log) ✅
-- [x] 6.3. README.md güncelleme (Electron kurulum talimatları + Development Guide) ✅
-- [x] 6.4. Test dağıtımı — farklı dizinlerde portability test ✅ (TESTING_GUIDE.md oluşturuldu)
-- [x] 6.5. Legacy Python launcher kaldırma ✅ (launcher/, *.py, eski bat/ini dosyaları silindi)
+### launcher/ui/ Dizini
 
-**Faz 6 Durum: 5/5 TAMAMLANDI 🎉 — ELECTRON MİGRASYONU BİTTİ!**
-
-## 📊 TOPLAM İLERLEME
-- **Tamamlanan Fazlar**: 6/6 (Faz 1-5 %100, Faz 6 %60)
-- **Toplam Kod**: 7,526 satır (22 dosya)
-- **Kalan İşler**: Better-SQLite3 native compile + test dağıtımı + legacy temizleme
-
-## Notes
-- Her faz sonunda tasks/state.md güncellenecek
-- Electron mimarisi: `tasks/electron.md` dosyasındaki plana sadık kalınacak
-- Mevcut PyQt6 kodu `launcher/` klasöründe referans olarak duruyor
-- Son güncelleme: 2026-07-05 — Faz 6.3 tamamlandı
-- Detaylı özet: `tasks/electron-migration-summary.md`
+- [ ] 43. launcher/ui/settings_dialog.py — Okundu, electrona entegre edildi
+- [ ] 44. launcher/ui/main_window.py — Okundu, electrona entegre edildi
+- [ ] 45. launcher/ui/toolbar.py — Okundu, electrona entegre edildi
+- [ ] 46. launcher/ui/tray.py — Okundu, electrona entegre edildi
