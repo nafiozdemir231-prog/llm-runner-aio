@@ -6,7 +6,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --enable-logging",
-    "rebuild": "electron-rebuild -f -w better-sqlite3",
+    "rebuild": "npx electron-rebuild -f -w better-sqlite3",
     "build-win": "electron-builder build --win --x64",
     "build-mac": "electron-builder build --mac",
     "build-linux": "electron-builder build --linux",
@@ -19,7 +19,6 @@
     "better-sqlite3": "^11.7.0",
     "crypto-js": "^4.2.0",
     "electron-store": "^10.0.0",
-    "ini-file-parser": "^1.0.4",
     "node-fetch": "^3.3.2",
     "systeminformation": "^5.23.0",
     "tree-kill": "^1.2.2",
@@ -27,8 +26,7 @@
   },
   "devDependencies": {
     "electron": "^33.0.0",
-    "electron-builder": "^25.1.0",
-    "electron-rebuild": "^3.2.9"
+    "electron-builder": "^25.1.0"
   },
   "build": {
     "appId": "com.llmrunner.app",

@@ -23,9 +23,9 @@ call npm install || (
 echo [OK] Dependencies installed
 echo.
 echo Compiling native modules...
-call npm run rebuild || (
+call npx electron-rebuild -f -w better-sqlite3 || (
     echo [WARNING] better-sqlite3 compile skipped
-    echo Run "npm run rebuild" manually if needed.
+    Run "npx electron-rebuild -f -w better-sqlite3" manually if needed.
 )
 echo.
 echo ========================================
