@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;">
+    <title>LLM Runner AIO</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- ============================================ -->
+    <!-- Toolbar (Üst Bar) — PyQt6 QMainWindow toolbar karşılığı -->
+    <!-- ============================================ -->
+    <div id="toolbar">
+        <div class="toolbar-left">
+            <h1 id="app-title">LLM Runner AIO</h1>
+        </div>
+        
+        <div class="toolbar-center">
+            <!-- Tab Navigation — PyQt6 QTabWidget karşılığı -->
+            <div id="tab-bar">
+                <button data-tab="system" class="tab-btn active" title="System Detection & Configuration">
+                    🔍 System Detection
+                </button>
+                <button data-tab="servers" class="tab-btn" title="Start/Stop Servers">
+                    🖥️ Servers
+                </button>
+                <button data-tab="picoding" class="tab-btn" title="PiCoding IDE">
+                    💻 PiCoding
+                </button>
+                <button data-tab="models" class="tab-btn" title="Model Management">
+                    📦 Models
+                </button>
+            </div>
+        </div>
+        
+        <div class="toolbar-right">
+            <!-- Theme Toggle — Dark/Light -->
+            <button id="theme-toggle" class="tool-btn" title="Toggle Theme">🌙</button>
+            
+            <!-- Font Size Controls -->
+            <button id="font-decrease" class="tool-btn" title="Decrease Font Size">A-</button>
+            <span id="font-size-display">13px</span>
+            <button id="font-increase" class="tool-btn" title="Increase Font Size">A+</button>
+            
+            <!-- Settings Button -->
+            <button id="settings-btn" class="tool-btn" title="Settings">⚙️</button>
+            
+            <!-- Support Button -->
+            <button id="support-btn" class="tool-btn" title="Support the Project">☕ Buy a Coffee</button>
+        </div>
+    </div>
+    
+    <!-- ============================================ -->
+    <!-- Main Content Area — PyQt6 central widget karşılığı -->
+    <!-- ============================================ -->
+    <div id="main-container">
+        <!-- Tab Panels — PyQt6 QTabWidget panel'leri -->
+        <div id="tabs-content">
+            <!-- Tab 1: System Detection -->
+            <div id="tab-system" class="tab-panel active">
+                <div class="panel-header">
+                    <h2>System Detection</h2>
+                </div>
+                
+                <div class="panel-body">
+                    <!-- Hardware Info Section -->
+                    <div class="section-group">
+                        <fieldset>
+                            <legend>Detected Hardware</legend>
+                            
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <label>GPU:</label>
+                                    <span id="gpu-name" class="info-value">Detecting...</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>VRAM:</label>
+                                    <span id="vram-info" class="info-value">-- GB</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>RAM:</label>
+                                    <span id="ram-info" class="info-value">-- GB</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>CPU:</label>
+                                    <span id="cpu-info" class="info-value">--</span>
+                                </div>
+                            </div>
+                            
+                            <button id="btn-detect" class="primary-btn">🔍 Detect Hardware</button>
+                        </fieldset>
+                        
+                        <!-- INI Config Selection -->
+                        <fieldset>
+                            <legend>Configuration Profile</legend>
+                            
+                            <div class="form-row">
+                                <label for="ini-select">GPU Config File:</label>
+                                <select id="ini-select">
+                                    <option value="">Auto-Detect or Select...</option>
+                                </select>
+                                <button id="btn-load-ini" class="secondary-btn">Load</button>
+                            </div>
+                            
+                            <div class="form-row">
+                                <label for="ctx-spin">Context Length:</label>
+                                <input type="number" id="ctx-spin" min="1024" max="8192" value="8192" step="1024">
+                                <span>tokens</span>
+                            </div>
+                        </fieldset>
+                        
+                        <!-- Log Output — PyQt6 QTextEdit karşılığı -->
+                        <fieldset>
+                            <legend>Console Output</legend>
+                            <textarea id="log-output" class="log-area" readonly placeholder="Logs will appear here..."></textarea>
+                        </fieldset>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab 2: Servers -->
+            <div id="tab-servers" class="tab-panel">
+                <div class="panel-header">
+                    <h2>Server Management</h2>
+                </div>
+                
+                <div class="panel-body">
+                    <!-- SearXNG Section -->
+                    <div class="server-section">
+                        <fieldset>
+                            <legend>🔎 SearXNG (Search Engine)</legend>
+                            
+                            <div class="server-controls">
+                                <div class="form-row">
+                                    <label>Port:</label>
+                                    <input type="number" id="searxng-port" value="8080" min="1" max="65535">
+                                </div>
+                                <div class="form-row">
+                                    <label>Bind Address:</label>
+                                    <select id="searxng-host">
+                                        <option value="0.0.0.0">All Interfaces (0.0.0.0)</option>
+                                        <option value="127.0.0.1">Localhost Only (127.0.0.1)</option>
+                                    </select>
+                                </div>
+                                <div class="btn-group">
+                                    <button id="btn-start-searxng" class="start-btn">▶ Start</button>
+                                    <button id="btn-stop-searxng" class="stop-btn" disabled>⏹ Stop</button>
+                                </div>
+                            </div>
+                            
+                            <div class="server-status">
+                                Status: <span id="searxng-status" class="status-indicator stopped">Stopped</span>
+                            </div>
+                            
+                            <textarea id="searxng-log" class="log-area small" readonly placeholder="SearXNG logs..."></textarea>
+                        </fieldset>
+                    </div>
+                    
+                    <!-- OpenWebUI Section -->
+                    <div class="server-section">
+                        <fieldset>
+                            <legend>💬 OpenWebUI (Chat Interface)</legend>
+                            
+                            <div class="server-controls">
+                                <div class="form-row">
+                                    <label>Port:</label>
+                                    <input type="number" id="openwebui-port" value="3000" min="1" max="65535">
+                                </div>
+                                <div class="form-row">
+                                    <label>Bind Address:</label>
+                                    <select id="openwebui-host">
+                                        <option value="0.0.0.0">All Interfaces (0.0.0.0)</option>
+                                        <option value="127.0.0.1">Localhost Only (127.0.0.1)</option>
+                                    </select>
+                                </div>
+                                <div class="btn-group">
+                                    <button id="btn-start-openwebui" class="start-btn">▶ Start</button>
+                                    <button id="btn-stop-openwebui" class="stop-btn" disabled>⏹ Stop</button>
+                                </div>
+                            </div>
+                            
+                            <div class="server-status">
+                                Status: <span id="openwebui-status" class="status-indicator stopped">Stopped</span>
+                            </div>
+                            
+                            <textarea id="openwebui-log" class="log-area small" readonly placeholder="OpenWebUI logs..."></textarea>
+                        </fieldset>
+                    </div>
+                    
+                    <!-- llama.cpp Section -->
+                    <div class="server-section">
+                        <fieldset>
+                            <legend>🦙 llama.cpp (Inference Server)</legend>
+                            
+                            <div class="server-controls">
+                                <div class="form-row">
+                                    <label>Port:</label>
+                                    <input type="number" id="llamacpp-port" value="1234" min="1" max="65535">
+                                </div>
+                                <div class="form-row">
+                                    <label>Bind Address:</label>
+                                    <select id="llamacpp-host">
+                                        <option value="0.0.0.0">All Interfaces (0.0.0.0)</option>
+                                        <option value="127.0.0.1">Localhost Only (127.0.0.1)</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label>Model:</label>
+                                    <input type="text" id="llamacpp-model" placeholder="models/your-model.gguf">
+                                </div>
+                                <div class="btn-group">
+                                    <button id="btn-start-llamacpp" class="start-btn">▶ Start</button>
+                                    <button id="btn-stop-llamacpp" class="stop-btn" disabled>⏹ Stop</button>
+                                </div>
+                            </div>
+                            
+                            <div class="server-status">
+                                Status: <span id="llamacpp-status" class="status-indicator stopped">Stopped</span>
+                            </div>
+                            
+                            <textarea id="llamacpp-log" class="log-area small" readonly placeholder="llama.cpp logs..."></textarea>
+                        </fieldset>
+                    </div>
+                    
+                    <!-- Vane Section -->
+                    <div class="server-section">
+                        <fieldset>
+                            <legend>🌐 Vane (AI Answer Engine)</legend>
+                            
+                            <div class="server-controls">
+                                <div class="form-row">
+                                    <label>Port:</label>
+                                    <input type="number" id="vane-port" value="8090" min="1" max="65535">
+                                </div>
+                                <div class="form-row">
+                                    <label>Bind Address:</label>
+                                    <select id="vane-host">
+                                        <option value="0.0.0.0">All Interfaces (0.0.0.0)</option>
+                                        <option value="127.0.0.1">Localhost Only (127.0.0.1)</option>
+                                    </select>
+                                </div>
+                                <div class="btn-group">
+                                    <button id="btn-start-vane" class="start-btn">▶ Start</button>
+                                    <button id="btn-stop-vane" class="stop-btn" disabled>⏹ Stop</button>
+                                </div>
+                            </div>
+                            
+                            <div class="server-status">
+                                Status: <span id="vane-status" class="status-indicator stopped">Stopped</span>
+                            </div>
+                            
+                            <textarea id="vane-log" class="log-area small" readonly placeholder="Vane logs..."></textarea>
+                        </fieldset>
+                    </div>
+                    
+                    <!-- Global Actions -->
+                    <div class="global-actions">
+                        <button id="btn-start-all" class="primary-btn">▶ Start All Servers</button>
+                        <button id="btn-stop-all" class="danger-btn">⏹ Stop All Servers</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab 3: PiCoding -->
+            <div id="tab-picoding" class="tab-panel">
+                <div class="panel-header">
+                    <h2>PiCoding IDE</h2>
+                </div>
+                
+                <div class="panel-body">
+                    <div class="section-group">
+                        <fieldset>
+                            <legend>PiCoding Configuration</legend>
+                            
+                            <div class="form-row">
+                                <label for="picoding-path">Installation Path:</label>
+                                <input type="text" id="picoding-path" placeholder="/path/to/picoding">
+                                <button id="btn-browse-picoding" class="secondary-btn">📁 Browse</button>
+                            </div>
+                            
+                            <div class="form-row">
+                                <label for="mcp-config">MCP Config File:</label>
+                                <input type="text" id="mcp-config" placeholder="config.json">
+                            </div>
+                            
+                            <button id="btn-load-picoding" class="primary-btn">💻 Load PiCoding</button>
+                        </fieldset>
+                        
+                        <fieldset>
+                            <legend>Terminal Output</legend>
+                            <textarea id="picoding-log" class="log-area" readonly placeholder="PiCoding terminal output..."></textarea>
+                        </fieldset>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab 4: Models -->
+            <div id="tab-models" class="tab-panel">
+                <div class="panel-header">
+                    <h2>Model Management</h2>
+                </div>
+                
+                <div class="panel-body">
+                    <div class="section-group">
+                        <fieldset>
+                            <legend>Storage</legend>
+                            
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <label>Models Directory:</label>
+                                    <span id="models-path-display" class="info-value">models/</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Total Size:</label>
+                                    <span id="models-total-size" class="info-value">Calculating...</span>
+                                </div>
+                            </div>
+                        </fieldset>
+                        
+                        <!-- Model List — PyQt6 QListWidget karşılığı -->
+                        <fieldset>
+                            <legend>Available Models (.gguf)</legend>
+                            
+                            <div class="model-list-controls">
+                                <button id="btn-scan-models" class="secondary-btn">🔄 Scan Models</button>
+                                <button id="btn-delete-selected" class="danger-btn" disabled>Delete Selected</button>
+                            </div>
+                            
+                            <ul id="model-list" class="model-list">
+                                <!-- Models will be populated dynamically -->
+                                <li class="empty-message">Click "Scan Models" to discover GGUF files.</li>
+                            </ul>
+                        </fieldset>
+                        
+                        <!-- Download Section -->
+                        <fieldset>
+                            <legend>Download Model</legend>
+                            
+                            <div class="form-row">
+                                <label for="download-url">HuggingFace URL:</label>
+                                <input type="text" id="download-url" placeholder="https://huggingface.co/...">
+                            </div>
+                            
+                            <div class="progress-container">
+                                <div id="download-progress-bar" class="progress-bar">
+                                    <div id="download-progress-fill" class="progress-fill" style="width: 0%"></div>
+                                </div>
+                                <span id="download-percent">0%</span>
+                            </div>
+                            
+                            <button id="btn-download" class="primary-btn">⬇ Download</button>
+                        </fieldset>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ============================================ -->
+    <!-- Settings Modal — PyQt6 QDialog karşılığı -->
+    <!-- ============================================ -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button id="close-settings" class="close-btn">×</button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Theme Selection -->
+                <div class="setting-group">
+                    <label>Theme</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="theme" value="dark" checked> 🌙 Dark</label>
+                        <label><input type="radio" name="theme" value="light"> ☀️ Light</label>
+                    </div>
+                </div>
+                
+                <!-- Font Size -->
+                <div class="setting-group">
+                    <label>Font Size</label>
+                    <div class="font-controls">
+                        <button id="settings-font-decrease" class="small-btn">A-</button>
+                        <span id="settings-font-size">13px</span>
+                        <button id="settings-font-increase" class="small-btn">A+</button>
+                    </div>
+                </div>
+                
+                <!-- Language Selection -->
+                <div class="setting-group">
+                    <label>Language</label>
+                    <select id="language-select">
+                        <option value="en">English</option>
+                        <option value="tr">Türkçe</option>
+                        <option value="de">Deutsch</option>
+                        <option value="es">Español</option>
+                        <option value="fr">Français</option>
+                        <option value="pt">Português</option>
+                        <option value="zh">中文</option>
+                        <option value="ja">日本語</option>
+                    </select>
+                </div>
+                
+                <!-- Startup Options -->
+                <div class="setting-group">
+                    <label>Startup Options</label>
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="start-with-windows"> Start with Windows
+                        </label>
+                        <label>
+                            <input type="checkbox" id="auto-start-servers"> Auto-start Servers on Launch
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Database Management -->
+                <div class="setting-group">
+                    <label>Database</label>
+                    <button id="btn-load-database" class="secondary-btn">📥 Load Database</button>
+                    <p class="help-text">Import chat history from another OpenWebUI installation.</p>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button id="apply-settings" class="primary-btn">Apply</button>
+                <button id="cancel-settings" class="secondary-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ============================================ -->
+    <!-- Scripts -->
+    <!-- ============================================ -->
+    <script src="renderer.js"></script>
+</body>
+</html>

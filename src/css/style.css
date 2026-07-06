@@ -1,0 +1,796 @@
+/**
+ * LLM Runner AIO - Main Stylesheet
+ * 
+ * PyQt6 Qt Style Sheets (QSS) → CSS Flexbox/Grid dönüşümü
+ * Dark/Light tema desteği
+ * 
+ * Mevcut PyQt6 temaları:
+ * - app.py'deki apply_theme() metodunun CSS karşılığı
+ */
+
+/* ============================================ */
+/* CSS Custom Properties (Tema Değişkenleri)     */
+/* ============================================ */
+
+:root {
+    /* Dark Tema (Varsayılan) */
+    --bg-primary: #1e1e2e;
+    --bg-secondary: #2a2a3e;
+    --bg-tertiary: #0f172a;
+    --accent: #7c3aed;
+    --accent-hover: #6d28d9;
+    --accent-active: #5b21b6;
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --border: #374151;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --log-bg: #0f172a;
+    --log-text: #4ade80;
+    --shadow: rgba(0, 0, 0, 0.3);
+    --radius: 6px;
+    --radius-lg: 8px;
+}
+
+/* Light Tema */
+[data-theme="light"] {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --accent: #6d28d9;
+    --accent-hover: #5b21b6;
+    --accent-active: #4c1d95;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --border: #e2e8f0;
+    --success: #059669;
+    --danger: #dc2626;
+    --warning: #d97706;
+    --log-bg: #f1f5f9;
+    --log-text: #166534;
+    --shadow: rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================ */
+/* Reset & Base                                 */
+/* ============================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: var(--font-size, 13px);
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+}
+
+/* Scrollbar Stilleri */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+}
+
+/* ============================================ */
+/* Toolbar — QMainWindow üst barı               */
+/* ============================================ */
+
+#toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 50px;
+    padding: 0 16px;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    user-select: none;
+}
+
+.toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#app-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--accent);
+    white-space: nowrap;
+}
+
+.toolbar-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: 0 20px;
+}
+
+#tab-bar {
+    display: flex;
+    gap: 4px;
+}
+
+.tab-btn {
+    padding: 8px 16px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
+    cursor: pointer;
+    font-size: inherit;
+    font-weight: normal;
+    transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+    background-color: var(--accent-hover);
+}
+
+.tab-btn.active {
+    background-color: var(--accent);
+    color: var(--text-primary);
+    font-weight: bold;
+}
+
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tool-btn {
+    padding: 6px 12px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: inherit;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.tool-btn:hover {
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+
+.tool-btn:active {
+    background-color: var(--accent-hover);
+}
+
+#font-size-display {
+    color: var(--text-secondary);
+    font-size: 11px;
+    min-width: 40px;
+    text-align: center;
+}
+
+/* ============================================ */
+/* Main Container — QMainWindow central widget  */
+/* ============================================ */
+
+#main-container {
+    height: calc(100vh - 50px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#tabs-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.tab-panel {
+    display: none;
+    height: 100%;
+    overflow-y: auto;
+    padding: 16px;
+    background-color: var(--bg-primary);
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+.panel-header {
+    margin-bottom: 16px;
+}
+
+.panel-header h2 {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--accent);
+}
+
+.panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 900px;
+}
+
+/* ============================================ */
+/* Fieldset / GroupBox — QGroupBox karşılığı     */
+/* ============================================ */
+
+fieldset {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    margin-top: 12px;
+}
+
+fieldset legend {
+    padding: 0 8px;
+    font-size: inherit;
+    font-weight: bold;
+    color: var(--accent);
+}
+
+.section-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ============================================ */
+/* Info Grid — Donanım Bilgisi                  */
+/* ============================================ */
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--radius);
+}
+
+.info-item label {
+    font-weight: bold;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.info-value {
+    color: var(--text-primary);
+    word-break: break-all;
+}
+
+/* ============================================ */
+/* Form Elements                                */
+/* ============================================ */
+
+.form-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.form-row label {
+    min-width: 120px;
+    font-weight: bold;
+    color: var(--text-secondary);
+}
+
+.form-row input[type="text"],
+.form-row input[type="number"] {
+    flex: 1;
+    padding: 8px 12px;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: inherit;
+    transition: border-color 0.2s ease;
+}
+
+.form-row input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.form-row select {
+    flex: 1;
+    padding: 8px 12px;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: inherit;
+    cursor: pointer;
+}
+
+/* ============================================ */
+/* Buttons                                      */
+/* ============================================ */
+
+button {
+    padding: 8px 16px;
+    background-color: var(--accent);
+    color: var(--text-primary);
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: inherit;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+button:hover {
+    background-color: var(--accent-hover);
+}
+
+button:active {
+    background-color: var(--accent-active);
+}
+
+button:disabled {
+    background-color: var(--border);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+.primary-btn {
+    background-color: var(--accent);
+    padding: 10px 24px;
+    font-size: 14px;
+}
+
+.primary-btn:hover {
+    background-color: var(--accent-hover);
+}
+
+.secondary-btn {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+
+.secondary-btn:hover {
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+
+.start-btn {
+    background-color: var(--success);
+}
+
+.start-btn:hover {
+    background-color: #059669;
+}
+
+.stop-btn {
+    background-color: var(--danger);
+}
+
+.stop-btn:hover {
+    background-color: #dc2626;
+}
+
+.danger-btn {
+    background-color: var(--danger);
+    color: white;
+}
+
+.danger-btn:hover {
+    background-color: #dc2626;
+}
+
+.small-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+}
+
+/* Button Group */
+.btn-group {
+    display: flex;
+    gap: 8px;
+}
+
+.global-actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+/* ============================================ */
+/* Server Section                               */
+/* ============================================ */
+
+.server-section {
+    margin-bottom: 20px;
+}
+
+.server-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.server-status {
+    margin: 8px 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.status-indicator.running {
+    color: var(--success);
+    font-weight: bold;
+}
+
+.status-indicator.stopped {
+    color: var(--text-secondary);
+}
+
+.status-indicator.error {
+    color: var(--danger);
+}
+
+/* ============================================ */
+/* Log Area — QTextEdit karşılığı               */
+/* ============================================ */
+
+.log-area {
+    width: 100%;
+    min-height: 120px;
+    max-height: 300px;
+    padding: 8px 12px;
+    background-color: var(--log-bg);
+    color: var(--log-text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: calc(var(--font-size, 13px) - 1px);
+    resize: vertical;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.log-area.small {
+    min-height: 60px;
+    max-height: 150px;
+}
+
+/* ============================================ */
+/* Model List — QListWidget karşılığı           */
+/* ============================================ */
+
+.model-list-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.model-list {
+    list-style: none;
+    max-height: 300px;
+    overflow-y: auto;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px;
+}
+
+.model-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.model-list li:hover {
+    background-color: var(--accent-hover);
+}
+
+.model-list li.selected {
+    background-color: var(--accent);
+    color: white;
+}
+
+.empty-message {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* ============================================ */
+/* Progress Bar — QProgressBar karşılığı        */
+/* ============================================ */
+
+.progress-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 12px 0;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 24px;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--accent);
+    transition: width 0.3s ease;
+    border-radius: calc(var(--radius) - 1px);
+}
+
+#download-percent {
+    min-width: 50px;
+    text-align: right;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+/* ============================================ */
+/* Modal — QDialog karşılığı                    */
+/* ============================================ */
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+.modal-content {
+    position: relative;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    min-width: 400px;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px var(--shadow);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-header h2 {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--accent);
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 0 4px;
+}
+
+.close-btn:hover {
+    color: var(--danger);
+    background-color: transparent;
+}
+
+.modal-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.setting-group label:first-child {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.radio-group,
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.radio-group label,
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-weight: normal;
+}
+
+.font-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#settings-font-size {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.help-text {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    font-style: italic;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+}
+
+/* ============================================ */
+/* Radio & Checkbox                             */
+/* ============================================ */
+
+input[type="radio"],
+input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* ============================================ */
+/* Utility Classes                              */
+/* ============================================ */
+
+.hidden {
+    display: none !important;
+}
+
+.text-success {
+    color: var(--success);
+}
+
+.text-danger {
+    color: var(--danger);
+}
+
+.text-warning {
+    color: var(--warning);
+}
+
+.muted {
+    color: var(--text-secondary);
+}
+
+/* ============================================ */
+/* Responsive                                   */
+/* ============================================ */
+
+@media (max-width: 768px) {
+    .toolbar-center {
+        display: none;
+    }
+    
+    #tab-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background-color: var(--bg-secondary);
+        border-top: 1px solid var(--border);
+        z-index: 100;
+        justify-content: space-around;
+        padding: 0;
+    }
+    
+    .tab-btn {
+        flex: 1;
+        text-align: center;
+        border: none;
+        border-radius: 0;
+        font-size: 10px;
+        padding: 8px 4px;
+    }
+    
+    #main-container {
+        height: calc(100vh - 100px);
+    }
+}
+
+/* ============================================ */
+/* Animations                                   */
+/* ============================================ */
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.status-indicator.running {
+    animation: pulse 2s infinite;
+}
+
+/* Fade-in for modals */
+.modal-content {
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
