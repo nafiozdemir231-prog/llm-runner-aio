@@ -58,7 +58,7 @@ async function detectHardware() {
     // RAM Detection
     // ============================================
     const totalMem = require('os').totalmem();
-    result.ramGb = Math.round(totalMem / (1024 * 1024 * 1024 * 100)) / 100;
+    result.ramGb = Math.round((totalMem / (1024 * 1024 * 1024)) * 100) / 100;
     
     // ============================================
     // CPU Detection

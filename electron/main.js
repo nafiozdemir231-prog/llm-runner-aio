@@ -357,9 +357,9 @@ async function detectHardware() {
         }
     }
     
-    // RAM detection
-    result.ramGb = Math.round(process.memoryUsage().heapTotal / (1024 * 1024 * 1024));
-    // Gerçek RAM için sysinfo kullanacağız (daha gelişmiş versiyonda)
+    // RAM detection — Sistem toplam RAM'i
+    const totalMemBytes = require('os').totalmem();
+    result.ramGb = Math.round((totalMemBytes / (1024 * 1024 * 1024)) * 10) / 10;
     
     // CPU detection
     try {
@@ -378,6 +378,49 @@ async function detectHardware() {
         }
     } catch (e) {
         result.cpuName = require('os').cpus()[0]?.model || 'Unknown';
+    }
+    
+    // INI Config Eşleştirme — GPU'ya göre otomatik config seç
+    try {
+        const files = fs.readdirSync(PROJECT_DIR);
+        const iniFiles = files.filter(f => f.match(/^gpu.*models\.ini$/));
+        
+        if (result.gpuName && iniFiles.length > 0) {
+            const gpuNameLower = result.gpuName.toLowerCase();
+            let bestMatch = null;
+            let bestScore = -1;
+            
+            for (const ini of iniFiles) {
+                let score = 0;
+                
+                // GPU adı içinde ini dosyası varsa yüksek skor
+                if (gpuNameLower.includes(ini.toLowerCase().split('.')[0])) {
+                    score += 10;
+                }
+                
+                // VRAM'e en yakın INI'yı seç
+                const vramMatch = ini.match(/vram(\d+)/);
+                if (vramMatch) {
+                    const iniVram = parseInt(vramMatch[1]);
+                    const diff = Math.abs(result.vramGb * 1024 - iniVram);
+                    if (diff < 2048) { // ±2GB tolerans
+                        score += (2048 - diff);
+                    }
+                }
+                
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMatch = ini;
+                }
+            }
+            
+            result.iniMatch = bestMatch || null;
+        } else {
+            result.iniMatch = null;
+        }
+    } catch (e) {
+        console.warn('[DETECT] INI matching failed:', e.message);
+        result.iniMatch = null;
     }
     
     return result;

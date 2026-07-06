@@ -404,6 +404,12 @@ async function detectHardware() {
         
         appendToLog('system', `GPU: ${hw.gpuName || 'None'}, VRAM: ${hw.vramGb}GB, RAM: ${hw.ramGb}GB`);
         
+        // INI Presetleri yeniden tara ve otomatik eşleştir
+        await refreshINIPresets(hw.iniMatch);
+        
+        // VRAM'e göre model önerileri göster
+        renderModelRecommendations(hw.vramGb);
+        
         showNotification('Detection Complete', `Found: ${hw.gpuName || 'No GPU'} (${hw.vramGb}GB VRAM)`);
     } catch (err) {
         appendToLog('system', `Detection failed: ${err.message}`, true);
@@ -730,9 +736,66 @@ function formatBytes(bytes) {
 }
 
 // ============================================
+// Model Recommendations (VRAM'e göre)
+// ============================================
+function renderModelRecommendations(vramGb) {
+    const container = document.getElementById('recommended-models');
+    
+    if (!container || vramGb <= 0) {
+        container.innerHTML = '<p class="help-text">Run "Detect Hardware" first to see recommendations.</p>';
+        return;
+    }
+    
+    // VRAM'e göre model önerileri — GGUF Q4_K_M quantization
+    const models = [
+        { minVram: 4, maxVram: 8, name: 'llama-3.2-1b-instruct-q4_k_m.gguf', size: '~1GB', desc: 'Hızlı, düşük VRAM' },
+        { minVram: 6, maxVram: 10, name: 'llama-3.2-3b-instruct-q4_k_m.gguf', size: '~2GB', desc: 'Dengeli performans' },
+        { minVram: 8, maxVram: 12, name: 'mistral-7b-v2-q4_k_m.gguf', size: '~4.5GB', desc: 'Genel amaçlı' },
+        { minVram: 10, maxVram: 16, name: 'llama-3-8b-instruct-q4_k_m.gguf', size: '~5.5GB', desc: 'En popüler 7B-8B sınıfı' },
+        { minVram: 12, maxVram: 20, name: 'mixtral-8x7b-instruct-q4_k_m.gguf', size: '~9GB', desc: 'MoE mimarisi, yüksek kalite' },
+        { minVram: 16, maxVram: 24, name: 'llama-3-70b-instruct-q4_k_m.gguf', size: '~38GB', desc: 'Yüksek kapasite GPU için' },
+        { minVram: 24, maxVram: Infinity, name: 'llama-3-70b-instruct-q3_k_s.gguf', size: '~25GB', desc: 'Ultra büyük modeller' }
+    ];
+    
+    // Kullanıcının VRAM aralığına uygun modelleri filtrele
+    const recommended = models.filter(m => vramGb >= m.minVram && vramGb <= m.maxVram);
+    
+    if (recommended.length === 0) {
+        container.innerHTML = '<p class="help-text">No specific recommendations for your GPU. Try custom download.</p>';
+        return;
+    }
+    
+    // HTML oluştur
+    container.innerHTML = recommended.map(model => `
+        <div class="model-rec-item">
+            <div class="model-rec-info">
+                <div class="model-rec-name">${model.name}</div>
+                <div class="model-rec-details">${model.size} — ${model.desc}</div>
+            </div>
+            <button class="secondary-btn model-rec-btn" onclick="startModelDownload('${model.name}')">
+                ⬇ Download
+            </button>
+        </div>
+    `).join('');
+    
+    appendToLog('system', `Recommended ${recommended.length} model(s) for ${vramGb}GB VRAM`);
+}
+
+function startModelDownload(filename) {
+    const urlInput = document.getElementById('download-url');
+    // HuggingFace pattern: https://huggingface.co/TheBloke/{name}/resolve/main/{filename}
+    const url = `https://huggingface.co/TheBloke/${filename.replace('.gguf', '')}/resolve/main/${filename}`;
+    urlInput.value = url;
+    
+    // Models tab'ına scroll
+    switchTab('models');
+    showNotification('URL Ready', `${filename} URL added. Click Download.`);
+}
+
+// ============================================
 // INI Preset Management (llama.cpp GPU configs)
 // ============================================
-async function loadINIPresets() {
+async function loadINIPresets(autoSelect = null) {
     try {
         const presets = await window.electronAPI.model.getINIPresets();
         const select = document.getElementById('ini-select');
@@ -752,10 +815,21 @@ async function loadINIPresets() {
             select.appendChild(option);
         }
         
+        // Otomatik eşleştirme varsa seç
+        if (autoSelect && presets.includes(autoSelect)) {
+            select.value = autoSelect;
+            appendToLog('system', `Auto-selected INI: ${autoSelect}`);
+            showNotification('Config Auto-Selected', `Using ${autoSelect} for your GPU`);
+        }
+        
         console.log(`[INI] Loaded ${presets.length} presets`);
     } catch (err) {
         console.error('[INI] Failed to load presets:', err.message);
     }
+}
+
+async function refreshINIPresets(autoSelect = null) {
+    await loadINIPresets(autoSelect);
 }
 
 function setupINICallbacks() {
@@ -774,13 +848,7 @@ function setupINICallbacks() {
             state.config.selected_ini = selected;
             await window.electronAPI.config.write(state.config);
             
-            // Context length'i al
-            const ctxValue = document.getElementById('ctx-spin')?.value;
-            if (ctxValue) {
-                state.config.llamacpp_ctx = parseInt(ctxValue, 10);
-            }
-            
-            appendToLog('system', `Loaded INI preset: ${selected} (ctx: ${state.config.llamacpp_ctx})`);
+            appendToLog('system', `Loaded INI preset: ${selected}`);
             showNotification('Config Loaded', `Using ${selected}`);
         });
     }

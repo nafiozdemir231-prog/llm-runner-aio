@@ -102,12 +102,6 @@
                                 </select>
                                 <button id="btn-load-ini" class="secondary-btn">Load</button>
                             </div>
-                            
-                            <div class="form-row">
-                                <label for="ctx-spin">Context Length:</label>
-                                <input type="number" id="ctx-spin" min="1024" max="8192" value="8192" step="1024">
-                                <span>tokens</span>
-                            </div>
                         </fieldset>
                         
                         <!-- Log Output — PyQt6 QTextEdit karşılığı -->
@@ -333,9 +327,18 @@
                             </ul>
                         </fieldset>
                         
-                        <!-- Download Section -->
+                        <!-- Recommended Models — VRAM'e göre -->
                         <fieldset>
-                            <legend>Download Model</legend>
+                            <legend>Recommended Models (Based on Your GPU)</legend>
+                            
+                            <div id="recommended-models" class="model-recommendations">
+                                <p class="help-text">Run "Detect Hardware" first to see recommendations.</p>
+                            </div>
+                        </fieldset>
+                        
+                        <!-- Custom Download Section -->
+                        <fieldset>
+                            <legend>Custom Download</legend>
                             
                             <div class="form-row">
                                 <label for="download-url">HuggingFace URL:</label>
