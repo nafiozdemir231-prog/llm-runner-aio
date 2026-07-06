@@ -6,7 +6,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --enable-logging",
-    "rebuild": "npx electron-rebuild -f -w better-sqlite3",
+    "rebuild": "echo No native modules to rebuild",
     "build-win": "electron-builder build --win --x64",
     "build-mac": "electron-builder build --mac",
     "build-linux": "electron-builder build --linux",
@@ -16,7 +16,6 @@
   "author": "LLM Runner AIO Team",
   "license": "MIT",
   "dependencies": {
-    "better-sqlite3": "^11.7.0",
     "crypto-js": "^4.2.0",
     "electron-store": "^10.0.0",
     "node-fetch": "^3.3.2",
