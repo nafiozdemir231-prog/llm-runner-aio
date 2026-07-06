@@ -302,7 +302,8 @@ function setupIPC() {
         try {
             const files = fs.readdirSync(iniDir);
             for (const file of files) {
-                if (file.match(/^gpu\d+vram\d+ram\d+models\.ini$/)) {
+                // Daha eskek pattern: gpu ile baslayan ve models.ini ile biten dosyalar
+                if (file.startsWith('gpu') && file.endsWith('.ini')) {
                     presets.push(file);
                 }
             }
@@ -618,6 +619,8 @@ async function detectHardware() {
     try {
         const files = fs.readdirSync(PROJECT_DIR);
         const iniFiles = files.filter(f => f.match(/^gpu.*models\.ini$/));
+        
+        console.log('[DETECT] Found INI files:', iniFiles);
         
         if (result.gpuName && iniFiles.length > 0) {
             const gpuNameLower = result.gpuName.toLowerCase();

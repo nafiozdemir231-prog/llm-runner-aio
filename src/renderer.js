@@ -407,6 +407,10 @@ async function detectHardware() {
         
         appendToLog('system', `GPU: ${hw.gpuName || 'None'}, VRAM: ${hw.vramGb}GB, RAM: ${hw.ramGb}GB`);
         
+        // INI eşleştirme debug
+        console.log('[RENDERER] Hardware detect result:', hw);
+        console.log('[RENDERER] iniMatch:', hw.iniMatch);
+        
         // INI Presetleri yeniden tara ve otomatik eşleştir
         await refreshINIPresets(hw.iniMatch);
         
