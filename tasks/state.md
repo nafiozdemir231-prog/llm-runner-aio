@@ -1,8 +1,8 @@
-current_step: Faz 6.3 tamamlandı (README.md Electron + Development Guide eklendi)
+current_step: Faz 6.4 tamamlandı (TESTING_GUIDE.md oluşturuldu)
 status: in_progress
 verdict: PASS
-last_action: README.md güncellendi + electron-migration-summary.md oluşturuldu
-next_action: Faz 6.4 — Test dağıtımı senaryoları tanımlama / Faz 6.5 — Legacy launcher temizliği
+last_action: TESTING_GUIDE.md + BETTER_SQLITE3_SETUP.md oluşturuldu — tüm test senaryoları hazır
+next_action: Faz 6.5 — Legacy Python launcher temizliği (run.bat, main.py, import_functions.py)
 blocked: false
 
 ## 📊 TOPLAM İLERLEME RAPORU
