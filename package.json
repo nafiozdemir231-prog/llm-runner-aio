@@ -1,0 +1,139 @@
+{
+  "name": "llm-runner-aio",
+  "version": "1.0.0",
+  "description": "AI Assistant Platform — SearXNG, OpenWebUI, llama.cpp & Vane",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "rebuild": "electron-rebuild -f -w better-sqlite3",
+    "build-win": "electron-builder build --win --x64",
+    "build-mac": "electron-builder build --mac",
+    "build-linux": "electron-builder build --linux",
+    "package": "electron-builder",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "author": "LLM Runner AIO Team",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "crypto-js": "^4.2.0",
+    "electron-store": "^10.0.0",
+    "ini-file-parser": "^1.0.4",
+    "node-fetch": "^3.3.2",
+    "systeminformation": "^5.23.0",
+    "tree-kill": "^1.2.2",
+    "winston": "^3.15.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.0",
+    "electron-rebuild": "^3.2.9"
+  },
+  "build": {
+    "appId": "com.llmrunner.app",
+    "productName": "LLM Runner AIO",
+    "copyright": "Copyright © 2025 LLM Runner AIO",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "electron/**/*",
+      "src/**/*",
+      "launcher/lang/**/*",
+      "launcher/config.json",
+      "assets/**/*",
+      "model_urls.json",
+      "package.json",
+      "requirements.txt",
+      "migrate_ini_to_urls.py"
+    ],
+    "extraResources": [
+      {
+        "from": "searxng/",
+        "to": "searxng/",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "openwebui/",
+        "to": "openwebui/",
+        "filter": ["**/*", "!node_modules/**", ".git/**", "__pycache__/**"]
+      },
+      {
+        "from": "Vane/",
+        "to": "Vane/",
+        "filter": ["**/*", "!node_modules/**", ".git/**", "__pycache__/**", ".next/**", "out/**"]
+      },
+      {
+        "from": "llama.cpp-cuda13+vulkan/",
+        "to": "llama.cpp-cuda13+vulkan/",
+        "filter": ["**/*.exe", "**/*.dll", "**/*.sys"]
+      },
+      {
+        "from": "models/",
+        "to": "models/",
+        "filter": ["**/*.gguf"]
+      }
+    ],
+    "asarUnpack": [
+      "**/*.node",
+      "**/better-sqlite3/**/*",
+      "**/sqlite3/**/*",
+      "**/*.py",
+      "**/requirements.txt"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "artifactName": "LLM-Runner-AIO-${version}-windows-x64.${ext}",
+      "certificateSubjectName": "LLM Runner AIO",
+      "rfc3161TimeStampServer": "http://timestamp.comodoca.com"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "LLM Runner AIO",
+      "menuCategory": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "deleteAppDataOnUninstall": true
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.utilities",
+      "artifactName": "LLM-Runner-AIO-${version}-macos-${arch}.${ext}"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "category": "Utility",
+      "artifactName": "LLM-Runner-AIO-${version}-linux-x64.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "nafiozdemir231-prog",
+      "repo": "llm-runner-aio",
+      "private": false
+    }
+  }
+}
