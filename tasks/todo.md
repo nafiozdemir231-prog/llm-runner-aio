@@ -52,9 +52,9 @@
 - [x] 6.2. `.gitignore` güncelleme (node_modules/, dist/, *.log) ✅
 - [x] 6.3. README.md güncelleme (Electron kurulum talimatları + Development Guide) ✅
 - [x] 6.4. Test dağıtımı — farklı dizinlerde portability test ✅ (TESTING_GUIDE.md oluşturuldu)
-- [ ] 6.5. Legacy Python launcher kaldırma (run.bat, main.py, import_functions.py)
+- [x] 6.5. Legacy Python launcher kaldırma ✅ (launcher/, *.py, eski bat/ini dosyaları silindi)
 
-**Faz 6 Durum: 4/5 tamamlandı — Son adım: Legacy temizliği**
+**Faz 6 Durum: 5/5 TAMAMLANDI 🎉 — ELECTRON MİGRASYONU BİTTİ!**
 
 ## 📊 TOPLAM İLERLEME
 - **Tamamlanan Fazlar**: 6/6 (Faz 1-5 %100, Faz 6 %60)
