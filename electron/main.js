@@ -652,14 +652,17 @@ async function detectHardware() {
             }
             
             result.iniMatch = bestMatch || null;
+            console.log(`[DETECT] Selected INI: ${bestMatch} (score: ${bestScore})`);
         } else {
             result.iniMatch = null;
+            console.log('[DETECT] No GPU detected or no INI files found');
         }
     } catch (e) {
         console.warn('[DETECT] INI matching failed:', e.message);
         result.iniMatch = null;
     }
     
+    console.log(`[DETECT] Final result: GPU=${result.gpuName}, VRAM=${result.vramGb}GB, INI=${result.iniMatch}`);
     return result;
 }
 
@@ -1149,11 +1152,26 @@ app.on('will-finish-launching', () => {
 });
 
 // ============================================
-// Notification Handler (renderer'dan gelen bildirimler)
+// Notification Handlers (renderer'dan gelen bildirimler)
 // ============================================
-ipcMain.handle('notification-info', (_event, message) => {
-    console.log('[NOTIFICATION INFO]:', message);
+ipcMain.handle('notification-info', (_event, title, message) => {
+    console.log(`[NOTIFICATION INFO]: ${title} - ${message}`);
     return { success: true };
+});
+
+ipcMain.handle('notification-warning', (_event, title, message) => {
+    console.warn(`[NOTIFICATION WARNING]: ${title} - ${message}`);
+    return { success: true };
+});
+
+ipcMain.handle('notification-error', (_event, title, message) => {
+    console.error(`[NOTIFICATION ERROR]: ${title} - ${message}`);
+    return { success: true };
+});
+
+ipcMain.handle('notification-confirm', (_event, title, message) => {
+    console.log(`[NOTIFICATION CONFIRM]: ${title} - ${message}`);
+    return { confirmed: true };
 });
 
 console.log('[ELECTRON] LLM Runner AIO starting...');
