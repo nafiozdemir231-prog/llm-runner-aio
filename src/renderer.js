@@ -391,21 +391,28 @@ document.getElementById('settings-font-decrease')?.addEventListener('click', () 
 // Hardware Detection
 // ============================================
 async function detectHardware() {
-    const logOutput = document.getElementById('log-output');
-    
-    appendToLog('system', 'Detecting hardware...');
-    
     try {
         const hw = await window.electronAPI.hardware.detect();
         state.hardware = hw;
         
-        // Update UI
-        document.getElementById('gpu-name').textContent = hw.gpuName || 'Not Detected';
-        document.getElementById('vram-info').textContent = hw.vramGb > 0 ? `${hw.vramGb.toFixed(1)} GB` : '--';
-        document.getElementById('ram-info').textContent = hw.ramGb > 0 ? `${hw.ramGb.toFixed(1)} GB` : '--';
-        document.getElementById('cpu-info').textContent = hw.cpuName || '--';
+        // Update UI — null kontrolleri ile
+        const gpuEl = document.getElementById('gpu-name');
+        if (gpuEl) gpuEl.textContent = hw.gpuName || 'Not Detected';
         
-        appendToLog('system', `GPU: ${hw.gpuName || 'None'}, VRAM: ${hw.vramGb}GB, RAM: ${hw.ramGb}GB`);
+        const vramEl = document.getElementById('vram-info');
+        if (vramEl) vramEl.textContent = hw.vramGb > 0 ? `${hw.vramGb.toFixed(1)} GB` : '--';
+        
+        const ramEl = document.getElementById('ram-info');
+        if (ramEl) ramEl.textContent = hw.ramGb > 0 ? `${hw.ramGb.toFixed(1)} GB` : '--';
+        
+        const cpuEl = document.getElementById('cpu-info');
+        if (cpuEl) cpuEl.textContent = hw.cpuName || '--';
+        
+        // Log cikti
+        const logOutput = document.getElementById('log-output');
+        if (logOutput) {
+            appendToLog('system', `GPU: ${hw.gpuName || 'None'}, VRAM: ${hw.vramGb}GB, RAM: ${hw.ramGb}GB`);
+        }
         
         // INI eşleştirme debug
         console.log('[RENDERER] Hardware detect result:', hw);
@@ -427,6 +434,7 @@ async function detectHardware() {
         
         showNotification('Detection Complete', `Found: ${hw.gpuName || 'No GPU'} (${hw.vramGb}GB VRAM)`);
     } catch (err) {
+        console.error('[RENDERER] detectHardware error:', err);
         appendToLog('system', `Detection failed: ${err.message}`, true);
         showNotification('Error', `Hardware detection failed: ${err.message}`);
     }
@@ -780,9 +788,14 @@ function formatBytes(bytes) {
 // Model Recommendations (VRAM'e göre)
 // ============================================
 function renderModelRecommendations(vramGb) {
-    const container = document.getElementById('recommended-models');
+    const container = document.getElementById('model-recommendations');
     
-    if (!container || vramGb <= 0) {
+    if (!container) {
+        console.warn('[RENDERER] #model-recommendations element not found in DOM');
+        return;
+    }
+    
+    if (vramGb <= 0) {
         container.innerHTML = '<p class="help-text">Run "Detect Hardware" first to see recommendations.</p>';
         return;
     }
