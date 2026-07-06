@@ -139,6 +139,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
         },
         
         /**
+         * INI preset listesi al (llama.cpp için)
+         * PyQt6'da: get_available_ini_presets()
+         */
+        getINIPresets: () => ipcRenderer.invoke('get-llama-ini-presets'),
+        
+        /**
          * Models klasörünü tara (.gguf dosyaları)
          * PyQt6'da: scan_models() fonksiyonu
          */

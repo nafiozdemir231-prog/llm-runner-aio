@@ -115,22 +115,83 @@ class ServerManager extends EventEmitter {
      * PyQt6'da: LlamaCppWorker.start_server_internal()
      * @param {number} port - Port numarası
      * @param {string} host - Bind address
-     * @param {string} model - GGUF model yolu
+     * @param {string} model - GGUF model yolu (varsayılan boş)
+     * @param {string} iniPreset - INI dosyası adı (örn: 'gpu1vram12ram32models.ini')
      * @returns {Promise<Object>} Sonuç
      */
-    async startLlamaCPP(port = 1234, host = '0.0.0.0', model = '') {
+    async startLlamaCPP(port = 1234, host = '0.0.0.0', model = '', iniPreset = '') {
         const exePath = path.join(
             this.projectRoot,
             'llama.cpp-cuda13+vulkan',
             'llama-server.exe'
         );
         
+        // Argümanları oluştur
+        const args = ['--host', host, '--port', String(port)];
+        
+        // INI preset varsa ekle
+        if (iniPreset) {
+            args.push('--models-max', '1');
+            args.push('--models-preset', iniPreset);
+        }
+        
+        // Model yolu varsa ekle
+        if (model) {
+            args.push('-m', model);
+        }
+        
+        // Jinja template desteği
+        args.push('--jinja');
+        
         return this._startServer('llamacpp', {
             cmd: exePath,
-            args: ['--host', host, '--port', String(port), '-m', model].filter(Boolean),
+            args,
             cwd: path.join(this.projectRoot, 'llama.cpp-cuda13+vulkan'),
             port,
             host
+        });
+    }
+    
+    /**
+     * Mevcut INI preset'lerini listele
+     * @returns {Array} INI dosya isimleri
+     */
+    getAvailableINIPresets() {
+        const iniDir = this.projectRoot;
+        const presets = [];
+        
+        try {
+            const files = require('fs').readdirSync(iniDir);
+            for (const file of files) {
+                if (file.endsWith('.ini') && file.match(/^gpu\d+vram\d+ram\d+models\.ini$/)) {
+                    presets.push(file);
+                }
+            }
+        } catch (err) {
+            console.error('[LLAMA] Failed to read INI presets:', err.message);
+        }
+        
+        return presets;
+    }
+    
+    /**
+     * Bat dosyasıyla llama.cpp başlat (fallback)
+     * PyQt6'da: subprocess ile .bat çalıştırma
+     * @param {string} batFile - Bat dosyası adı (örn: 'start_gpu1vram12ram32.bat')
+     * @returns {Promise<Object>} Sonuç
+     */
+    async startLlamaCPPViaBat(batFile) {
+        const batPath = path.join(this.projectRoot, batFile);
+        
+        if (!require('fs').existsSync(batPath)) {
+            return { success: false, error: `Bat file not found: ${batFile}` };
+        }
+        
+        return this._startServer('llamacpp-bat', {
+            cmd: batFile,
+            cwd: this.projectRoot,
+            port: null, // Bat dosyası kendi portunu belirler
+            host: '0.0.0.0'
         });
     }
     

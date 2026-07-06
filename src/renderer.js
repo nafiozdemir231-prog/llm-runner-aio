@@ -50,6 +50,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Apply font size
     applyFontSize(state.fontSize);
     
+    // Load INI presets for llama.cpp
+    await loadINIPresets();
+    
     // Setup event listeners
     setupEventListeners();
     
@@ -260,6 +263,9 @@ function setupEventListeners() {
         });
     }
     
+    // INI preset callbacks
+    setupINICallbacks();
+    
     // Listen for server logs from main process
     window.electronAPI.server.onLog((data) => {
         appendToLog(data.type, data.message);
@@ -413,7 +419,16 @@ function setupServerControls() {
     const servers = [
         { type: 'searxng', startId: 'btn-start-searxng', stopId: 'btn-stop-searxng', portId: 'searxng-port', hostId: 'searxng-host', statusId: 'searxng-status', logId: 'searxng-log' },
         { type: 'openwebui', startId: 'btn-start-openwebui', stopId: 'btn-stop-openwebui', portId: 'openwebui-port', hostId: 'openwebui-host', statusId: 'openwebui-status', logId: 'openwebui-log' },
-        { type: 'llamacpp', startId: 'btn-start-llamacpp', stopId: 'btn-stop-llamacpp', portId: 'llamacpp-port', hostId: 'llamacpp-host', statusId: 'llamacpp-status', logId: 'llamacpp-log' },
+        { 
+            type: 'llamacpp', 
+            startId: 'btn-start-llamacpp', 
+            stopId: 'btn-stop-llamacpp', 
+            portId: 'llamacpp-port', 
+            hostId: 'llamacpp-host', 
+            iniSelectId: 'ini-select',
+            statusId: 'llamacpp-status', 
+            logId: 'llamacpp-log' 
+        },
         { type: 'vane', startId: 'btn-start-vane', stopId: 'btn-stop-vane', portId: 'vane-port', hostId: 'vane-host', statusId: 'vane-status', logId: 'vane-log' }
     ];
     
@@ -429,7 +444,17 @@ function setupServerControls() {
                 startBtn.disabled = true;
                 appendToLog(server.type, `Starting on ${host}:${port}...`);
                 
-                const result = await window.electronAPI.server.start(server.type, { port, host });
+                // llama.cpp için INI preset desteği
+                let options = { port, host };
+                if (server.type === 'llamacpp' && server.iniSelectId) {
+                    const iniSelect = document.getElementById(server.iniSelectId);
+                    if (iniSelect?.value) {
+                        options.iniPreset = iniSelect.value;
+                        appendToLog('system', `Using INI preset: ${options.iniPreset}`);
+                    }
+                }
+                
+                const result = await window.electronAPI.server.start(server.type, options);
                 
                 if (result.success) {
                     state.servers[server.type].running = true;
@@ -702,6 +727,63 @@ function formatBytes(bytes) {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// ============================================
+// INI Preset Management (llama.cpp GPU configs)
+// ============================================
+async function loadINIPresets() {
+    try {
+        const presets = await window.electronAPI.model.getINIPresets();
+        const select = document.getElementById('ini-select');
+        
+        if (!select) return;
+        
+        // Mevcut option'ları temizle (placeholder hariç)
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
+        
+        // Preset'leri ekle
+        for (const preset of presets) {
+            const option = document.createElement('option');
+            option.value = preset;
+            option.textContent = preset.replace('.ini', '');
+            select.appendChild(option);
+        }
+        
+        console.log(`[INI] Loaded ${presets.length} presets`);
+    } catch (err) {
+        console.error('[INI] Failed to load presets:', err.message);
+    }
+}
+
+function setupINICallbacks() {
+    const iniSelect = document.getElementById('ini-select');
+    const loadBtn = document.getElementById('btn-load-ini');
+    
+    if (loadBtn) {
+        loadBtn.addEventListener('click', async () => {
+            const selected = iniSelect?.value;
+            if (!selected) {
+                showNotification('Warning', 'Please select a GPU config file first');
+                return;
+            }
+            
+            // Config'e kaydet
+            state.config.selected_ini = selected;
+            await window.electronAPI.config.write(state.config);
+            
+            // Context length'i al
+            const ctxValue = document.getElementById('ctx-spin')?.value;
+            if (ctxValue) {
+                state.config.llamacpp_ctx = parseInt(ctxValue, 10);
+            }
+            
+            appendToLog('system', `Loaded INI preset: ${selected} (ctx: ${state.config.llamacpp_ctx})`);
+            showNotification('Config Loaded', `Using ${selected}`);
+        });
+    }
 }
 
 // ============================================

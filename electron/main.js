@@ -286,6 +286,25 @@ function setupIPC() {
     ipcMain.handle('model-download', async (event, url, destFolder) => {
         return downloadModel(url, destFolder);
     });
+    
+    // INI preset listesi (llama.cpp için)
+    ipcMain.handle('get-llama-ini-presets', async () => {
+        const iniDir = PROJECT_DIR;
+        const presets = [];
+        
+        try {
+            const files = fs.readdirSync(iniDir);
+            for (const file of files) {
+                if (file.match(/^gpu\d+vram\d+ram\d+models\.ini$/)) {
+                    presets.push(file);
+                }
+            }
+        } catch (e) {
+            console.error('[IPC] Failed to read INI presets:', e.message);
+        }
+        
+        return presets.sort();
+    });
 }
 
 // ============================================
@@ -390,7 +409,21 @@ async function startServer(serverType, options = {}) {
             
         case 'llamacpp':
             cmd = path.join(PROJECT_DIR, 'llama.cpp-cuda13+vulkan', 'llama-server.exe');
-            args = ['--host', host, '--port', String(port), '-m', options.model || ''];
+            args = ['--host', host, '--port', String(port)];
+            
+            // INI preset desteği
+            if (options.iniPreset) {
+                args.push('--models-max', '1');
+                args.push('--models-preset', options.iniPreset);
+            }
+            
+            // Model yolu varsa ekle
+            if (options.model) {
+                args.push('-m', options.model);
+            }
+            
+            // Jinja template desteği
+            args.push('--jinja');
             cwd = path.join(PROJECT_DIR, 'llama.cpp-cuda13+vulkan');
             break;
             
