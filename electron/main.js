@@ -27,7 +27,7 @@ const APP_ROOT = app.isPackaged
 
 const PROJECT_DIR = path.join(APP_ROOT, '..');
 const LAUNCHER_DIR = path.join(PROJECT_DIR, 'launcher');
-const SRC_DIR = __dirname;
+const SRC_DIR = path.join(__dirname, '..', 'src');
 
 // ============================================
 // App User Model ID (Windows Taskbar düzeltme)
@@ -55,11 +55,17 @@ function cleanupOrphanProcesses() {
     let killedCount = 0;
     
     try {
-        // Windows: tasklist komutuyla tüm process'leri al
-        const output = execSync('tasklist /FI "IMAGENAME eq *.exe" /FO CSV /NH', { 
-            encoding: 'utf8',
-            timeout: 5000
-        });
+        // Windows: tasklist komutuyla tum process'leri al (filter without filter for Turkish compatibility)
+        let output;
+        try {
+            output = execSync('tasklist /FO CSV /NH', { 
+                encoding: 'utf8',
+                timeout: 5000
+            });
+        } catch {
+            console.log('[CLEANUP] tasklist not available, skipping orphan cleanup');
+            return { killedCount: 0 };
+        }
         
         const lines = output.trim().split('\n');
         
@@ -137,7 +143,7 @@ function createMainWindow() {
             nodeIntegration: false,
             sandbox: true
         },
-        icon: path.join(APP_ROOT, 'assets', 'icon.ico'),
+        icon: path.join(PROJECT_DIR, 'assets', 'icon.ico'),
         titleBarStyle: 'default',
         show: false
     });
@@ -167,7 +173,7 @@ function createMainWindow() {
 // System Tray Oluşturma
 // ============================================
 function createTray() {
-    const trayIconPath = path.join(APP_ROOT, 'assets', 'icon.ico');
+    const trayIconPath = path.join(PROJECT_DIR, 'assets', 'icon.ico');
     
     tray = new Tray(trayIconPath);
     
@@ -220,7 +226,7 @@ function setupIPC() {
     
     // Config okuma/yazma
     ipcMain.handle('config-read', async () => {
-        const configPath = path.join(LAUNCHER_DIR, 'config.json');
+        const configPath = path.join(PROJECT_DIR, 'launcher', 'config.json');
         try {
             if (fs.existsSync(configPath)) {
                 const data = fs.readFileSync(configPath, 'utf8');
@@ -233,7 +239,7 @@ function setupIPC() {
     });
     
     ipcMain.handle('config-write', async (event, configData) => {
-        const configPath = path.join(LAUNCHER_DIR, 'config.json');
+        const configPath = path.join(PROJECT_DIR, 'launcher', 'config.json');
         const tempPath = configPath + '.tmp';
         
         try {
@@ -248,7 +254,7 @@ function setupIPC() {
     
     // Dil okuma
     ipcMain.handle('lang-read', async (event, langCode) => {
-        const langPath = path.join(LAUNCHER_DIR, 'lang', `${langCode}.json`);
+        const langPath = path.join(SRC_DIR, 'lang', `${langCode}.json`);
         try {
             if (fs.existsSync(langPath)) {
                 const data = fs.readFileSync(langPath, 'utf8');
@@ -258,7 +264,7 @@ function setupIPC() {
             console.error(`[IPC] Failed to read ${langCode}.json:`, e.message);
         }
         // Fallback: English
-        const enPath = path.join(LAUNCHER_DIR, 'lang', 'en.json');
+        const enPath = path.join(SRC_DIR, 'lang', 'en.json');
         try {
             const data = fs.readFileSync(enPath, 'utf8');
             return JSON.parse(data);
