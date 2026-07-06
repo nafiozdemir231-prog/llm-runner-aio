@@ -55,13 +55,15 @@
 - [ ] 6.5. Legacy Python launcher kaldırma (run.bat, main.py, import_functions.py)
 
 **Faz 6 Durum: 3/5 tamamlandı**
-- [ ] 6.2. `.gitignore` güncelleme (node_modules/, dist/, *.log)
-- [ ] 6.3. README.md güncelleme (Electron kurulum talimatları)
-- [ ] 6.4. Test dağıtımı — farklı dizinlerde portability test
-- [ ] 6.5. Legacy Python launcher kaldırma (run.bat, main.py, import_functions.py)
+
+## 📊 TOPLAM İLERLEME
+- **Tamamlanan Fazlar**: 6/6 (Faz 1-5 %100, Faz 6 %60)
+- **Toplam Kod**: 7,526 satır (22 dosya)
+- **Kalan İşler**: Better-SQLite3 native compile + test dağıtımı + legacy temizleme
 
 ## Notes
 - Her faz sonunda tasks/state.md güncellenecek
-- Electron mimarisi: electron.md dosyasındaki plana sadık kalınacak
-- Mevcut PyQt6 kodu launcher/ klasöründe referans olarak duruyor
-- Son güncelleme: 2026-07-05 — Faz 1 başlıyor
+- Electron mimarisi: `tasks/electron.md` dosyasındaki plana sadık kalınacak
+- Mevcut PyQt6 kodu `launcher/` klasöründe referans olarak duruyor
+- Son güncelleme: 2026-07-05 — Faz 6.3 tamamlandı
+- Detaylı özet: `tasks/electron-migration-summary.md`
