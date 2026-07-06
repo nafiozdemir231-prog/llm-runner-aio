@@ -1,45 +1,31 @@
-# Task: Electron UI Güncellemeleri — duzeltilmesi-gerekenler.txt
+# Task: PyQt6 → Electron Entegrasyon — Tüm Özellikler
 
-## Steps
-- [x] 1. System Detection sekmesi güncellemesi
-  - INI seçimi + otomatik eşleştirme
-  - Download All Models butonu
-  - Model listesi gösterimi
-  - Download Progress göstergesi
-  - Start Configuration (auto-generated INI)
-  
-- [x] 2. Servers sekmesi güncellemesi
-  - Open in Browser butonları eklendi
-  - Bind to etiketleri kullanıcı dostu (This PC Only / Local Network)
-  - llama.cpp Context Size inputu
-  - OpenWebUI CPU Threads inputu
-  
-- [x] 3. PiCoding sekmesi güncellemesi
-  - Working Directory bölümü
-  - Detect Project butonu
-  - Add to PATH butonu
-  - Instructions toggle butonu
-  - MCP Advisor Settings (URL, API Key, Model Name)
-  
-- [x] 4. Models sekmesi güncellemesi
-  - Refresh butonu
-  - Delete Selected butonu
-  - Model count ve total size göstergesi
-  
-- [x] 5. backend IPC handler'ları
-  - picoding-detect-project
-  - picoding-add-to-path
-  - picoding-save-advisor
-  - picoding-get-advisor
-  - model-get-models-from-ini
-  - model-generate-local-ini
-  
-- [x] 6. preload.js güncellemesi
-  - picoding API'si eklendi
-  - model.getModelsFromINI() eklendi
-  - model.generateLocalINI() eklendi
+## Phase 1: Server Manager Genişletme ✅ TAMAMLANDI
+- [x] SearXNG: settings.yml güncelleme + PYTHONPATH injection
+- [x] OpenWebUI: secret key + 15+ env vars + delayed import_functions.py
+- [x] LlamaCPP: Dinamik BAT oluşturma + ctx-size desteği
+- [x] Vane: .next cleanup + npm run dev pattern + SEARXNG_API_URL
+- [x] Process tree kill (leaf-first termination)
+- [x] Port bazlı emergency kill
+- [x] Health check auto-restart
+
+## Phase 2: IPC Handlers (electron/main.js)
+- [ ] Database load handler (OpenWebUI DB swap)
+- [ ] Atomic config write (fsyncSync)
+- [ ] SHA256 model verify
+- [ ] MCP advisor file update (mcp_web_reader.py)
+- [ ] Local INI generation fix
+
+## Phase 3: Model Manager (src/tabs/models.js)
+- [ ] SHA256 verification during download
+- [ ] Partial file (.part) cleanup on disk full
+- [ ] model_urls.json hash lookup
+
+## Phase 4: App-wide Features
+- [ ] Language switch real-time UI update
+- [ ] Config persistence improvements
+- [ ] System tray status updates
 
 ## Notes
-- PyQt6 referans kodu: D:/OpenCode/LLM-Runner-AIO/LLM-Runner-AIO/launcher/
-- Tüm değişiklikler Electron projesine uygulandı
-- INI parser için custom parseINI/stringifyINI fonksiyonları yazıldı (no external dependency)
+- Phase 1 tamamlandı — server-manager.js PyQt6 worker'larının tüm özelliklerini içeriyor
+- Her phase sonunda tasks/state.md ve change.md güncellenecek

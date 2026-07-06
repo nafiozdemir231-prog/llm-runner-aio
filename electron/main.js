@@ -13,6 +13,7 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { spawn, execSync } = require('child_process');
 const treeKill = require('tree-kill');
 
@@ -495,6 +496,55 @@ function setupIPC() {
             return { success: false, error: err.message };
         }
     });
+    
+    // ============================================
+    // NEW: Database Load Handler
+    // PyQt6'da: _load_database() metodu
+    // ============================================
+    ipcMain.handle('db-load', async (event, dbFilePath) => {
+        return loadDatabase(dbFilePath);
+    });
+    
+    // ============================================
+    // NEW: SHA256 Model Verification
+    // PyQt6'da: _calculate_sha256() + hash comparison
+    // ============================================
+    ipcMain.handle('model-verify-sha256', async (event, filePath, expectedHash) => {
+        return verifyModelSHA256(filePath, expectedHash);
+    });
+    
+    // ============================================
+    // NEW: MCP Advisor File Update
+    // PyQt6'da: _save_advisor_config() — mcp_web_reader.py güncelleme
+    // ============================================
+    ipcMain.handle('mcp-update-advisor-file', async (event, advisorData) => {
+        const configResult = await updateMCPAdvisorFile(advisorData);
+        
+        // Config dosyasına da kaydet
+        const configPath = path.join(PROJECT_DIR, 'launcher', 'config.json');
+        let config = {};
+        
+        try {
+            if (fs.existsSync(configPath)) {
+                config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            }
+        } catch (e) {
+            console.error('[IPC] Failed to read config:', e.message);
+        }
+        
+        config.mcp_advisor = {
+            url: advisorData.url,
+            key: advisorData.key,
+            model: advisorData.model
+        };
+        
+        const tempPath = configPath + '.tmp';
+        fs.writeFileSync(tempPath, JSON.stringify(config, null, 2), 'utf8');
+        fs.fsyncSync(fs.openSync(tempPath, 'r')); // Atomic write için fsync
+        fs.renameSync(tempPath, configPath);
+        
+        return configResult;
+    });
 }
 
 // ============================================
@@ -775,6 +825,115 @@ async function stopServer(serverType) {
         return { success: true };
     } catch (err) {
         console.error(`[${serverType}] Stop failed:`, err.message);
+        return { success: false, error: err.message };
+    }
+}
+
+// ============================================
+// NEW: Database Load Handler (PyQt6 _load_database)
+// ============================================
+async function loadDatabase(dbFilePath) {
+    const openwebuiDir = path.join(PROJECT_DIR, 'openwebui');
+    const destDb = path.join(openwebuiDir, 'openwebui.db');
+    
+    try {
+        // Eski database'i yedekle
+        const oldDb = fs.existsSync(destDb);
+        if (oldDb) {
+            const backupPath = path.join(openwebuiDir, 'openwebui.db.backup');
+            if (fs.existsSync(backupPath)) {
+                fs.unlinkSync(backupPath);
+            }
+            fs.renameSync(destDb, backupPath);
+            console.log(`[DB] Old database backed up to: ${backupPath}`);
+        }
+        
+        // Yeni database'i kopyala
+        fs.copyFileSync(dbFilePath, destDb);
+        console.log(`[DB] Database loaded from: ${dbFilePath}`);
+        console.log(`[DB] Database saved to: ${destDb}`);
+        
+        return { success: true, message: 'Database loaded successfully' };
+    } catch (err) {
+        console.error('[DB] Load failed:', err.message);
+        return { success: false, error: err.message };
+    }
+}
+
+// ============================================
+// NEW: SHA256 Model Verification (Bug #5)
+// ============================================
+async function calculateSHA256(filePath) {
+    return new Promise((resolve, reject) => {
+        const hash = crypto.createHash('sha256');
+        const stream = fs.createReadStream(filePath);
+        
+        stream.on('data', (chunk) => {
+            hash.update(chunk);
+        });
+        
+        stream.on('end', () => {
+            resolve(hash.digest('hex'));
+        });
+        
+        stream.on('error', (err) => {
+            reject(err);
+        });
+    });
+}
+
+async function verifyModelSHA256(filePath, expectedHash) {
+    try {
+        const actualHash = await calculateSHA256(filePath);
+        return {
+            success: true,
+            verified: actualHash.toLowerCase() === expectedHash.toLowerCase(),
+            actualHash,
+            expectedHash: expectedHash.substring(0, 16) + '...'
+        };
+    } catch (err) {
+        console.error('[VERIFY] SHA256 verification failed:', err.message);
+        return { success: false, error: err.message };
+    }
+}
+
+// ============================================
+// NEW: MCP Advisor File Update (PyQt6 _save_advisor_config)
+// ============================================
+async function updateMCPAdvisorFile(advisorData) {
+    const mcpPath = path.join(PROJECT_DIR, 'picoding', 'mcp', 'mcp_web_reader.py');
+    
+    if (!fs.existsSync(mcpPath)) {
+        return { success: false, error: 'mcp_web_reader.py not found' };
+    }
+    
+    try {
+        let content = fs.readFileSync(mcpPath, 'utf8');
+        
+        // ADVISOR_URL güncelle
+        content = content.replace(
+            /ADVISOR_URL = ".*?"/,
+            `ADVISOR_URL = "${advisorData.url}"`
+        );
+        
+        // ADVISOR_KEY güncelle
+        content = content.replace(
+            /ADVISOR_KEY = ".*?"/,
+            `ADVISOR_KEY = "${advisorData.key}"`
+        );
+        
+        // ADVISOR_MODEL güncelle
+        content = content.replace(
+            /ADVISOR_MODEL = ".*?"/,
+            `ADVISOR_MODEL = "${advisorData.model}"`
+        );
+        
+        fs.writeFileSync(mcpPath, content, 'utf8');
+        console.log('[MCP] Advisor config updated in mcp_web_reader.py');
+        
+        return { success: true, message: 'MCP file updated successfully' };
+    } catch (err) {
+        console.error('[MCP] Update failed:', err.message);
         return { success: false, error: err.message };
     }
 }

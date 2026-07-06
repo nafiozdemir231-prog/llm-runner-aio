@@ -195,16 +195,33 @@ contextBridge.exposeInMainWorld('electronAPI', {
         addToPath: () => ipcRenderer.invoke('picoding-add-to-path'),
         
         /**
-         * MCP Advisor ayarlarını kaydet
-         * PyQt6'da: _save_advisor_config()
+         * MCP Advisor ayarlarını kaydet + mcp_web_reader.py güncelle
+         * PyQt6'da: _save_advisor_config() — config.json + mcp_web_reader.py
          */
-        saveAdvisor: (advisorData) => ipcRenderer.invoke('picoding-save-advisor', advisorData),
+        saveAdvisor: (advisorData) => ipcRenderer.invoke('mcp-update-advisor-file', advisorData),
         
         /**
          * MCP Advisor ayarlarını yükle
          * PyQt6'da: _load_advisor_config()
          */
         getAdvisor: () => ipcRenderer.invoke('picoding-get-advisor')
+    },
+    
+    // ============================================
+    // Database Operations (PyQt6 _load_database)
+    // ============================================
+    database: {
+        /**
+         * OpenWebUI veritabanı yükle
+         * PyQt6'da: _load_database() — .db dosyasını kopyala + eski'yi yedekle
+         */
+        load: (dbFilePath) => ipcRenderer.invoke('db-load', dbFilePath),
+        
+        /**
+         * Model SHA256 doğrula
+         * PyQt6'da: _calculate_sha256() + hash karşılaştırması
+         */
+        verifySHA256: (filePath, expectedHash) => ipcRenderer.invoke('model-verify-sha256', filePath, expectedHash)
     },
     
     // ============================================

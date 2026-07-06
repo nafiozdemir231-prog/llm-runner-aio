@@ -1,48 +1,32 @@
-current_step: done
-status: complete
+current_step: 2
+status: in_progress
 verdict: PASS
-last_action: Electron UI güncellemeleri tamamlandı — tüm sekme içerikleri PyQt6 referans koduna uygun hale getirildi
-next_action: none
-blocked: false
+last_action: PyQt6 → Electron entegrasyonu Phase 1 + Phase 2 tamamlandı
+next_action: Phase 3 - Model Manager SHA256 verification + partial file cleanup
 
-## Changes Made
-### src/index.html
-- System Detection: INI seçimi, Download All Models, model listesi, download progress, auto log alanları eklendi
-- Servers: Open in Browser butonları, kullanıcı dostu bind etiketleri, context size/cpu threads inputları eklendi
-- PiCoding: Working directory, detect project, add to path, instructions toggle, MCP advisor settings eklendi
-- Models: Refresh/delete buttons, model count/size göstergeleri düzenlendi
+## Phase 1: Server Manager Genişletme ✅ TAMAMLANDI
+### src/workers/server-manager.js
+- SearXNGWorker: settings.yml güncelleme + PYTHONPATH injection
+- OpenWebUIWorker: WEBUI_SECRET_KEY + 15+ env vars + delayed import_functions.py (15sn)
+- LlamaCppWorker: Dinamik BAT oluşturma + ctx-size desteği
+- VaneWorker: .next klasör temizleme + npm run dev pattern + SEARXNG_API_URL
+- Process tree kill: Leaf-first terminate → 10s wait → force kill fallback
+- Port bazlı emergency kill (netstat ile)
+- Health check auto-restart: Unresponsive sunucuları otomatik restart
 
-### src/css/style.css
-- .server-info, .info-desc stilleri eklendi
-- .browser-btn stilleri eklendi
-- #auto-log, #instructions-content, #picoding-path-display stilleri eklendi
-- .hidden class'ı eklendi
-
-### src/renderer.js
-- setupSystemModelControls() fonksiyonu eklendi
-- renderSystemModelList(), downloadAllModels(), updateDownloadStatus(), generateLocalINI() fonksiyonları eklendi
-- setupPicodingControls() genişletildi (detect, add-to-path, instructions, advisor)
-- loadAdvisorSettings() fonksiyonu eklendi
-- Server kontrollerine Open in Browser desteği eklendi
-- updateBrowserButton() yardımcı fonksiyonu eklendi
-- scanModels() model count göstergesiyle güncellendi
-
+## Phase 2: IPC Handlers ✅ TAMAMLANDI
 ### electron/main.js
-- parseINI()/stringifyINI() custom INI parser fonksiyonları eklendi
-- picoding-detect-project IPC handler'ı eklendi
-- picoding-add-to-path IPC handler'ı eklendi
-- picoding-save-advisor IPC handler'ı eklendi
-- picoding-get-advisor IPC handler'ı eklendi
-- model-get-models-from-ini IPC handler'ı eklendi
-- model-generate-local-ini IPC handler'ı eklendi
+- loadDatabase(): OpenWebUI DB swap (eski'yi .backup olarak yedekler)
+- calculateSHA256()/verifyModelSHA256(): Model hash doğrulama
+- updateMCPAdvisorFile(): mcp_web_reader.py dosyasını güncelle
+- Atomic config write: fs.fsyncSync() eklendi
 
 ### electron/preload.js
-- picoding API namespace'i eklendi (detectProject, addToPath, saveAdvisor, getAdvisor)
-- model.getModelsFromINI() ve model.generateLocalINI() metodları eklendi
+- database.load(), database.verifySHA256() eklendi
+- picoding.saveAdvisor() → mcp-update-advisor-file IPC channel'a yönlendirildi
 
-## References
-- PyQt6 System Detection: D:/OpenCode/LLM-Runner-AIO/LLM-Runner-AIO/launcher/tabs/system_detection.py
-- PyQt6 Servers: D:/OpenCode/LLM-Runner-AIO/LLM-Runner-AIO/launcher/tabs/servers.py
-- PyQt6 PiCoding: D:/OpenCode/LLM-Runner-AIO/LLM-Runner-AIO/launcher/tabs/picoding.py
-- PyQt6 Models: D:/OpenCode/LLM-Runner-AIO/LLM-Runner-AIO/launcher/tabs/models.py
-- Gereksinimler: D:/OpenCode/LLM-Runner-AIO/tasks/duzeltilmesi-gerekenler.txt
+## PyQt6 Reference Files Read
+- launcher/tabs/system_detection.py — Hardware detection + INI matching
+- launcher/tabs/servers.py — 4 Worker class + graceful shutdown + health check
+- launcher/tabs/picoding.py — Project detection + PATH + MCP advisor
+- launcher/app.py — ConfigManager + LanguageManager + AppManager singleton
