@@ -576,17 +576,17 @@ async function detectHardware() {
         // NVIDIA yok, AMD/Intel kontrolü
         if (process.platform === 'win32') {
             try {
-                const wmicOutput = execSync('wmic path win32_VideoController get Name', {
-                    encoding: 'utf8',
-                    timeout: 3000
-                }).trim();
+                // wmic degil, PowerShell Get-CimInstance kullan (wmik yeni Windows'larda yok)
+                const gpuOutput = execSync(
+                    'powershell -Command "Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name"',
+                    { encoding: 'utf8', timeout: 3000 }
+                ).trim();
                 
-                const lines = wmicOutput.split('\n').filter(l => l.trim() && !l.includes('Name'));
-                if (lines.length > 0) {
-                    result.gpuName = lines[0].trim();
+                if (gpuOutput) {
+                    result.gpuName = gpuOutput;
                 }
-            } catch (wmicErr) {
-                console.log('[DETECT] Could not detect GPU via WMIC');
+            } catch (gpuErr) {
+                console.log('[DETECT] Could not detect GPU via PowerShell');
             }
         }
     }
@@ -598,14 +598,14 @@ async function detectHardware() {
     // CPU detection
     try {
         if (process.platform === 'win32') {
-            const cpuOutput = execSync('wmic cpu get Name', {
-                encoding: 'utf8',
-                timeout: 3000
-            }).trim();
+            // wmik degil, PowerShell Get-CimInstance kullan
+            const cpuOutput = execSync(
+                'powershell -Command "Get-CimInstance Win32_Processor | Select-Object -ExpandProperty Name"',
+                { encoding: 'utf8', timeout: 3000 }
+            ).trim();
             
-            const lines = cpuOutput.split('\n').filter(l => l.trim() && !l.includes('Name'));
-            if (lines.length > 0) {
-                result.cpuName = lines[0].trim();
+            if (cpuOutput) {
+                result.cpuName = cpuOutput;
             }
         } else {
             result.cpuName = require('os').cpus()[0]?.model || '';
@@ -1143,6 +1143,14 @@ app.on('will-finish-launching', () => {
     app.on('unhandledRejection', (reason) => {
         console.error('[UNHANDLED REJECTION]:', reason);
     });
+});
+
+// ============================================
+// Notification Handler (renderer'dan gelen bildirimler)
+// ============================================
+ipcMain.handle('notification-info', (_event, message) => {
+    console.log('[NOTIFICATION INFO]:', message);
+    return { success: true };
 });
 
 console.log('[ELECTRON] LLM Runner AIO starting...');
