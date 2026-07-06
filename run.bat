@@ -4,7 +4,7 @@ echo ========================================
 echo   LLM Runner AIO - Electron Launcher
 echo ========================================
 echo.
-where node >nul 2>&1 || (
+where node >nul 2^>^&1 || (
     echo [ERROR] Node.js is NOT installed!
     echo Please install Node.js 18+ from: https://nodejs.org/
     echo.
@@ -14,13 +14,13 @@ where node >nul 2>&1 || (
 echo [OK] Node.js found
 echo.
 echo Installing dependencies...
-call npm install || (
+call npm install ^|\| (
     echo [ERROR] npm install failed!
     echo.
     pause
     exit /b 1
 )
-echo [OK] Dependencies installed — no native modules to compile
+echo [OK] Dependencies installed
 echo.
 echo ========================================
 echo   Starting Application
