@@ -507,6 +507,112 @@ function setupIPC() {
     });
     
     // ============================================
+    // Models Tab — PyQt6'daki models.py'nin IPC handler'lari
+    // ============================================
+    
+    // Scan Models — models/ dizinini tara (.gguf dosyalari)
+    // PyQt6'da: _scan_models() metodu
+    ipcMain.handle('scan-models', async (event, modelsDir) => {
+        const ggufFiles = [];
+        let totalSize = 0;
+        
+        function walk(currentDir, depth = 0) {
+            if (depth > 10 || !fs.existsSync(currentDir)) {
+                return;
+            }
+            
+            const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+            
+            for (const entry of entries) {
+                const fullPath = path.join(currentDir, entry.name);
+                
+                if (entry.isDirectory()) {
+                    walk(fullPath, depth + 1);
+                } else if (entry.isFile() && entry.name.endsWith('.gguf')) {
+                    const stat = fs.statSync(fullPath);
+                    const relPath = path.relative(modelsDir, fullPath);
+                    
+                    ggufFiles.push({
+                        name: entry.name,
+                        path: fullPath,
+                        size: stat.size,
+                        relativePath: relPath,
+                        modified: stat.mtime
+                    });
+                    totalSize += stat.size;
+                }
+            }
+        }
+        
+        walk(modelsDir);
+        
+        // Alfabetik sirala (PyQt6'daki gibi)
+        ggufFiles.sort((a, b) => a.name.localeCompare(b.name));
+        
+        const result = {
+            files: ggufFiles,
+            totalSize,
+            count: ggufFiles.length
+        };
+        
+        console.log(`[SCAN] Found ${result.count} GGUF files in ${modelsDir}`);
+        
+        // Renderer'a event gonder
+        if (mainWindow) {
+            mainWindow.webContents.send('models-scanned', result);
+        }
+        
+        return result;
+    });
+    
+    // Delete Model — Model dosyasini sil
+    // PyQt6'da: _delete_selected() metodu
+    ipcMain.handle('model-delete', async (event, filePath) => {
+        try {
+            if (!fs.existsSync(filePath)) {
+                console.warn('[DELETE] File not found:', filePath);
+                return { success: false, error: 'File does not exist' };
+            }
+            
+            const fileName = path.basename(filePath);
+            const stat = fs.statSync(filePath);
+            
+            // Dosyayi sil
+            fs.unlinkSync(filePath);
+            
+            console.log(`[DELETE] Deleted: ${fileName} (${formatBytes(stat.size)})`);
+            
+            return { success: true, deleted: fileName, size: stat.size };
+        } catch (err) {
+            console.error('[DELETE] Failed:', err.message);
+            return { success: false, error: err.message };
+        }
+    });
+    
+    // Delete Multiple — Birden fazla modeli sil
+    // PyQt6'da: _delete_selected() ile multi-selection
+    ipcMain.handle('model-delete-multiple', async (event, filePaths) => {
+        const results = { success: 0, errors: 0, deleted: [], failed: [] };
+        
+        for (const filePath of filePaths) {
+            try {
+                if (!fs.existsSync(filePath)) continue;
+                
+                const fileName = path.basename(filePath);
+                fs.unlinkSync(filePath);
+                results.success++;
+                results.deleted.push(fileName);
+            } catch (err) {
+                results.errors++;
+                results.failed.push({ path: filePath, error: err.message });
+            }
+        }
+        
+        console.log(`[DELETE-MULTIPLE] Success: ${results.success}, Errors: ${results.errors}`);
+        return results;
+    });
+    
+    // ============================================
     // NEW: SHA256 Model Verification
     // PyQt6'da: _calculate_sha256() + hash comparison
     // ============================================
@@ -1188,6 +1294,26 @@ ipcMain.handle('notification-confirm', (_event, title, message) => {
     console.log(`[NOTIFICATION CONFIRM]: ${title} - ${message}`);
     return { confirmed: true };
 });
+
+// ============================================
+// Utility Functions
+// ============================================
+
+/**
+ * Bayt cinsinden boyutu okunabilir formata cevirir
+ * PyQt6'da yok ama Electron tarafinda gerekli
+ * @param {number} bytes - Bayt
+ * @returns {string} Formatlanmis boyut
+ */
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
 
 console.log('[ELECTRON] LLM Runner AIO starting...');
 console.log('[ELECTRON] App root:', APP_ROOT);

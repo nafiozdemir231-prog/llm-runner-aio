@@ -692,6 +692,7 @@ function renderModelList(files) {
             <input type="checkbox" onclick="event.stopPropagation()">
             <span>${model.name}</span>
             <span class="muted">${formatBytes(model.size)}</span>
+            <span class="muted">${model.relativePath || ''}</span>
         </li>
     `).join('');
 }
@@ -711,27 +712,49 @@ function selectModel(index) {
 }
 
 async function deleteSelectedModel() {
-    if (state.selectedModel === null) {
+    // PyQT6'daki gibi multi-selection destekle
+    const checkboxes = document.querySelectorAll('#model-list input[type="checkbox"]:checked');
+    
+    if (checkboxes.length === 0) {
         showNotification('Warning', 'Please select a model first.');
         return;
     }
     
-    const model = state.models.files[state.selectedModel];
+    // Secilen modelleri topla
+    const selectedModels = Array.from(checkboxes).map(cb => {
+        const li = cb.closest('li');
+        const index = parseInt(li?.dataset.index);
+        return state.models.files[index];
+    }).filter(m => m !== undefined);
+    
+    // Onay dialogu - PyQT6'daki QMessageBox.question() karsiligi
+    const names = selectedModels.map(m => `- ${m.name}`).join('\n');
+    const message = `Delete ${selectedModels.length} model(s)?\n\n${names}\n\nThis cannot be undone.`;
+    
     const confirmed = await window.electronAPI.notification.confirm(
-        'Delete Model',
-        `Are you sure you want to delete "${model.name}"?`
+        'Confirm Delete',
+        message
     );
     
-    if (confirmed) {
-        try {
-            await window.electronAPI.model.delete(model.path);
-            state.models.files.splice(state.selectedModel, 1);
-            state.selectedModel = null;
-            renderModelList(state.models.files);
-            showNotification('Success', 'Model deleted.');
-        } catch (err) {
-            showNotification('Error', `Delete failed: ${err.message}`);
+    if (!confirmed) return;
+    
+    // Dosya yollarini al
+    const filePaths = selectedModels.map(m => m.path);
+    
+    try {
+        const result = await window.electronAPI.model.deleteMultiple(filePaths);
+        
+        if (result.success > 0) {
+            // Listeyi yeniden tara
+            await scanModels();
+            showNotification('Success', `${result.success} model(s) deleted.`);
         }
+        
+        if (result.errors > 0) {
+            showNotification('Warning', `${result.errors} model(s) could not be deleted.`);
+        }
+    } catch (err) {
+        showNotification('Error', `Delete failed: ${err.message}`);
     }
 }
 

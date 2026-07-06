@@ -175,6 +175,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
          */
         delete: (filePath) => {
             return ipcRenderer.invoke('model-delete', filePath);
+        },
+        
+        /**
+         * Birden fazla model sil
+         * PyQt6'da: multi-selection ile silme
+         */
+        deleteMultiple: (filePaths) => {
+            return ipcRenderer.invoke('model-delete-multiple', filePaths);
         }
     },
     
