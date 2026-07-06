@@ -1,0 +1,34 @@
+Ayiklanacak yol : %USERPROFILE%\
+Ayıklama sonrasında çalıştır : LLM-Runner-AIO\run.bat
+
+Hariç tutulacak dosyalar
+
+D:\OpenCode\LLM-Runner-AIO\.git D:\OpenCode\LLM-Runner-AIO\tasks D:\OpenCode\LLM-Runner-AIO\venv D:\OpenCode\LLM-Runner-AIO\openwebui\.git D:\OpenCode\LLM-Runner-AIO\searxng\.git D:\OpenCode\LLM-Runner-AIO\Vane\.git
+
+
+
+LLM Runner AIO - Automatic Installation
+
+
+sfx aciklama
+
+##After installation, download your models from the launcher.
+You can view download progress in the terminal.
+
+##Kurulum tamamlandıktan sonra açılan launcher'da model indirmelerini yapın.
+Terminalde indirme miktarını görüntüleyebilirsiniz.
+
+##Après l'installation, téléchargez vos modèles depuis le lanceur.
+Vous pouvez afficher la progression du téléchargement dans le terminal.
+
+##安装完成后，从启动器下载您的模型。
+您可以在终端中查看下载进度。
+
+##インストール後、ランチャーからモデルをダウンロードしてください。
+ダウンロードの進捗状況はターミナルで表示できます。
+
+##Después de la instalación, descargue sus modelos desde el lanzador.
+Puede ver el progreso de descarga en la terminal.
+
+##Nach der Installation laden Sie Ihre Modelle über den Launcher herunter.
+Sie können den Download-Fortschritt im Terminal anzeigen.

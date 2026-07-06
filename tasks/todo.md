@@ -1,78 +1,67 @@
-# Task: LLM Runner AIO - QA Security Report 15 Bug Fix + Bind Address Feature
+# Task: PyQt6 → Electron Migration (Faz 1: Foundation & App Shell)
 
-## ✅ TÜM FAZLAR TAMAMLANDI (2026-07-04)
+## Faz 1: Electron Foundation & App Shell (2 Hafta)
+- [x] 1.1. `package.json` oluştur (✅ ZATEN MEVCUT)
+- [x] 1.2. `electron/main.js` temel yapı (BrowserWindow, app lifecycle) ✅
+- [x] 1.3. `preload.js` context bridge (contextIsolation: true) ✅
+- [x] 1.4. `src/index.html` boş şablon + CSS linkleri ✅
+- [x] src/css/style.css dark/light tema stilleri ✅
+- [x] 1.5. `npm install` ile bağımlılıkları yükle ✅ (482 package, --ignore-scripts)
+- [ ] 1.6. `electron-rebuild` ile better-sqlite3 native compile (VS Build Tools gerekli — Faz 2'ye ertelendi)
+- [x] 1.7. 8 dil JSON dosyalarını `src/lang/` kopyala + i18n entegrasyonu ✅
 
-## Phase 1: Process Lifecycle & Orchestration (Bugs #2, #13, #15) ✅
-- [x] 1.1. Bug #13: Orphan process temizliği (startup'ta psutil ile) — launcher/main.py
-- [x] 1.2. Bug #15: Graceful shutdown timeout (terminate → 10s wait → kill) — servers.py + main_window.py closeEvent
-- [x] 1.3. Bug #2: closeEvent tüm servisleri stop_all_servers() ile durdur — güçlendirildi
+**Faz 1 Durum: 6/7 tamamlandı (better-sqlite3 hariç)**
 
-## Phase 2: System Resilience & State Recovery (Bugs #4, #8, #10) ✅
-- [x] 2.1. Bug #4: Port çakışma kontrolü (is_port_in_use utility) — servers.py + tüm _start_* metodları
-  - ✅ Erken return'e "Already Running" QMessageBox eklendi (4 sunucu)
-- [x] 2.2. Bug #8: SearXNG internet kesintisi handling (check_internet_connection ping) — servers.py
-- [x] 2.3. Bug #10: Uyku modu recovery (QTimer health check) — servers.py + main_window.py changeEvent
+## Faz 2: Core Utility Modülleri (Sonraki)
+- [x] 2.1. `src/utils/config.js` (ConfigManager — fs + atomic rename) ✅
+- [x] 2.2. `src/utils/i18n.js` (LanguageManager — JSON yükleme, onChange listeners) ✅
+- [x] 2.3. `src/utils/logger.js` (Rotating log — winston yerine custom RotatingLogger) ✅
+- [x] 2.4. `src/utils/helpers.js` (Port check via net.Socket, SHA256 via crypto.createHash) ✅
+- [ ] 2.5. `src/workers/function-sync-api.js` (import_functions_api.py → REST API sync)
+- [x] 2.6. Cross-platform Python resolver (`which python` / `where python` helper) ✅ helpers.js içinde
+- [x] 2.5. `src/workers/function-sync-api.js` (import_functions_api.py → REST API sync) ✅
 
-## Phase 3: Model Management Safety (Bugs #3, #5) ✅
-- [x] 3.1. Bug #3: Disk full .part dosyası temizliği (try/finally) — system_detection.py
-- [x] 3.2. Bug #5: GGUF SHA256 doğrulama — system_detection.py
+## Faz 3: Ana Pencere ve UI (Sonraki)
+- [x] 3.1. `src/index.html` toolbar + tab yapısı ✅ (Faz 1'de oluşturuldu)
+- [x] 3.2. `src/css/style.css` dark/light tema ✅ (Faz 1'de oluşturuldu)
+- [x] 3.3. `src/renderer.js` tab switching logic (pyqtSignal → EventEmitter pattern) ✅
+- [x] 3.4. `src/settings-dialog.html/js` settings modal ✅ (renderer.js içinde)
+- [ ] 3.5. System tray entegrasyonu (`electron.Tray`) — main.js'te var, renderer'dan kontrol gerekli
+- [x] 3.6. Font size +/-, theme toggle, language switch UI ✅ (renderer.js içinde)
 
-## Phase 4: Configuration & Logging (Bugs #6, #12, #14) ✅
-- [x] 4.1. Bug #14: RotatingFileHandler log rotasyonu — app.py (5MB max, 3 backup)
-- [x] 4.2. Bug #6: Ayar kalıcılığı (APPDATA + atomic write) — app.py (os.replace + fsync)
-- [x] 4.3. Bug #12: SearXNG port kalıcılığı (config.json) — zaten mevcut ✅
+## Faz 4: Tab Modülleri & Process Management (Sonraki)
+- [x] 4.1. `src/tabs/system-detection.js` hardware detection (gpu*.ini parsing, nvidia-smi execSync, systeminformation fallback) ✅
+- [x] 4.2. `src/workers/server-manager.js` server control (child_process.spawn + tree-kill) ✅
+- [x] 4.3. `src/workers/process-manager.js` stdout/stderr stream parser (UI console'a feed) ✅
+- [x] 4.4. `src/tabs/picoding.js` working directory + MCP config ✅
+- [x] 4.5. `src/tabs/models.js` model browser + download manager (node-fetch streaming) ✅
+- [x] 4.6. Health check timer (setInterval HTTP ping, sleep-mode recovery) ✅ server-manager.js içinde
 
-## Phase 5: OS & UI Polish (Bugs #7, #9, #11) ✅
-- [x] 5.1. Bug #11: Windows startup registry try-except + bildirim — settings_dialog.py
-- [x] 5.2. Bug #7: Kullanıcı dostu Türkçe hata mesajları — 8 dil dosyası
-- [x] 5.3. Bug #9: Dil dosyası eksik çevirileri — en/tr/de/es/fr/pt/zh/ja
+## Faz 5: Vane Entegrasyonu & İlk-Run Bootloader (Sonraki)
+- [x] 5.1. Vane Next.js static export konfigürasyonu (output: 'export') ✅
+- [x] 5.2. Build sırasında `npm run build` ile statik dosya üretimi ✅
+- [x] 5.3. Electron'da `loadFile('Vane/out/index.html')` yükleme ✅
+- [x] 5.4. İlk-run bootloader: Node.js venv oluşturma + pip install requirements.txt ✅
+- [x] 5.5. OpenWebUI health-check poll loop → function-sync-api.js trigger ✅
+- [x] 5.6. migrate_ini_to_urls.json migration script'i (ilk çalıştırma) ✅
 
-## 🆕 YENİ ÖZELLİK: Bind Address Seçimi (Her Sunucu İçin) ✅
-- [x] SearXNGWorker'a host parametresi eklendi → settings.yml'ye bind_address yazıldı
-- [x] OpenWebUIWorker'a host parametresi eklendi → uvicorn'a host geçirildi
-- [x] LlamaCppWorker'a host parametresi eklendi → llama-server'a host geçirildi
-- [x] VaneWorker'a host parametresi eklendi → HOST env varlığı ile Next.js'e geçirildi
-- [x] UI'ya QComboBox eklendi (her sunucu için 0.0.0.0 / 127.0.0.1)
-- [x] Config'e kaydediliyor (`searxng_host`, `openwebui_host`, `llamacpp_host`, `vane_host`)
-- [x] Globalization: 8 dil × 3 yeni anahtar = 24 satır yeni çeviri ✅
-- [x] Her sunucuda bind address PORT AYARLARININ HEMEN ALTINDA (dikey düzen)
+**Faz 5 Durum: 6/6 tamamlandı (vane-integration.js içinde tümü)**
 
-## 🐛 KRİTİK BUG DÜZELTMELERİ ✅
-- [x] QComboBox.valueChanged → currentIndexChanged (PyQt6 uyumluluğu)
-- [x] Config save Windows rename hatası → os.replace() + fsync() kullanımı
+## Faz 6: Paketleme & Dağıtım (Sonraki)
+- [x] 6.1. `electron-builder.json` konfigürasyonu ✅
+- [x] 6.2. `.gitignore` güncelleme (node_modules/, dist/, *.log) ✅
+- [ ] 6.3. README.md güncelleme (Electron kurulum talimatları)
+- [ ] 6.4. Test dağıtımı — farklı dizinlerde portability test
+- [ ] 6.5. Legacy Python launcher kaldırma (run.bat, main.py, import_functions.py)
 
-## 🆕 EK GÜNCELLEMELER (Sonradan Eklenen Düzeltmeler)
-
-### Bind Address Label Anlık Güncelleme Düzeltmesi
-- [x] "Bind to:" label'leri instance attribute'a çevrildi (self.searxng_bind_label, self.lc_bind_label, self.ow_bind_label, self.vane_bind_label)
-- [x] _refresh_bind_labels() hem label setText() hem combobox güncellemesi yapıyor
-- [x] Dil değiştiğinde artık "Bind to:" label'i + dropdown seçenekleri anında güncelleniyor
-
-### stop_process TypeError Düzeltmesi
-- [x] OpenWebUIWorker.stop_process() → (self, timeout=10) imzası eklendi
-- [x] VaneWorker.stop_process() → (self, timeout=10) imzası eklendi
-- [x] stop_all_servers()'dan gelen timeout=10 parametresi artık tüm sınıflara uyuyor
-- [x] Uygulama kapatıldığında artık tüm sunucular (OpenWebUI dahil) düzgün durduruluyor
-
-### Git Push
-- [x] launcher/ klasörü GitHub'a başarıyla push edildi
-- [x] Repo: https://github.com/nafiozdemir231-prog/llm-runner-aio
-- [x] Commit: "feat: launcher klasörü - QA güvenlik düzeltmeleri ve bind address özelliği"
-- [x] 21 dosya, 5685 satır kod
-
-## 🔄 ELECTRON MIGRATION PLAN (Güncellenmiş)
-- [x] Tüm root dosyalar analiz edildi (import_functions.py, model_urls.json, create_shortcut.py, gpu*.ini)
-- [x] Advisor danışmanlığı alındı — 6 kritik karar belirlendi
-- [x] electron.md 1004 satıra tamamlandı
-- [x] Yeni Faz planı: 10 hafta (6 Faz)
-- [x] package.json konfigürasyonu güncellendi (better-sqlite3, electron-store, systeminformation)
-- [x] Architecture flow diagram eklendi
-- [x] Risk assessments güncellendi
+**Faz 6 Durum: 2/5 tamamlandı**
+- [ ] 6.2. `.gitignore` güncelleme (node_modules/, dist/, *.log)
+- [ ] 6.3. README.md güncelleme (Electron kurulum talimatları)
+- [ ] 6.4. Test dağıtımı — farklı dizinlerde portability test
+- [ ] 6.5. Legacy Python launcher kaldırma (run.bat, main.py, import_functions.py)
 
 ## Notes
-- Danışman önerisi: Faz sırasıyla ilerle (1→2→3→4→5)
-- Her faz bitiminde tasks/state.md güncellendi
-- Her adımdan önce advisor'a soruldu
-- Tüm kod syntax kontrolünden geçti
-- 8 dil dosyası valid JSON olarak doğrulandı
-- Son güncelleme: 2026-07-05 — electron.md advisor review + güncellenmiş migration plan
+- Her faz sonunda tasks/state.md güncellenecek
+- Electron mimarisi: electron.md dosyasındaki plana sadık kalınacak
+- Mevcut PyQt6 kodu launcher/ klasöründe referans olarak duruyor
+- Son güncelleme: 2026-07-05 — Faz 1 başlıyor
