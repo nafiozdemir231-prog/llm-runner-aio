@@ -629,23 +629,38 @@ async function detectHardware() {
             
             for (const ini of iniFiles) {
                 let score = 0;
+                let vramDiff = Infinity;
                 
                 // GPU adı içinde ini dosyası varsa yüksek skor
                 if (gpuNameLower.includes(ini.toLowerCase().split('.')[0])) {
                     score += 10;
                 }
                 
-                // VRAM'e en yakın INI'yı seç
+                // VRAM'e en yakın INI'yı seç — her iki taraf da GB cinsinden
                 const vramMatch = ini.match(/vram(\d+)/);
                 if (vramMatch) {
                     const iniVram = parseInt(vramMatch[1]);
-                    const diff = Math.abs(result.vramGb * 1024 - iniVram);
-                    if (diff < 2048) { // ±2GB tolerans
-                        score += (2048 - diff);
+                    vramDiff = Math.abs(result.vramGb - iniVram); // GB vs GB
+                    
+                    // Tam eşleşme: çok yüksek skor
+                    if (vramDiff <= 0.5) { // ±0.5GB tolerans = tam eşleşme
+                        score += 100;
+                    } else if (vramDiff <= 2) { // ±2GB tolerans
+                        score += Math.max(0, 20 - (vramDiff * 10)); // Yakınlık skoru
                     }
                 }
                 
-                if (score > bestScore) {
+                // RAM de kontrol et (eğer INI'da ram varsa)
+                const ramMatch = ini.match(/ram(\d+)/);
+                if (ramMatch && result.ramGb > 0) {
+                    const iniRam = parseInt(ramMatch[1]);
+                    const ramDiff = Math.abs(result.ramGb - iniRam);
+                    if (ramDiff <= 4) { // ±4GB RAM tolerans
+                        score += Math.max(0, 5 - ramDiff);
+                    }
+                }
+                
+                if (score > bestScore || (score === bestScore && vramDiff < Infinity)) {
                     bestScore = score;
                     bestMatch = ini;
                 }
