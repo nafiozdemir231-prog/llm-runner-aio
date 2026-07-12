@@ -3,6 +3,8 @@ license: mit
 ---
 # LLM Runner AIO - All-In-One Local AI Platform
 
+> **Portable Windows Desktop App** — Run local AI models with a single click. No installation required.
+
 ## Overview
 
 LLM Runner AIO is a comprehensive, self-contained desktop application that bundles all the tools you need to run local AI models on your own hardware. No complex setup, no dependency hell — just download, run, and start chatting with AI locally.
@@ -20,7 +22,7 @@ This package brings together four powerful open-source components into one seaml
 
 ## Features
 
-- 🚀 **Single Executable** — Everything in one `.exe` file, no installation required
+- 🚀 **Portable** — No installer needed. Move the folder anywhere and it works.
 - 🔒 **100% Offline** — All processing happens on your machine, no data leaves your computer
 - 🎨 **Modern UI** — Clean, dark-themed interface with support for 8 languages
 - ⚙️ **Auto-Configuration** — Automatic hardware detection and optimal settings
@@ -28,7 +30,9 @@ This package brings together four powerful open-source components into one seaml
 - 💾 **Persistent Database** — Your chat history and settings are saved locally
 - 📱 **System Tray Integration** — Runs quietly in the background
 - 🌐 **Port Configurable** — Customize ports for all services
-- 🖥️ **Windows Startup** — Optional auto-start with Windows
+- 🖥️ **Windows Autostart** — Auto-start with Windows (registry + desktop shortcut)
+- 🔧 **Python venv Isolation** — Dependencies installed in isolated virtual environment
+- 🗄️ **Manual Function Loading** — Inject `.json` functions directly into OpenWebUI
 
 ## How It Works
 
@@ -59,56 +63,63 @@ This package brings together four powerful open-source components into one seaml
 | **OS** | Windows 10/11 | Windows 11 |
 | **RAM** | 8 GB | 16 GB+ |
 | **VRAM** | N/A | 4 GB+ |
-| **Python** | 3.11 (bundled) | 3.11 (bundled) |
-| **Node.js** | 18+ (bundled) | 20+ (bundled) |
+| **Python** | 3.11+ (system) | 3.11+ (system) |
+| **Node.js** | 18+ (system) | 20+ (system) |
 
-> **Note:** Python 3.11 and Node.js are bundled inside the executable. No separate installation needed!
+> **Note:** Python 3.11 and Node.js must be installed on your system before running the app.
 
 ## Quick Start
 
-### Electron Version (Recommended)
+### First Time Setup
 
-1. **Clone** the repository:
+1. **Download or clone** the repository:
    ```bash
    git clone https://github.com/nafiozdemir231-prog/llm-runner-aio.git
    cd llm-runner-aio
    ```
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+2. **Install system dependencies**:
+   - Python 3.11+ (from https://python.org)
+   - Node.js 18+ (from https://nodejs.org)
 
-3. **Run the app**:
+3. **Run the launcher**:
    ```bash
-   npm start
-   # Or for development mode:
-   npm run dev
+   # Windows — creates venv and starts the app
+   .\run.bat
+   
+   # Or for silent background mode:
+   cscript //Nologo electron\launch_app.vbs
    ```
 
 4. **Open** your browser and go to `http://localhost:3000`
 5. **Start chatting** with your local AI!
 
-### Building Distribution Package
+### Development Mode
 
-To create a distributable `.exe` package:
+```bash
+# Install Electron dependencies
+npm install
+
+# Start with DevTools auto-opened
+npm start -- --dev
+```
+
+### Windows Autostart
+
+The app automatically configures itself on every launch:
+- **Registry entry** → `HKCU\...\Run\LLMRunnerAIO` points to `electron/launch_app.vbs`
+- **Desktop shortcut** → Created via PowerShell
+- **Startup folder** → `.lnk` shortcut created in `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`
+
+All paths are resolved dynamically — move the folder and autostart still works.
+
+### Building Distribution Package
 
 ```bash
 npm run build:win    # Windows x64 NSIS installer
-npm run build:mac    # macOS DMG (Intel + Apple Silicon)
-npm run build:linux  # Linux AppImage
 ```
 
-The built packages will be in the `dist/` directory.
-
-### Legacy Python Version
-
-For the Python/PyQt6 version:
-
-1. **Download** `LLM-Runner-AIO.exe` (2.5 GB)
-2. **Double-click** to run
-3. **Open** your browser and go to `http://localhost:3000`
-4. **Start chatting** with your local AI!
+Built packages will be in the `dist/` directory.
 
 ## Supported Languages
 
@@ -126,76 +137,58 @@ The interface supports 8 languages:
 
 ### Architecture Overview
 
-The Electron version consists of:
-
 ```
-electron/
-├── main.js          # Main process (app lifecycle, IPC handlers)
-└── preload.js       # Context bridge (secure API exposure)
-
-src/
-├── index.html       # UI structure
-├── css/style.css    # Styles (dark/light themes)
-├── renderer.js      # Renderer process (UI logic)
-├── utils/           # Core utilities
-│   ├── config.js    # Configuration management
-│   ├── i18n.js      # Internationalization (8 languages)
-│   ├── helpers.js   # Port check, SHA256, etc.
-│   └── logger.js    # Log rotation handler
-└── workers/         # Background workers
-    ├── server-manager.js     # Server orchestration
-    ├── process-manager.js    # Process tree management
-    ├── models.js             # Model management
-    └── vane-integration.js   # Vane Next.js integration
+LLM-Runner-AIO/
+├── electron/
+│   ├── main.js              # Main process (lifecycle, IPC, autostart, cleanup)
+│   ├── preload.js           # Context bridge (secure API exposure)
+│   ├── launch_app.vbs       # Silent launcher for Windows autostart
+│   └── create_shortcut.py   # Desktop shortcut creator
+├── src/
+│   ├── index.html           # UI structure
+│   ├── css/style.css        # Modern transparent/minimal styling
+│   ├── renderer.js          # Renderer process (DOM, tabs, logs)
+│   ├── lang/                # 8 language files (en, tr, es, de, fr, pt, zh, ja)
+│   └── assets/              # Icons, images
+├── venv/                    # Python virtual environment (auto-created)
+├── node_modules/            # Node.js + Electron dependencies
+├── launcher/                # PyQt6 reference (legacy)
+├── searxng/                 # SearXNG configuration & data
+├── openwebui/               # OpenWebUI runtime directory
+├── picoding/                # MCP Advisor settings
+├── run.bat                  # Interactive launcher (creates venv, installs deps)
+├── run_silent.bat           # Silent mode for autostart
+├── Vane/                    # Vane Next.js app
+├── gpu*.ini                 # Hardware-specific model presets
+├── model_urls.json          # Model download URLs
+└── requirements.txt         # Python dependencies
 ```
 
 ### Key Technologies
 
-| PyQt6 Feature | Electron Equivalent |
-|---------------|---------------------|
-| QMainWindow/QWidget | BrowserWindow + HTML/CSS/JS |
-| QThread | worker_threads / child_process.spawn |
-| pyqtSignal | EventEmitter |
-| psutil | child_process + tree-kill |
-| SQLite (better-sqlite3) | better-sqlite3 (native module) |
-| NSIS installer | electron-builder NSIS target |
-
-### Running in Development Mode
-
-```bash
-# Install dependencies
-npm install
-
-# Start with hot reload
-npm run dev
-
-# Build for production
-npm run build
-```
+| Component | Technology |
+|-----------|------------|
+| Desktop Framework | Electron v28+ |
+| UI | HTML5, CSS3, Vanilla JS |
+| Process Management | child_process.spawn() + tree-kill |
+| Database | SQLite (better-sqlite3) |
+| Python Isolation | venv (auto-created by run.bat) |
+| Autostart | Registry + VBS launcher + .lnk shortcuts |
 
 ### Adding New Features
 
 1. **New Tab**: Add to `src/index.html`, create in `src/tabs/`, register in `renderer.js`
-2. **New Worker**: Create in `src/workers/`, expose via IPC in `main.js`
+2. **New IPC Channel**: Add to `preload.js` (expose) and `main.js` (handler)
 3. **New Language**: Add to `src/lang/*.json` (follow existing format)
-4. **New Server**: Update `server-manager.js` spawn logic
+4. **New Server**: Update `startServer()` in `main.js` spawn logic
 
-### Testing
-
-```bash
-# Run linting
-npm run lint
-
-# Test build
-npm run build:test
-```
-
-## Data Privacy
+## Data Privacy & Security
 
 - ✅ **No Cloud Dependencies** — Everything runs locally
 - ✅ **No Telemetry** — No data is sent anywhere
 - ✅ **Local Database** — Chat history stored only on your machine
 - ✅ **No Account Required** — No registration or login needed
+- ✅ **Portable** — No registry entries left behind when moved
 
 ## License
 

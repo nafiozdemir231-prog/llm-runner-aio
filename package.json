@@ -16,8 +16,10 @@
   "author": "LLM Runner AIO Team",
   "license": "MIT",
   "dependencies": {
+    "better-sqlite3": "^11.0.0",
     "crypto-js": "^4.2.0",
     "electron-store": "^10.0.0",
+    "ini": "^5.0.0",
     "node-fetch": "^3.3.2",
     "systeminformation": "^5.23.0",
     "tree-kill": "^1.2.2",

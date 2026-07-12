@@ -1,20 +1,20 @@
 /**
  * LLM Runner AIO - Preload Script
- * 
+ *
  * Context Bridge: Main process ile Renderer process arasında güvenli iletişim köprüsü
  * PyQt6'da pyqtSignal + QObject pattern'ının Electron karşılığı
- * 
+ *
  * Güvenlik: contextIsolation: true + nodeIntegration: false
  * Renderer process sadece bu API'ye erişebilir
  */
 
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, shell } = require('electron');
 
 // ============================================
 // Güvenli API Maruziyeti (contextBridge.exposeInMainWorld)
 // ============================================
 contextBridge.exposeInMainWorld('electronAPI', {
-    
+
     // ============================================
     // Config Management (ConfigManager.py karşılığı)
     // ============================================
@@ -24,14 +24,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
          * PyQt6'da: ConfigManager._load()
          */
         read: () => ipcRenderer.invoke('config-read'),
-        
+
         /**
          * Config dosyasına yaz (atomic write)
-         * PyQt6'da: ConfigManager._save() — os.replace + fsync
+         * PyQt6'da: ConfigManager._save() - os.replace + fsync
          */
         write: (configData) => ipcRenderer.invoke('config-write', configData)
     },
-    
+
     // ============================================
     // Internationalization (LanguageManager.py karşılığı)
     // ============================================
@@ -41,7 +41,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
          * PyQt6'da: LanguageManager._load(lang_code)
          */
         read: (langCode) => ipcRenderer.invoke('lang-read', langCode),
-        
+
         /**
          * Dil değişikliği event'ini dinle
          * PyQt6'da: self.lang.lang_changed.connect(callback)
@@ -50,7 +50,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
             ipcRenderer.on('lang-changed', (event, data) => callback(data));
         }
     },
-    
+
     // ============================================
     // Hardware Detection (system_detection.py karşılığı)
     // ============================================
@@ -61,7 +61,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
          */
         detect: () => ipcRenderer.invoke('detect-hardware')
     },
-    
+
     // ============================================
     // Server Management (servers.py karşılığı)
     // ============================================
@@ -71,13 +71,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
          * PyQt6'da: SearXNGWorker.start_server_internal() vb.
          */
         start: (serverType, options) => ipcRenderer.invoke('server-start', serverType, options),
-        
+
         /**
          * Sunucu durdur
          * PyQt6'da: ServerWorker.stop_process(timeout=10)
          */
         stop: (serverType) => ipcRenderer.invoke('server-stop', serverType),
-        
+
         /**
          * Sunucu durumu kontrolü
          * PyQt6'da: ServerWorker.is_running
@@ -94,23 +94,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
                 ipcRenderer.send('get-server-status', serverType);
             });
         },
-        
+
         /**
          * Sunucu log mesajlarını dinle
-         * PyQt6'da: QTextEdit.append() — stdout/stderr stream
+         * PyQt6'da: QTextEdit.append() - stdout/stderr stream
          */
         onLog: (callback) => {
             ipcRenderer.on('server-log', (event, data) => callback(data));
         },
-        
+
         /**
          * Sunucu hata mesajlarını dinle
-         * PyQt6'da: QTextEdit.append() — stderr stream
+         * PyQt6'da: QTextEdit.append() - stderr stream
          */
         onError: (callback) => {
             ipcRenderer.on('server-error', (event, data) => callback(data));
         },
-        
+
         /**
          * Sunucu durdu event'ini dinle
          * PyQt6'da: pyqtSignal emit edildiğinde
@@ -119,7 +119,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
             ipcRenderer.on('server-stopped', (event, data) => callback(data));
         }
     },
-    
+
     // ============================================
     // Model Download (models.py/hf_hub_download karşılığı)
     // ============================================
@@ -128,47 +128,57 @@ contextBridge.exposeInMainWorld('electronAPI', {
          * Model indir (streaming download)
          * PyQt6'da: hf_hub_download() + progress signal
          */
-        download: (url, destFolder) => ipcRenderer.invoke('model-download', url, destFolder),
-        
+        download: (url, destFolder, taskId) => ipcRenderer.invoke('model-download', url, destFolder, taskId),
+
         /**
-         * İndirme ilerlemesini dinle
+         * İndirme ilerlemesini dinle (onProgress/onDownloadProgress birleştirildi)
          * PyQt6'da: pyqtSignal(value) → QProgressBar.setValue()
          */
         onProgress: (callback) => {
             ipcRenderer.on('download-progress', (event, data) => callback(data));
         },
-        
+
+        /**
+         * İndirme ilerlemesini taskId ile dinle (per-model progress)
+         */
+        onDownloadProgress: (callback) => {
+            ipcRenderer.on('download-progress', (event, data) => callback(data));
+        },
+
         /**
          * INI preset listesi al (llama.cpp için)
          * PyQt6'da: get_available_ini_presets()
          */
         getINIPresets: () => ipcRenderer.invoke('get-llama-ini-presets'),
-        
+
         /**
          * INI dosyasından model listesini al
          * PyQt6'da: _load_ini_models()
          */
         getModelsFromINI: (iniName) => ipcRenderer.invoke('model-get-models-from-ini', iniName),
-        
+
         /**
          * Yerel INI oluştur (URL'leri yerel yollara çevir)
          * PyQt6'da: _create_local_ini()
          */
         generateLocalINI: (iniName) => ipcRenderer.invoke('model-generate-local-ini', iniName),
-        
+
+        /**
+         * model_urls.json'dan URL al
+         * PyQt6'da: _get_urls_from_json(ini_name, section_name)
+         */
+        getUrlsFromJSON: (iniName, sectionName) => {
+            return ipcRenderer.invoke('model-get-urls-from-json', iniName, sectionName);
+        },
+
         /**
          * Models klasörünü tara (.gguf dosyaları)
          * PyQt6'da: scan_models() fonksiyonu
          */
         scan: (modelsDir) => {
-            return new Promise((resolve) => {
-                ipcRenderer.once('models-scanned', (event, data) => {
-                    resolve(data);
-                });
-                ipcRenderer.send('scan-models', modelsDir);
-            });
+            return ipcRenderer.invoke('scan-models', modelsDir);
         },
-        
+
         /**
          * Model sil
          * PyQt6'da: delete_selected_models()
@@ -176,16 +186,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
         delete: (filePath) => {
             return ipcRenderer.invoke('model-delete', filePath);
         },
-        
+
         /**
          * Birden fazla model sil
          * PyQt6'da: multi-selection ile silme
          */
         deleteMultiple: (filePaths) => {
             return ipcRenderer.invoke('model-delete-multiple', filePaths);
+        },
+
+        /**
+         * Dosya var mı kontrol et
+         */
+        fileExists: (filePath) => {
+            return ipcRenderer.invoke('file-exists', filePath);
         }
     },
-    
+
     // ============================================
     // PiCoding Agent (picoding.py karşılığı)
     // ============================================
@@ -195,43 +212,34 @@ contextBridge.exposeInMainWorld('electronAPI', {
          * PyQt6'da: _detect_project()
          */
         detectProject: () => ipcRenderer.invoke('picoding-detect-project'),
-        
+
         /**
          * PATH'e ekle
          * PyQt6'da: _add_to_path()
          */
         addToPath: () => ipcRenderer.invoke('picoding-add-to-path'),
-        
+
         /**
          * MCP Advisor ayarlarını kaydet + mcp_web_reader.py güncelle
-         * PyQt6'da: _save_advisor_config() — config.json + mcp_web_reader.py
+         * PyQt6'da: _save_advisor_config() - config.json + mcp_web_reader.py
          */
-        saveAdvisor: (advisorData) => ipcRenderer.invoke('mcp-update-advisor-file', advisorData),
-        
+        saveAdvisor: (advisorData) => ipcRenderer.invoke('picoding-save-advisor', advisorData),
+
         /**
          * MCP Advisor ayarlarını yükle
          * PyQt6'da: _load_advisor_config()
          */
-        getAdvisor: () => ipcRenderer.invoke('picoding-get-advisor')
-    },
-    
-    // ============================================
-    // Database Operations (PyQt6 _load_database)
-    // ============================================
-    database: {
+        getAdvisor: () => ipcRenderer.invoke('picoding-get-advisor'),
+
         /**
-         * OpenWebUI veritabanı yükle
-         * PyQt6'da: _load_database() — .db dosyasını kopyala + eski'yi yedekle
+         * API'den mevcut modelleri listele
+         * Provider turune gore otomatik endpoint secimi
          */
-        load: (dbFilePath) => ipcRenderer.invoke('db-load', dbFilePath),
-        
-        /**
-         * Model SHA256 doğrula
-         * PyQt6'da: _calculate_sha256() + hash karşılaştırması
-         */
-        verifySHA256: (filePath, expectedHash) => ipcRenderer.invoke('model-verify-sha256', filePath, expectedHash)
+        fetchModels: (apiUrl, apiKey, providerType) => ipcRenderer.invoke('picoding-fetch-models', apiUrl, apiKey, providerType)
     },
-    
+
+
+
     // ============================================
     // System Cleanup (orphan process temizliği)
     // ========================================
@@ -242,7 +250,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
          */
         orphan: () => ipcRenderer.invoke('cleanup-orphan-processes')
     },
-    
+
     // ============================================
     // File Dialog (QFileDialog karşılığı)
     // ============================================
@@ -252,20 +260,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
          * PyQt6'da: QFileDialog.getOpenFileName()
          */
         openFile: (options) => ipcRenderer.invoke('dialog-open-file', options),
-        
+
         /**
          * Klasör seç dialogu aç
          * PyQt6'da: QFileDialog.getExistingDirectory()
          */
         openFolder: (options) => ipcRenderer.invoke('dialog-open-folder', options),
-        
+
         /**
          * Kaydet dialogu aç
          * PyQt6'da: QFileDialog.getSaveFileName()
          */
         saveFile: (options) => ipcRenderer.invoke('dialog-save-file', options)
     },
-    
+
     // ============================================
     // Notification (QMessageBox karşılığı)
     // ============================================
@@ -275,48 +283,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
          * PyQt6'da: QMessageBox.information()
          */
         info: (title, message) => ipcRenderer.invoke('notification-info', title, message),
-        
+
         /**
          * Uyarı mesajı göster
          * PyQt6'da: QMessageBox.warning()
          */
         warning: (title, message) => ipcRenderer.invoke('notification-warning', title, message),
-        
+
         /**
          * Hata mesajı göster
          * PyQt6'da: QMessageBox.critical()
          */
         error: (title, message) => ipcRenderer.invoke('notification-error', title, message),
-        
+
         /**
          * Onay sorusu göster
          * PyQt6'da: QMessageBox.question()
          */
         confirm: (title, message) => ipcRenderer.invoke('notification-confirm', title, message)
     },
-    
-    // ============================================
-    // Shell Integration (os.startfile / shell.openItem karşılığı)
-    // ============================================
-    shell: {
-        /**
-         * Dosya/yolu dış uygulamada aç
-         * PyQt6'da: QDesktopServices.openUrl()
-         */
-        openExternal: (url) => shell.openExternal(url),
-        
-        /**
-         * Dosyayı bulucu'da göster
-         * PyQt6'da: QGuiApplication::focusWindow() + explorer /select
-         */
-        revealInFinder: (filePath) => ipcRenderer.invoke('shell-reveal', filePath),
-        
-        /**
-         * Klasörü aç
-         */
-        openPath: (filePath) => ipcRenderer.invoke('shell-open-path', filePath)
-    },
-    
+
+
+
     // ============================================
     // System Information (systeminformation paketi)
     // ============================================
@@ -326,14 +314,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
          * PyQt6'da: psutil + os.uname()
          */
         getInfo: () => ipcRenderer.invoke('system-getinfo'),
-        
+
         /**
          * Port kontrolü
          * PyQt6'da: is_port_in_use() utility
          */
         checkPort: (port) => ipcRenderer.invoke('system-check-port', port)
     },
-    
+
     // ============================================
     // Event Listeners (pyqtSignal pattern'ının JS karşılığı)
     // ============================================
@@ -345,7 +333,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
         on: (eventName, callback) => {
             ipcRenderer.on(eventName, (event, ...args) => callback(...args));
         },
-        
+
         /**
          * Tek seferlik event listener
          * PyQt6'da: signal.connect_once(callback)
@@ -353,7 +341,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
         once: (eventName, callback) => {
             ipcRenderer.once(eventName, (event, ...args) => callback(...args));
         },
-        
+
         /**
          * Event listener'ı kaldır
          * PyQt6'da: signal.disconnect(callback)
@@ -361,7 +349,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
         removeListener: (eventName, callback) => {
             ipcRenderer.removeListener(eventName, callback);
         },
-        
+
         /**
          * Event gönder
          * PyQt6'da: signal.emit(data)
@@ -370,7 +358,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
             ipcRenderer.send(eventName, data);
         }
     },
-    
+
     // ============================================
     // App Control (QCoreApplication karşılığı)
     // ============================================
@@ -379,24 +367,40 @@ contextBridge.exposeInMainWorld('electronAPI', {
          * Uygulamayı yeniden başlat
          */
         restart: () => ipcRenderer.invoke('app-restart'),
-        
+
         /**
          * Uygulamayı kapat
          * PyQt6'da: qapp.quit()
          */
         quit: () => ipcRenderer.invoke('app-quit'),
-        
+
         /**
          * Uygulama sürümünü al
          */
         getVersion: () => ipcRenderer.invoke('app-version'),
-        
+
         /**
          * Platform bilgisini al
          */
         getPlatform: () => process.platform
     },
-    
+
+    // ============================================
+    // Shell (Shell.openExternal / os.startfile karşılığı)
+    // ============================================
+    shell: {
+        /**
+         * Harici URL'yi varsayılan tarayıcıda aç (IPC ile)
+         * PyQt6'da: QDesktopServices.openUrl(QUrl(url))
+         */
+        openExternal: (url) => ipcRenderer.invoke('shell-open-url', url),
+
+        /**
+         * function/ dizinini Windows Explorer'da ac
+         */
+        openPathFunctionFolder: () => ipcRenderer.invoke('shell-open-path-func-folder')
+    },
+
     // ============================================
     // Path Utilities (path.join / Path(__file__) karşılığı)
     // ============================================
@@ -406,18 +410,64 @@ contextBridge.exposeInMainWorld('electronAPI', {
          * PyQt6'da: ROOT = Path(__file__).parent.parent
          */
         getProjectRoot: () => ipcRenderer.invoke('paths-project-root'),
-        
+
         /**
          * Launcher dizinini al
          * PyQt6'da: LAUNCHER_DIR = ROOT / "launcher"
          */
         getLauncherDir: () => ipcRenderer.invoke('paths-launcher-dir'),
-        
+
         /**
          * Models dizinine tam yolu oluştur
          * PyQt6'da: MODELS_DIR = ROOT / "models"
          */
         getModelsDir: () => ipcRenderer.invoke('paths-models-dir')
+    },
+
+    // ============================================
+    // Database Management (QFileDialog + file.copy karşılığı)
+    // ============================================
+    db: {
+        /**
+         * Veritabanı dosyasını yükle ve mevcut DB'yi yedekle
+         * PyQt6'da: _load_database(db_file)
+         */
+        load: (dbFilePath) => ipcRenderer.invoke('db-load', dbFilePath),
+
+        /**
+         * Model SHA256 doğrula
+         * PyQt6'da: _calculate_sha256() + hash karşılaştırması
+         */
+        verifySHA256: (filePath, expectedHash) => ipcRenderer.invoke('model-verify-sha256', filePath, expectedHash)
+    },
+
+    // ============================================
+    // Autostart (Windows Registry)
+    // ============================================
+    autostart: {
+        /**
+         * Windows başlangıcına ekle (registry)
+         */
+        enable: () => ipcRenderer.invoke('autostart-enable'),
+
+        /**
+         * Windows başlangıcından kaldır (registry)
+         */
+        disable: () => ipcRenderer.invoke('autostart-disable'),
+
+        /**
+         * Aktif mi kontrol et
+         */
+        check: () => ipcRenderer.invoke('autostart-check')
+    },
+
+    // ============================================
+    // Window Controls (Frameless icin)
+    // ============================================
+    window: {
+        minimize: () => ipcRenderer.send('window-minimize'),
+        maximize: () => ipcRenderer.send('window-maximize'),
+        close: () => ipcRenderer.send('window-close')
     }
 });
 

@@ -1,0 +1,20 @@
+{
+  "defaultProvider": "local-openai",
+  "defaultModel": "llama3.1",
+  "extensions": [
+    "../.pi/extensions/auto-model-discovery.ts"
+  ],
+  "mcp": {
+    "web-reader": {
+      "type": "local",
+      "command": [
+        "../../venv/Scripts/python.exe",
+        "mcp/mcp_web_reader.py"
+      ],
+      "enabled": true
+    }
+  },
+  "packages": [
+    "npm:pi-mcp-adapter"
+  ]
+}

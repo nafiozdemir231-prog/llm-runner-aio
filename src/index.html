@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;">
     <title>LLM Runner AIO</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -11,8 +11,9 @@
     <!-- ============================================ -->
     <!-- Toolbar (Üst Bar) — PyQt6 QMainWindow toolbar karşılığı -->
     <!-- ============================================ -->
-    <div id="toolbar">
+    <div id="toolbar" class="drag-region">
         <div class="toolbar-left">
+            <img src="../assets/icon.ico" alt="Icon" class="toolbar-icon">
             <h1 id="app-title">LLM Runner AIO</h1>
         </div>
         
@@ -35,19 +36,18 @@
         </div>
         
         <div class="toolbar-right">
-            <!-- Theme Toggle — Dark/Light -->
-            <button id="theme-toggle" class="tool-btn" title="Toggle Theme">🌙</button>
-            
-            <!-- Font Size Controls -->
-            <button id="font-decrease" class="tool-btn" title="Decrease Font Size">A-</button>
-            <span id="font-size-display">13px</span>
-            <button id="font-increase" class="tool-btn" title="Increase Font Size">A+</button>
-            
             <!-- Settings Button -->
             <button id="settings-btn" class="tool-btn" title="Settings">⚙️</button>
             
             <!-- Support Button -->
             <button id="support-btn" class="tool-btn" title="Support the Project">☕ Buy a Coffee</button>
+            
+            <!-- Window Controls -->
+            <div class="window-controls">
+                <button id="btn-minimize" class="win-btn win-min" title="Minimize">─</button>
+                <button id="btn-maximize" class="win-btn win-max" title="Maximize">□</button>
+                <button id="btn-close" class="win-btn win-close" title="Close">✕</button>
+            </div>
         </div>
     </div>
     
@@ -88,7 +88,7 @@
                                 </div>
                             </div>
                             
-                            <button id="btn-detect" class="primary-btn">🔍 Detect Hardware</button>
+                            <button id="btn-detect" class="primary-btn" data-i18n="btn_detect">🔍 Detect Hardware</button>
                         </fieldset>
                         
                         <!-- INI Config Selection -->
@@ -121,43 +121,27 @@
                             </div>
                         </fieldset>
                         
-                        <!-- VRAM-Based Model Recommendations -->
-                        <fieldset>
-                            <legend>Recommended Models (by VRAM)</legend>
-                            
-                            <div id="model-recommendations" class="recommendation-area">
-                                <p class="help-text">Run "Detect Hardware" first to see recommendations.</p>
-                            </div>
-                        </fieldset>
-                        
+
                         <!-- Download Progress -->
                         <fieldset>
                             <legend>Download Progress</legend>
                             
                             <div id="download-status" class="help-text">No downloads in progress.</div>
                             
+                            <!-- Toplam ilerleme -->
                             <div class="progress-container">
+                                <span id="download-percent-system">0%</span>
                                 <div id="download-progress-bar-system" class="progress-bar">
                                     <div id="download-progress-fill-system" class="progress-fill" style="width: 0%"></div>
                                 </div>
-                                <span id="download-percent-system">0%</span>
+                            </div>
+                            
+                            <!-- Her model için ayrı ilerleme çubuğu -->
+                            <div id="per-model-progress-container" class="per-model-progress">
                             </div>
                         </fieldset>
                         
-                        <!-- Start Configuration -->
-                        <fieldset>
-                            <legend>Start Configuration</legend>
-                            
-                            <p class="help-text">Auto-generated start_auto.bat after download</p>
-                            
-                            <div id="auto-log" class="log-area small" readonly placeholder="Configuration logs..."></div>
-                        </fieldset>
-                        
-                        <!-- Log Output — PyQt6 QTextEdit karşılığı -->
-                        <fieldset>
-                            <legend>Console Output</legend>
-                            <textarea id="log-output" class="log-area" readonly placeholder="Logs will appear here..."></textarea>
-                        </fieldset>
+
                     </div>
                 </div>
             </div>
@@ -168,28 +152,65 @@
                     <h2>Server Management</h2>
                 </div>
                 
-                <div class="panel-body">
+                <div class="panel-body" id="server-panel">
+                    <!-- Vane Section -->
+                    <div class="server-section">
+                        <fieldset>
+                            <legend data-i18n="legend_vane">🌐 Vane - AI Answer Engine</legend>
+                            
+                            <div class="server-info">
+                                <span id="desc-vane" class="info-desc">AI-powered answer engine with web search integration</span>
+                            </div>
+                            
+                            <!-- Start/Stop/Browser Buttons (Her zaman gorunur) -->
+                            <div class="server-controls">
+                                <div class="btn-group">
+                                    <button id="btn-start-vane" class="start-btn">▶ Start</button>
+                                    <button id="btn-stop-vane" class="stop-btn" disabled>⏹ Stop</button>
+                                    <button id="btn-open-vane" class="browser-btn" disabled>🌐 Open in Browser</button>
+                                </div>
+                            </div>
+                            
+                            <div class="server-status">
+                                Status: <span class="status-text-label">Stopped</span> <span id="vane-status" class="status-indicator stopped">Stopped</span>
+                            </div>
+                            
+                            <!-- Config Toggle Button (Her zaman gorunur) -->
+                            <button id="btn-hide-vane-config" class="secondary-btn small-btn" data-i18n="hide_config_btn" onclick="toggleConfigPanel('vane-config', this)">🔧 Hide Config</button>
+                            
+                            <!-- Vane Config (Gizli) -->
+                            <div id="vane-config" class="server-config hidden">
+                                <div class="form-row">
+                                    <label data-i18n="label_port">Port:</label>
+                                    <input type="number" id="vane-port" value="3001" min="1" max="65535">
+                                </div>
+                                <div class="form-row">
+                                    <label data-i18n="label_bind_to">Bind to:</label>
+                                    <select id="vane-host">
+                                        <option value="127.0.0.1">This PC Only</option>
+                                        <option value="0.0.0.0">Local Network</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="log-panel">
+                                <button class="log-toggle" onclick="toggleLogPanel('vane-log', this)">📋 Logs ▾</button>
+                                <textarea id="vane-log" class="log-area hidden" readonly placeholder="Vane logs..."></textarea>
+                            </div>
+                        </fieldset>
+                    </div>
+
                     <!-- SearXNG Section -->
                     <div class="server-section">
                         <fieldset>
                             <legend>🔎 SearXNG - Private Search</legend>
                             
                             <div class="server-info">
-                                <span class="info-desc">Private search engine for web results</span>
+                                <span id="desc-searxng" class="info-desc">Private search engine for web results</span>
                             </div>
                             
+                            <!-- Start/Stop/Browser Buttons (Her zaman gorunur) -->
                             <div class="server-controls">
-                                <div class="form-row">
-                                    <label>Port:</label>
-                                    <input type="number" id="searxng-port" value="8080" min="1" max="65535">
-                                </div>
-                                <div class="form-row">
-                                    <label>Bind to:</label>
-                                    <select id="searxng-host">
-                                        <option value="127.0.0.1">This PC Only</option>
-                                        <option value="0.0.0.0">Local Network</option>
-                                    </select>
-                                </div>
                                 <div class="btn-group">
                                     <button id="btn-start-searxng" class="start-btn">▶ Start</button>
                                     <button id="btn-stop-searxng" class="stop-btn" disabled>⏹ Stop</button>
@@ -198,38 +219,45 @@
                             </div>
                             
                             <div class="server-status">
-                                Status: <span id="searxng-status" class="status-indicator stopped">Stopped</span>
+                                Status: <span class="status-text-label">Stopped</span> <span id="searxng-status" class="status-indicator stopped">Stopped</span>
                             </div>
                             
-                            <textarea id="searxng-log" class="log-area small" readonly placeholder="SearXNG logs..."></textarea>
+                            <!-- Config Toggle Button (Her zaman gorunur) -->
+                            <button id="btn-hide-searxng-config" class="secondary-btn small-btn" data-i18n="hide_config_btn" onclick="toggleConfigPanel('searxng-config', this)">🔧 Hide Config</button>
+                            
+                            <!-- SearXNG Config (Gizli) -->
+                            <div id="searxng-config" class="server-config hidden">
+                                <div class="form-row">
+                                    <label data-i18n="label_port">Port:</label>
+                                    <input type="number" id="searxng-port" value="8080" min="1" max="65535">
+                                </div>
+                                <div class="form-row">
+                                    <label data-i18n="label_bind_to">Bind to:</label>
+                                    <select id="searxng-host">
+                                        <option value="127.0.0.1">This PC Only</option>
+                                        <option value="0.0.0.0">Local Network</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="log-panel">
+                                <button class="log-toggle" onclick="toggleLogPanel('searxng-log', this)">📋 Logs ▾</button>
+                                <textarea id="searxng-log" class="log-area hidden" readonly placeholder="SearXNG logs..."></textarea>
+                            </div>
                         </fieldset>
                     </div>
                     
                     <!-- OpenWebUI Section -->
                     <div class="server-section">
                         <fieldset>
-                            <legend>💬 Open WebUI - Chat Interface</legend>
+                            <legend data-i18n="legend_openwebui">💬 Open WebUI - Chat Interface</legend>
                             
                             <div class="server-info">
-                                <span class="info-desc">Web-based chat interface with AI integration</span>
+                                <span id="desc-openwebui" class="info-desc">Web-based chat interface with AI integration</span>
                             </div>
                             
+                            <!-- Start/Stop/Browser Buttons (Her zaman gorunur) -->
                             <div class="server-controls">
-                                <div class="form-row">
-                                    <label>Port:</label>
-                                    <input type="number" id="openwebui-port" value="3000" min="1" max="65535">
-                                </div>
-                                <div class="form-row">
-                                    <label>CPU Threads:</label>
-                                    <input type="number" id="openwebui-threads" value="4" min="1" max="64">
-                                </div>
-                                <div class="form-row">
-                                    <label>Bind to:</label>
-                                    <select id="openwebui-host">
-                                        <option value="127.0.0.1">This PC Only</option>
-                                        <option value="0.0.0.0">Local Network</option>
-                                    </select>
-                                </div>
                                 <div class="btn-group">
                                     <button id="btn-start-openwebui" class="start-btn">▶ Start</button>
                                     <button id="btn-stop-openwebui" class="stop-btn" disabled>⏹ Stop</button>
@@ -238,10 +266,43 @@
                             </div>
                             
                             <div class="server-status">
-                                Status: <span id="openwebui-status" class="status-indicator stopped">Stopped</span>
+                                Status: <span class="status-text-label">Stopped</span> <span id="openwebui-status" class="status-indicator stopped">Stopped</span>
                             </div>
                             
-                            <textarea id="openwebui-log" class="log-area small" readonly placeholder="OpenWebUI logs..."></textarea>
+                            <!-- Config Toggle Button (Her zaman gorunur) -->
+                            <button id="btn-hide-openwebui-config" class="secondary-btn small-btn" data-i18n="hide_config_btn" onclick="toggleConfigPanel('openwebui-config', this)">🔧 Hide Config</button>
+                            
+                            <!-- OpenWebUI Config (Gizli) -->
+                            <div id="openwebui-config" class="server-config hidden">
+                                <div class="form-row">
+                                    <label data-i18n="label_port">Port:</label>
+                                    <input type="number" id="openwebui-port" value="3000" min="1" max="65535">
+                                </div>
+                                <div class="form-row">
+                                    <label data-i18n="label_cpu_threads">CPU Threads:</label>
+                                    <input type="number" id="openwebui-threads" value="4" min="1" max="64">
+                                </div>
+                                <div class="form-row">
+                                    <label data-i18n="label_bind_to">Bind to:</label>
+                                    <select id="openwebui-host">
+                                        <option value="127.0.0.1">This PC Only</option>
+                                        <option value="0.0.0.0">Local Network</option>
+                                    </select>
+                                </div>
+                                <div class="form-row" style="margin-top: 12px; justify-content: flex-end;">
+                                    <button id="btn-open-function-folder" class="secondary-btn">📂 Open Function Folder</button>
+                                    <p id="function-folder-help" class="help-text" style="margin-left: 8px;">Open LLM-Runner-AIO\openwebui\function folder to manage JSON files.</p>
+                                </div>
+                                <div class="form-row" style="margin-top: 8px; justify-content: flex-end;">
+                                    <button id="btn-load-database" class="secondary-btn">📥 Load Database</button>
+                                    <p id="load-database-help" class="help-text" style="margin-left: 8px;">Import chat history from another OpenWebUI installation.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="log-panel">
+                                <button class="log-toggle" onclick="toggleLogPanel('openwebui-log', this)">📋 Logs ▾</button>
+                                <textarea id="openwebui-log" class="log-area hidden" readonly placeholder="OpenWebUI logs..."></textarea>
+                            </div>
                         </fieldset>
                     </div>
                     
@@ -251,25 +312,11 @@
                             <legend>🦙 llama.cpp - AI Engine</legend>
                             
                             <div class="server-info">
-                                <span class="info-desc">Local LLM inference server with GGUF support</span>
+                                <span id="desc-llamacpp" class="info-desc">Local LLM inference server with GGUF support</span>
                             </div>
                             
+                            <!-- Start/Stop/Browser Buttons (Her zaman gorunur) -->
                             <div class="server-controls">
-                                <div class="form-row">
-                                    <label>Port:</label>
-                                    <input type="number" id="llamacpp-port" value="1234" min="1" max="65535">
-                                </div>
-                                <div class="form-row">
-                                    <label>Context Size:</label>
-                                    <input type="number" id="llamacpp-ctx" value="8192" min="512" max="131072" step="512">
-                                </div>
-                                <div class="form-row">
-                                    <label>Bind to:</label>
-                                    <select id="llamacpp-host">
-                                        <option value="127.0.0.1">This PC Only</option>
-                                        <option value="0.0.0.0">Local Network</option>
-                                    </select>
-                                </div>
                                 <div class="btn-group">
                                     <button id="btn-start-llamacpp" class="start-btn">▶ Start</button>
                                     <button id="btn-stop-llamacpp" class="stop-btn" disabled>⏹ Stop</button>
@@ -278,57 +325,73 @@
                             </div>
                             
                             <div class="server-status">
-                                Status: <span id="llamacpp-status" class="status-indicator stopped">Stopped</span>
+                                Status: <span class="status-text-label">Stopped</span> <span id="llamacpp-status" class="status-indicator stopped">Stopped</span>
                             </div>
                             
-                            <textarea id="llamacpp-log" class="log-area small" readonly placeholder="llama.cpp logs..."></textarea>
-                        </fieldset>
-                    </div>
-                    
-                    <!-- Vane Section -->
-                    <div class="server-section">
-                        <fieldset>
-                            <legend>🌐 Vane - AI Answer Engine</legend>
+                            <!-- Config Toggle Button (Her zaman gorunur) -->
+                            <button id="btn-hide-llamacpp-config" class="secondary-btn small-btn" data-i18n="hide_config_btn" onclick="toggleConfigPanel('llamacpp-config', this)">🔧 Hide Config</button>
                             
-                            <div class="server-info">
-                                <span class="info-desc">AI-powered answer engine with web search integration</span>
-                            </div>
-                            
-                            <div class="server-controls">
+                            <!-- llama.cpp Config (Gizli) -->
+                            <div id="llamacpp-config" class="server-config hidden">
                                 <div class="form-row">
-                                    <label>Port:</label>
-                                    <input type="number" id="vane-port" value="3001" min="1" max="65535">
+                                    <label data-i18n="label_port">Port:</label>
+                                    <input type="number" id="llamacpp-port" value="1234" min="1" max="65535">
                                 </div>
                                 <div class="form-row">
-                                    <label>Bind to:</label>
-                                    <select id="vane-host">
+                                    <label data-i18n="label_context_size">Context Size:</label>
+                                    <select id="llamacpp-ctx">
+                                        <option value="4096">4,096</option>
+                                        <option value="8192" selected>8,192</option>
+                                        <option value="16384">16,384</option>
+                                        <option value="32768">32,768</option>
+                                        <option value="49152">49,152</option>
+                                        <option value="65536">65,536</option>
+                                        <option value="98304">98,304</option>
+                                        <option value="131072">131,072</option>
+                                        <option value="196608">196,608</option>
+                                        <option value="262144">262,144</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label data-i18n="label_bind_to">Bind to:</label>
+                                    <select id="llamacpp-host">
                                         <option value="127.0.0.1">This PC Only</option>
                                         <option value="0.0.0.0">Local Network</option>
                                     </select>
                                 </div>
-                                <div class="btn-group">
-                                    <button id="btn-start-vane" class="start-btn">▶ Start</button>
-                                    <button id="btn-stop-vane" class="stop-btn" disabled>⏹ Stop</button>
-                                    <button id="btn-open-vane" class="browser-btn" disabled>🌐 Open in Browser</button>
+                                <div class="form-row">
+                                    <label data-i18n="label_llamacpp_threads">CPU Threads:</label>
+                                    <input type="number" id="llamacpp-threads" value="10" min="1" max="128">
+                                </div>
+                                <div class="form-row">
+                                    <label data-i18n="label_llamacpp_parallel">Max User:</label>
+                                    <input type="number" id="llamacpp-parallel" value="1" min="1" max="64">
+                                </div>
+                                <div class="form-row">
+                                    <label data-i18n="label_llamacpp_sleep_idle">Sleep Idle Seconds:</label>
+                                    <input type="number" id="llamacpp-sleep-idle" value="1000" min="1" max="3600">
+                                </div>
+                                <div class="form-row">
+                                    <label data-i18n="label_llamacpp_max_model">Max Model Load:</label>
+                                    <input type="number" id="llamacpp-max-model" value="1" min="1" max="16">
                                 </div>
                             </div>
                             
-                            <div class="server-status">
-                                Status: <span id="vane-status" class="status-indicator stopped">Stopped</span>
+                            <div class="log-panel">
+                                <button class="log-toggle" onclick="toggleLogPanel('llamacpp-log', this)">📋 Logs ▾</button>
+                                <textarea id="llamacpp-log" class="log-area hidden" readonly placeholder="llama.cpp logs..."></textarea>
                             </div>
-                            
-                            <textarea id="vane-log" class="log-area small" readonly placeholder="Vane logs..."></textarea>
                         </fieldset>
                     </div>
-                    
-                    <!-- Global Actions -->
-                    <div class="global-actions">
-                        <button id="btn-start-all" class="primary-btn">▶ Start All Servers</button>
-                        <button id="btn-stop-all" class="danger-btn">⏹ Stop All Servers</button>
-                    </div>
+                </div>
+                
+                <!-- Global Actions -->
+                <div class="global-actions">
+                    <button id="btn-start-all" class="primary-btn">▶ Start All Servers</button>
+                    <button id="btn-stop-all" class="danger-btn">⏹ Stop All Servers</button>
                 </div>
             </div>
-            
+
             <!-- Tab 3: PiCoding -->
             <div id="tab-picoding" class="tab-panel">
                 <div class="panel-header">
@@ -339,7 +402,7 @@
                     <!-- Working Directory Section -->
                     <div class="section-group">
                         <fieldset>
-                            <legend>Working Directory</legend>
+                            <legend data-i18n="working_dir_legend">Working Directory</legend>
                             
                             <div id="picoding-path-display" class="help-text">No path set</div>
                             
@@ -353,11 +416,11 @@
                     <!-- Instructions Section -->
                     <div class="section-group">
                         <fieldset>
-                            <legend>Instructions</legend>
+                            <legend data-i18n="instructions_legend">Instructions</legend>
                             
-                            <button id="toggle-instructions" class="secondary-btn">📖 Show Instructions</button>
+                            <button id="toggle-instructions" class="secondary-btn" data-i18n="show_instructions_btn">📖 Show Instructions</button>
                             
-                            <div id="instructions-content" class="log-area small hidden" style="margin-top: 10px;">
+                            <div id="instructions-content" class="log-area small hidden" style="margin-top: 10px;" data-i18n="pi_instructions">
 Pi Coding Agent - Setup and Usage Instructions:
 
 1) Click 'Detect Project' button, then click 'Add to PATH' button.
@@ -375,21 +438,47 @@ Pi Coding Agent - Setup and Usage Instructions:
                     <!-- MCP Advisor Settings -->
                     <div class="section-group">
                         <fieldset>
-                            <legend>MCP Advisor Settings</legend>
+                            <legend data-i18n="mcp_advisor_title">MCP Advisor Settings</legend>
                             
                             <div class="form-row">
-                                <label for="advisor-url">Advisor URL:</label>
-                                <input type="text" id="advisor-url" placeholder="http://localhost:3000/api/chat/completions">
+                                <span id="lbl-advisor-url" class="form-label" data-i18n="advisor_url_label">Advisor URL:</span>
+                                <input type="text" id="advisor-url" placeholder="http://localhost:1234 or http://localhost:3000/v1 or https://openrouter.ai/api/v1">
+                                <div class="help-text" style="font-size: 0.75rem; color: #888;">Base URL girin — sona /v1/models eklemeyin. Sistem otomatik tamamlar.</div>
                             </div>
                             
                             <div class="form-row">
-                                <label for="advisor-key">API Key:</label>
-                                <input type="password" id="advisor-key" placeholder="eyJhbGciOiJIUzI1NiIs...">
+                                <span id="lbl-advisor-key" class="form-label" data-i18n="advisor_key_label">API Key:</span>
+                                <input type="password" id="advisor-key" placeholder="sk-or-v1-... or leave blank for local">
                             </div>
                             
                             <div class="form-row">
-                                <label for="advisor-model">Model Name:</label>
-                                <input type="text" id="advisor-model" placeholder="🟢NIM-nvidia.moonshotai/kimi-k2.6">
+                                <label data-i18n="provider_type_label">Provider Type:</label>
+                                <select id="provider-type">
+                                    <option value="auto" data-i18n="provider_auto">🔄 Auto-Detect</option>
+                                    <option value="openrouter" data-i18n="provider_openrouter">🌐 OpenRouter</option>
+                                    <option value="ollama" data-i18n="provider_ollama">🦙 Ollama</option>
+                                    <option value="lmstudio" data-i18n="provider_lmstudio">💻 LM Studio</option>
+                                    <option value="openai" data-i18n="provider_openai">🔵 OpenAI</option>
+                                    <option value="groq" data-i18n="provider_groq">⚡ Groq</option>
+                                    <option value="anthropic" data-i18n="provider_anthropic">🟣 Anthropic</option>
+                                    <option value="custom" data-i18n="provider_custom">⚙️ Custom</option>
+                                </select>
+                            </div>
+                            
+                            <div class="help-text" style="margin-bottom: 8px; font-size: 0.8rem;" data-i18n="auto_detect_help">Auto-detect tries common endpoints based on URL pattern.</div>
+                            
+                            <div class="form-row">
+                                <span id="lbl-advisor-model" class="form-label" data-i18n="advisor_model_label">Model Name:</span>
+                                <div style="display: flex; gap: 8px;">
+                                    <select id="advisor-model" style="flex: 1;">
+                                        <option value="">-- Select or type manually --</option>
+                                    </select>
+                                    <button id="btn-fetch-models" class="secondary-btn" title="Fetch models from API">🔄</button>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row" style="margin-top: 5px;">
+                                <input type="text" id="advisor-model-custom" placeholder="Custom model name (optional)" style="font-size: 0.85rem;">
                             </div>
                             
                             <button id="btn-save-advisor" class="primary-btn">💾 Save Advisor Settings</button>
@@ -454,16 +543,16 @@ Pi Coding Agent - Setup and Usage Instructions:
             <div class="modal-body">
                 <!-- Theme Selection -->
                 <div class="setting-group">
-                    <label>Theme</label>
+                    <label data-i18n="label_theme">Theme</label>
                     <div class="radio-group">
-                        <label><input type="radio" name="theme" value="dark" checked> 🌙 Dark</label>
-                        <label><input type="radio" name="theme" value="light"> ☀️ Light</label>
+                        <button id="theme-toggle-settings" class="theme-option active" data-theme="dark">🌙 Dark</button>
+                        <button id="theme-toggle-settings-light" class="theme-option" data-theme="light">☀️ Light</button>
                     </div>
                 </div>
                 
                 <!-- Font Size -->
                 <div class="setting-group">
-                    <label>Font Size</label>
+                    <label data-i18n="label_font_size">Font Size</label>
                     <div class="font-controls">
                         <button id="settings-font-decrease" class="small-btn">A-</button>
                         <span id="settings-font-size">13px</span>
@@ -488,23 +577,41 @@ Pi Coding Agent - Setup and Usage Instructions:
                 
                 <!-- Startup Options -->
                 <div class="setting-group">
-                    <label>Startup Options</label>
+                    <label data-i18n="startup_options_label">Startup Options</label>
                     <div class="checkbox-group">
                         <label>
-                            <input type="checkbox" id="start-with-windows"> Start with Windows
+                            <input type="checkbox" id="cb-start-windows"><span id="lbl-start-windows" data-i18n="cb_start_windows">Start with Windows</span>
                         </label>
                         <label>
-                            <input type="checkbox" id="auto-start-servers"> Auto-start Servers on Launch
+                            <input type="checkbox" id="cb-auto-server-autostart"><span id="lbl-auto-servers" data-i18n="cb_auto_servers">Auto-start Servers on Launch</span>
                         </label>
                     </div>
                 </div>
                 
-                <!-- Database Management -->
+                <!-- Auto-start Individual Servers -->
                 <div class="setting-group">
-                    <label>Database</label>
-                    <button id="btn-load-database" class="secondary-btn">📥 Load Database</button>
-                    <p class="help-text">Import chat history from another OpenWebUI installation.</p>
+                    <label data-i18n="auto_start_servers_label">Auto-start Individual Servers</label>
+                    <div class="checkbox-group server-checkboxes">
+                        <label>
+                            <input type="checkbox" id="cb-auto-searxng" class="server-autostart-cb">
+                            <span data-i18n="section_searxng">SearXNG - Private Search</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="cb-auto-openwebui" class="server-autostart-cb">
+                            <span data-i18n="section_openwebui">Open WebUI - Chat Interface</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="cb-auto-vane" class="server-autostart-cb">
+                            <span data-i18n="section_vane">Vane - AI Answer Engine</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="cb-auto-llamacpp" class="server-autostart-cb">
+                            <span data-i18n="section_llamacpp">llama.cpp - AI Engine</span>
+                        </label>
+                    </div>
                 </div>
+                
+
             </div>
             
             <div class="modal-footer">
