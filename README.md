@@ -20,6 +20,38 @@ This package brings together four powerful open-source components into one seaml
 | **SearXNG** | Privacy-respecting, metasearch engine for local web search | GPLv3 |
 | **Vane** | AI-powered browser automation and web interaction tool | Open Source |
 
+## What It Does
+
+LLM Runner AIO automates the entire workflow of running local AI models — from hardware detection to model selection, configuration, and service orchestration.
+
+### Smart System Detection
+- Automatically detects your GPU (VRAM size), CPU cores, and available RAM
+- Selects the optimal model preset (`gpu*.ini`) matching your hardware profile
+- Applies correct inference settings (context size, threads, quantization) without manual intervention
+
+### Optimized Model Execution
+- Models are pre-configured with maximum PP (PreFill) and TG (Token Generation) throughput
+- No infinite loops or generation stalls — all model parameters tuned for stable, continuous output
+- CPU thread count automatically aligned to physical cores for peak performance
+
+### PiCoding MCP Advisor — Pre-Configured Out of the Box
+- Built-in **Web Search** tool connects to SearXNG for live internet queries while chatting
+- **Advisor Mode** integrates with any OpenAI-compatible API endpoint for intelligent task assistance
+- Model auto-discovery scans your provider (Ollama, LM Studio, OpenRouter, Groq, custom endpoints) and populates available models automatically
+- All `.mcp.json` paths are relative — fully portable across machines
+
+### Zero-Copy Server Networking
+All four services communicate seamlessly through pre-wired internal connections:
+
+| Connection | Source → Destination | Port |
+|------------|---------------------|------|
+| Open WebUI → llama.cpp | Chat interface → Inference engine | `localhost:8000` |
+| Open WebUI → SearXNG | Chat search → Local search engine | `localhost:8080` |
+| Vane → SearXNG | Browser automation → Search backend | `localhost:8080` |
+| Vane → llama.cpp | Browser AI actions → Inference engine | `localhost:8000` |
+
+Every service port, bind address, and API URL is pre-configured on first launch — users don't need to touch any connection settings unless they want to customize ports.
+
 ## Features
 
 - 🚀 **Portable** — No installer needed. Move the folder anywhere and it works.
