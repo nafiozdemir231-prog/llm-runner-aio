@@ -14,4 +14,4 @@ IF EXIST "%dp0%\node.exe" (
   SET PATHEXT=%PATHEXT:;.JS;=;%
 )
 
-endLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & "%_prog%"  "%dp0%\node_modules\@earendil-works\pi-coding-agent\dist\cli.js" --extension "%dp0%\.pi\extensions\auto-model-discovery.ts" %*
+endLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & "%_prog%"  "%dp0%\node_modules\@earendil-works\pi-coding-agent\dist\cli.js" --extension "%dp0%\.pi\extensions\auto-model-discovery.ts" --mcp-config "%dp0%.mcp.json" %*
