@@ -24,6 +24,9 @@ echo   }
 echo }
 ) > "%SESSION_DIR%\.mcp.json" 2>nul
 
+REM Set PI_PACKAGES to point to local pi-mcp-adapter (via junction symlink)
+SET "PI_PACKAGES=%PICODING_DIR%\node_modules\pi-mcp-adapter"
+
 IF EXIST "%PICODING_DIR%\node.exe" (
   SET "_prog=%PICODING_DIR%\node.exe"
 ) ELSE (

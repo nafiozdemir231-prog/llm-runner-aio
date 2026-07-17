@@ -1,6 +1,9 @@
 {
   "defaultProvider": "local-openai",
   "defaultModel": "llama3.1",
+  "packages": [
+    "./node_modules/pi-mcp-adapter"
+  ],
   "extensions": [
     "../.pi/extensions/auto-model-discovery.ts"
   ],
