@@ -11,18 +11,14 @@ IF EXIST "%SESSION_DIR%\.pi" (
 )
 mklink /J "%SESSION_DIR%\.pi" "%PICODING_DIR%.pi" >nul 2>&1
 
-REM Write dynamic .mcp.json with absolute VENV path for MCP server discovery
-SET "VENV_PYTHON=%PICODING_DIR%..\venv\Scripts\python.exe"
-(
-echo {
-echo   "mcpServers": {
-echo     "web-reader": {
-echo       "command": "%VENV_PYTHON%",
-echo       "args": ["mcp/mcp_web_reader.py"]
-echo     }
-echo   }
-echo }
-) > "%SESSION_DIR%\.mcp.json" 2>nul
+REM Generate properly escaped .mcp.json with absolute VENV path
+IF EXIST "%PICODING_DIR%\node.exe" (
+  SET "_prog=%PICODING_DIR%\node.exe"
+) ELSE (
+  SET "_prog=node"
+  SET PATHEXT=%PATHEXT:;.JS;=;%
+)
+"%_prog%" "%PICODING_DIR%\write_mcp_json.js" "%PICODING_DIR%" "%SESSION_DIR%" 2>nul
 
 REM Set PI_PACKAGES to point to local pi-mcp-adapter (via junction symlink)
 SET "PI_PACKAGES=%PICODING_DIR%\node_modules\pi-mcp-adapter"
