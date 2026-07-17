@@ -25,5 +25,12 @@ const mcpConfig = {
 };
 
 const outputPath = path.join(sessionDir, '.mcp.json');
+
+// Ensure parent directory exists
+const dir = path.dirname(outputPath);
+if (!fs.existsSync(dir)) {
+  fs.mkdirSync(dir, { recursive: true });
+}
+
 fs.writeFileSync(outputPath, JSON.stringify(mcpConfig, null, 2) + '\n', 'utf8');
 console.log(`[pi] MCP config written to ${outputPath}`);
