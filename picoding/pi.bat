@@ -4,10 +4,12 @@ SETLOCAL
 REM Find picoding directory
 SET "PICODING_DIR=%~dp0"
 
-REM Use ONLY picoding/.pi for all configurations (NO global ~/.pi/)
-SET "PI_SETTINGS_DIR=%PICODING_DIR%.pi"
+REM Copy .mcp.json to session dir with correct escaping (uses forward slashes)
+IF EXIST "%PICODING_DIR%.mcp.json" (
+    copy /Y "%PICODING_DIR%.mcp.json" "%cd%\.mcp.json" >nul 2>&1
+)
 
-REM Point to local pi-mcp-adapter package (NOT global npm)
+REM Point to local pi-mcp-adapter package
 SET "PI_PACKAGES=%PICODING_DIR%\node_modules\pi-mcp-adapter"
 
 IF EXIST "%PICODING_DIR%\node.exe" (
