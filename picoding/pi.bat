@@ -1,5 +1,17 @@
-@echo off
-REM pi.bat - pi komutunu çagr
-REM -c flag: Devam eden session (previous session'u yükler)
-cd /d "%~dp0"
-node "node_modules/@earendil-works/pi-coding-agent/dist/cli.js" -c %*
+@ECHO off
+GOTO start
+:find_dp0
+SET dp0=%~dp0
+EXIT /b
+:start
+SETLOCAL
+CALL :find_dp0
+
+IF EXIST "%dp0%\node.exe" (
+  SET "_prog=%dp0%\node.exe"
+) ELSE (
+  SET "_prog=node"
+  SET PATHEXT=%PATHEXT:;.JS;=;%
+)
+
+endLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & "%_prog%"  "%dp0%\node_modules\@earendil-works\pi-coding-agent\dist\cli.js" --extension "%dp0%\.pi\extensions\auto-model-discovery.ts" %*
