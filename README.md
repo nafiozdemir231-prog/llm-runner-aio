@@ -1,254 +1,76 @@
----
-license: mit
----
-# LLM Runner AIO - All-In-One Local AI Platform
+🌐 Links
 
-> **Portable Windows Desktop App** — Run local AI models with a single click. No installation required.
+App Download Page: https://aihublocal.com/llm-runner-aio
 
-## Overview
+Community LLM Configurations: https://aihublocal.com/llm/configs
 
-LLM Runner AIO is a comprehensive, self-contained desktop application that bundles all the tools you need to run local AI models on your own hardware. No complex setup, no dependency hell — just download, run, and start chatting with AI locally.
+Main Website: https://aihublocal.com
 
-## What's Included
+📋 Requirements
 
-This package brings together four powerful open-source components into one seamless experience:
+* Node.js and Python 3.11 must be installed.
 
-| Component | Description | License |
-|-----------|-------------|---------|
-| **Open WebUI** | Beautiful web interface for chatting with local LLMs (formerly Ollama WebUI) | MIT |
-| **llama.cpp** | High-performance C++ inference engine for running LLMs locally | MIT |
-| **SearXNG** | Privacy-respecting, metasearch engine for local web search | GPLv3 |
-| **Vane** | AI-powered browser automation and web interaction tool | Open Source |
+* `LLM-Runner-AIO.exe` handles the automatic setup.
 
-## What It Does
+* After extracting the `LLM-Runner-AIO.rar` files, you must run `run.bat` first; this script installs the necessary dependencies, configures Pi Coding settings, and creates a desktop shortcut.
 
-LLM Runner AIO automates the entire workflow of running local AI models — from hardware detection to model selection, configuration, and service orchestration.
+📦 What Does the Application Include?
 
-### Smart System Detection
-- Automatically detects your GPU (VRAM size), CPU cores, and available RAM
-- Selects the optimal model preset (`gpu*.ini`) matching your hardware profile
-- Applies correct inference settings (context size, threads, quantization) without manual intervention
+* Open WebUI (Frontend interface) link: https://github.com/open-webui/open-webui
 
-### Optimized Model Execution
-- Models are pre-configured with maximum PP (PreFill) and TG (Token Generation) throughput
-- No infinite loops or generation stalls — all model parameters tuned for stable, continuous output
-- CPU thread count automatically aligned to physical cores for peak performance
+Searxng and `llama.cpp` server settings are pre-configured. You can also load functions found in the folder if you wish (e.g., EasySearch, Export to PDF/Excel/DOCX, unload `llama.cpp`, thinking toggle, pp/tg metrics).
 
-### PiCoding MCP Advisor — Pre-Configured Out of the Box
-- Built-in **Web Search** tool connects to SearXNG for live internet queries while chatting
-- **Advisor Mode** integrates with any OpenAI-compatible API endpoint for intelligent task assistance
-- Model auto-discovery scans your provider (Ollama, LM Studio, OpenRouter, Groq, custom endpoints) and populates available models automatically
-- All `.mcp.json` paths are relative — fully portable across machines
+* `llama.cpp` (Pre-compiled CUDA 13 + Vulkan versions) link: https://github.com/ggml-org/llama.cpp
 
-### Zero-Copy Server Networking
-All four services communicate seamlessly through pre-wired internal connections:
+These are the versions I have configured. 
+vram12ram32models.ini, vram16ram32models.ini, 
 
-| Connection | Source → Destination | Port |
-|------------|---------------------|------|
-| Open WebUI → llama.cpp | Chat interface → Inference engine | `localhost:8000` |
-| Open WebUI → SearXNG | Chat search → Local search engine | `localhost:8080` |
-| Vane → SearXNG | Browser automation → Search backend | `localhost:8080` |
-| Vane → llama.cpp | Browser AI actions → Inference engine | `localhost:8000` |
+* qwen3.6-35B-A3B
 
-Every service port, bind address, and API URL is pre-configured on first launch — users don't need to touch any connection settings unless they want to customize ports.
+* gemma-4-26B-A4B
 
-## Features
+vram4ram32models.ini, vram6ram32models.ini, vram8ram32models.ini
 
-- 🚀 **Portable** — No installer needed. Move the folder anywhere and it works.
-- 🔒 **100% Offline** — All processing happens on your machine, no data leaves your computer
-- 🎨 **Modern UI** — Clean, dark-themed interface with support for 8 languages
-- ⚙️ **Auto-Configuration** — Automatic hardware detection and optimal settings
-- 🔄 **Multi-Service** — Manages all AI services from one dashboard
-- 💾 **Persistent Database** — Your chat history and settings are saved locally
-- 📱 **System Tray Integration** — Runs quietly in the background
-- 🌐 **Port Configurable** — Customize ports for all services
-- 🖥️ **Windows Autostart** — Auto-start with Windows (registry + desktop shortcut)
-- 🔧 **Python venv Isolation** — Dependencies installed in isolated virtual environment
-- 🗄️ **Manual Function Loading** — Inject `.json` functions directly into OpenWebUI
+* qwen3.6-35B-A3B
 
-## How It Works
+* gemma-4-26B-A4B
 
-```
-┌─────────────────────────────────────────────┐
-│           LLM Runner AIO Launcher           │
-├─────────────────────────────────────────────┤
-│  ┌──────────┐  ┌──────────┐                │
-│  │ SearXNG  │  │ llama.cpp│                │
-│  │ :8080    │  │ :8000    │                │
-│  └──────────┘  └──────────┘                │
-│  ┌──────────┐  ┌──────────┐                │
-│  │OpenWebUI │  │  Vane    │                │
-│  │ :3000    │  │ :3001    │                │
-│  └──────────┘  └──────────┘                │
-└─────────────────────────────────────────────┘
-```
+*gemma-4-E4B
 
-1. **llama.cpp** runs the AI model inference engine
-2. **Open WebUI** provides the chat interface at `http://localhost:3000`
-3. **SearXNG** enables local web search at `http://localhost:8080`
-4. **Vane** handles browser automation at `http://localhost:3001`
+vram24ram32models.ini
 
-## System Requirements
+* qwen3.6-27B
 
-| Requirement | Minimum | Recommended |
-|-------------|---------|-------------|
-| **OS** | Windows 10/11 | Windows 11 |
-| **RAM** | 8 GB | 16 GB+ |
-| **VRAM** | N/A | 4 GB+ |
-| **Python** | 3.11+ (system) | 3.11+ (system) |
-| **Node.js** | 18+ (system) | 20+ (system) |
+*gemma-4-26B-A4B
 
-> **Note:** Python 3.11 and Node.js must be installed on your system before running the app.
+vram32ram32models.ini
 
-## Quick Start
+* qwen3.6-27B
 
-### First Time Setup
+* gemma-4-31B
 
-1. **Download or clone** the repository:
-   ```bash
-   git clone https://github.com/nafiozdemir231-prog/llm-runner-aio.git
-   cd llm-runner-aio
-   ```
+vram4ram16models.ini, vram6ram16models.ini
 
-2. **Install system dependencies**:
-   - Python 3.11+ (from https://python.org)
-   - Node.js 18+ (from https://nodejs.org)
+* gemma-4-E4B
 
-3. **Run the launcher**:
-   ```bash
-   # Windows — creates venv and starts the app
-   .\run.bat
-   
-   # Or for silent background mode:
-   cscript //Nologo electron\launch_app.vbs
-   ```
+* qwen3.5-9B
 
-4. **Open** your browser and go to `http://localhost:3000`
-5. **Start chatting** with your local AI!
+* SearXNG (Completely private local web search) link: https://github.com/searxng/searxng
 
-### Development Mode
+* Pi Coding (Pi is a minimal agent harness) link: https://github.com/earendil-works/pi
 
-```bash
-# Install Electron dependencies
-npm install
+Web search and Advisor (use your own API key) pre-installed.
 
-# Start with DevTools auto-opened
-npm start -- --dev
-```
+* Vane Search (For web search) link: https://github.com/ItzCrazyKns/Vane
 
-### Windows Autostart
+llama.cpp and searxng settings pre-configured.
 
-The app automatically configures itself on every launch:
-- **Registry entry** → `HKCU\...\Run\LLMRunnerAIO` points to `electron/launch_app.vbs`
-- **Desktop shortcut** → Created via PowerShell
-- **Startup folder** → `.lnk` shortcut created in `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`
+🚀 Key Features:
 
-All paths are resolved dynamically — move the folder and autostart still works.
+* No Manual Installation Required: It is a single 2 GB .exe file. Simply double-click and wait for the installation to complete. It automatically installs Python, Node, and all necessary dependencies within a local virtual environment (venv).
 
-### Building Distribution Package
+* Automatic Hardware Detection: The application automatically detects your GPU/VRAM and configures your system according to a specific hardware profile (VRAM options: 4GB, 6GB, 8GB, 12GB, 16GB, 24GB, and 32GB). * Smart Model Downloader: Simply select an auto-detection profile and click the model download button. The application filters and downloads models that perfectly match your VRAM capacity and configures llama.cpp accordingly.
 
-```bash
-npm run build:win    # Windows x64 NSIS installer
-```
+* Optimized for Coding Agents: Includes parameters fine-tuned specifically for Qwen and Gemma models to maximize token speed and eliminate formatting or context loop issues in coding tools.
 
-Built packages will be in the `dist/` directory.
-
-## Supported Languages
-
-The interface supports 8 languages:
-- 🇹🇷 Turkish (Türkçe)
-- 🇬🇧 English
-- 🇪🇸 Spanish (Español)
-- 🇩🇪 German (Deutsch)
-- 🇫🇷 French (Français)
-- 🇵🇹 Portuguese (Português)
-- 🇨🇳 Chinese (中文)
-- 🇯🇵 Japanese (日本語)
-
-## Development Guide
-
-### Architecture Overview
-
-```
-LLM-Runner-AIO/
-├── electron/
-│   ├── main.js              # Main process (lifecycle, IPC, autostart, cleanup)
-│   ├── preload.js           # Context bridge (secure API exposure)
-│   ├── launch_app.vbs       # Silent launcher for Windows autostart
-│   └── create_shortcut.py   # Desktop shortcut creator
-├── src/
-│   ├── index.html           # UI structure
-│   ├── css/style.css        # Modern transparent/minimal styling
-│   ├── renderer.js          # Renderer process (DOM, tabs, logs)
-│   ├── lang/                # 8 language files (en, tr, es, de, fr, pt, zh, ja)
-│   └── assets/              # Icons, images
-├── venv/                    # Python virtual environment (auto-created)
-├── node_modules/            # Node.js + Electron dependencies
-├── launcher/                # PyQt6 reference (legacy)
-├── searxng/                 # SearXNG configuration & data
-├── openwebui/               # OpenWebUI runtime directory
-├── picoding/                # MCP Advisor settings
-├── run.bat                  # Interactive launcher (creates venv, installs deps)
-├── run_silent.bat           # Silent mode for autostart
-├── Vane/                    # Vane Next.js app
-├── gpu*.ini                 # Hardware-specific model presets
-├── model_urls.json          # Model download URLs
-└── requirements.txt         # Python dependencies
-```
-
-### Key Technologies
-
-| Component | Technology |
-|-----------|------------|
-| Desktop Framework | Electron v28+ |
-| UI | HTML5, CSS3, Vanilla JS |
-| Process Management | child_process.spawn() + tree-kill |
-| Database | SQLite (better-sqlite3) |
-| Python Isolation | venv (auto-created by run.bat) |
-| Autostart | Registry + VBS launcher + .lnk shortcuts |
-
-### Adding New Features
-
-1. **New Tab**: Add to `src/index.html`, create in `src/tabs/`, register in `renderer.js`
-2. **New IPC Channel**: Add to `preload.js` (expose) and `main.js` (handler)
-3. **New Language**: Add to `src/lang/*.json` (follow existing format)
-4. **New Server**: Update `startServer()` in `main.js` spawn logic
-
-## Data Privacy & Security
-
-- ✅ **No Cloud Dependencies** — Everything runs locally
-- ✅ **No Telemetry** — No data is sent anywhere
-- ✅ **Local Database** — Chat history stored only on your machine
-- ✅ **No Account Required** — No registration or login needed
-- ✅ **Portable** — No registry entries left behind when moved
-
-## License
-
-This package is distributed under the **MIT License**. See `LICENSE.txt` for full details.
-
-Individual components retain their original licenses:
-- llama.cpp: MIT
-- Open WebUI: MIT
-- SearXNG: GPLv3
-
-## Credits
-
-This project would not be possible without the incredible work of:
-
-- **Georgi Gerganov** — llama.cpp
-- **Open WebUI Team** — Open WebUI
-- **SearXNG Contributors** — SearXNG
-- **All open-source contributors** who make local AI accessible
-
-## Support
-
-For questions, bug reports, or feature requests:
-
-- **Website:** https://aihublocal.com/llm-runner-aio
-- **Ko-fi:** Support the project at https://ko-fi.com/vincespeed
-
-## Disclaimer
-
-This software is provided "as is" without warranty of any kind. The developer (AIHubLocal) is not responsible for any data loss, system issues, or hardware strain resulting from use. Running local LLMs consumes significant system resources — users assume all risks associated with usage.
-
-
+* 100% Open Source: You can review the entire source code on the website.
