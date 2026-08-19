@@ -21,16 +21,16 @@
             <!-- Tab Navigation — PyQt6 QTabWidget karşılığı -->
             <div id="tab-bar">
                 <button data-tab="system" class="tab-btn active" title="System Detection & Configuration">
-                    🔍 System Detection
+                    🔍 <span data-i18n="tab_system">System Detection</span>
                 </button>
                 <button data-tab="servers" class="tab-btn" title="Start/Stop Servers">
-                    🖥️ Servers
+                    🖥️ <span data-i18n="tab_servers">Servers</span>
                 </button>
                 <button data-tab="picoding" class="tab-btn" title="PiCoding IDE">
-                    💻 PiCoding
+                    💻 <span data-i18n="tab_picoding">PiCoding</span>
                 </button>
                 <button data-tab="models" class="tab-btn" title="Model Management">
-                    📦 Models
+                    📦 <span data-i18n="tab_models">Models</span>
                 </button>
             </div>
         </div>
@@ -60,7 +60,7 @@
             <!-- Tab 1: System Detection -->
             <div id="tab-system" class="tab-panel active">
                 <div class="panel-header">
-                    <h2>System Detection</h2>
+                    <h2 data-i18n="panel_system_detection">System Detection</h2>
                 </div>
                 
                 <div class="panel-body">
@@ -149,7 +149,7 @@
             <!-- Tab 2: Servers -->
             <div id="tab-servers" class="tab-panel">
                 <div class="panel-header">
-                    <h2>Server Management</h2>
+                    <h2 data-i18n="panel_server_management">Server Management</h2>
                 </div>
                 
                 <div class="panel-body" id="server-panel">
@@ -382,7 +382,7 @@
             <!-- Tab 3: PiCoding -->
             <div id="tab-picoding" class="tab-panel">
                 <div class="panel-header">
-                    <h2>PiCoding Agent</h2>
+                    <h2 data-i18n="panel_picoding_ide">PiCoding Agent</h2>
                 </div>
                 
                 <div class="panel-body">
@@ -478,7 +478,7 @@ Pi Coding Agent - Setup and Usage Instructions:
             <!-- Tab 4: Models -->
             <div id="tab-models" class="tab-panel">
                 <div class="panel-header">
-                    <h2>Model Management</h2>
+                    <h2 data-i18n="panel_model_management">Model Management</h2>
                 </div>
                 
                 <div class="panel-body">
@@ -524,7 +524,7 @@ Pi Coding Agent - Setup and Usage Instructions:
         <div class="modal-overlay"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Settings</h2>
+                <h2 data-i18n="panel_settings">Settings</h2>
                 <button id="close-settings" class="close-btn">×</button>
             </div>
             
@@ -533,8 +533,8 @@ Pi Coding Agent - Setup and Usage Instructions:
                 <div class="setting-group">
                     <label data-i18n="label_theme">Theme</label>
                     <div class="radio-group">
-                        <button id="theme-toggle-settings" class="theme-option active" data-theme="dark">🌙 Dark</button>
-                        <button id="theme-toggle-settings-light" class="theme-option" data-theme="light">☀️ Light</button>
+                        <button id="theme-toggle-settings" class="theme-option active" data-theme="dark">🌙 <span data-i18n="theme_dark">Dark</span></button>
+                        <button id="theme-toggle-settings-light" class="theme-option" data-theme="light">☀️ <span data-i18n="theme_light">Light</span></button>
                     </div>
                 </div>
                 

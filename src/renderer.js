@@ -536,25 +536,14 @@ async function loadLanguage(langCode) {
 function updateUIText() {
     const s = state.languages || {};
     
-    // 1) Tab buttons
-    const tabs = document.querySelectorAll('.tab-btn');
-    const tabKeys = ['tab_system', 'tab_servers', 'tab_picoding', 'tab_models'];
-    tabs.forEach((btn, i) => {
-        if (s[tabKeys[i]]) btn.textContent = s[tabKeys[i]];
-    });
-    
-    // 2) App title
+    // 1) App title
     const appTitle = document.getElementById('app-title');
     if (appTitle && s.app_title) appTitle.textContent = s.app_title;
     
-    // 3) Panel headers (h2)
-    const panelHeaders = document.querySelectorAll('.panel-header h2');
-    const panelKeys = ['panel_system_detection', 'panel_server_management', 'panel_picoding_ide', 'panel_model_management', 'panel_settings'];
-    panelHeaders.forEach((header, i) => {
-        if (s[panelKeys[i]]) header.textContent = s[panelKeys[i]];
-    });
+    // NOT: Tab butonlari ve panel basliklari artik HTML'deki data-i18n
+    // attribute'lari uzerinden cevriliyor (pozisyon tabanli esleme kaldirildi - HAT-30).
     
-    // 4) Fieldset legends (only those with data-i18n)
+    // 2) Fieldset legends (only those with data-i18n)
     document.querySelectorAll('fieldset legend[data-i18n]').forEach(leg => {
         const key = leg.getAttribute('data-i18n');
         if (s[key]) leg.textContent = s[key];
@@ -620,8 +609,8 @@ function updateUIText() {
     // 9) Settings buttons
     const supportBtn = document.getElementById('support-btn');
     if (supportBtn && s.btn_support) supportBtn.textContent = s.btn_support;
-    const closeSettings = document.getElementById('btn-close-settings');
-    if (closeSettings && s.btn_close_settings) closeSettings.textContent = s.btn_close_settings;
+    const closeSettings = document.getElementById('close-settings');
+    if (closeSettings && s.btn_close_settings) closeSettings.title = s.btn_close_settings;
     const saveAdvisor = document.getElementById('btn-save-advisor');
     if (saveAdvisor && s.btn_save_advisor) saveAdvisor.textContent = s.btn_save_advisor;
     
@@ -640,16 +629,12 @@ function updateUIText() {
     if (detectProject && s.detect_project_btn) detectProject.textContent = s.detect_project_btn;
     const addToPath = document.getElementById('btn-add-to-path');
     if (addToPath && s.add_path_btn) addToPath.textContent = s.add_path_btn;
-    const piReady = document.getElementById('pi-ready-status');
-    if (piReady && s.label_pi_ready) piReady.textContent = s.label_pi_ready;
     
     // 13) Models tab
     const refreshModels = document.getElementById('btn-refresh-models');
     if (refreshModels && s.refresh_models_btn) refreshModels.textContent = s.refresh_models_btn;
     const deleteSelected = document.getElementById('btn-delete-selected');
     if (deleteSelected && s.delete_selected_btn) deleteSelected.textContent = s.delete_selected_btn;
-    const browseModels = document.getElementById('btn-browse-models');
-    if (browseModels && s.browse_models_btn) browseModels.textContent = s.browse_models_btn;
     const downloadAll = document.getElementById('btn-download-all');
     if (downloadAll && s.download_all_btn) downloadAll.textContent = s.download_all_btn;
     
@@ -685,11 +670,6 @@ function updateUIText() {
         if (s[serverLabels[i].key]) label.textContent = s[serverLabels[i].key];
     });
     
-    // 16) Theme buttons
-    const themeLight = document.getElementById('theme-light');
-    if (themeLight && s.theme_light) themeLight.textContent = s.theme_light;
-    const themeDark = document.getElementById('theme-dark');
-    if (themeDark && s.theme_dark) themeDark.textContent = s.theme_dark;
     
     // 17) Advisor labels
     const lblAdvisorUrl = document.getElementById('lbl-advisor-url');
@@ -747,7 +727,6 @@ function applyFontSize(size) {
     
     // Update font size displays
     const displays = [
-        document.getElementById('font-size-display'),
         document.getElementById('settings-font-size')
     ];
     
@@ -810,22 +789,6 @@ function setupEventListeners() {
         themeToggle.addEventListener('click', () => {
             const newTheme = state.theme === 'dark' ? 'light' : 'dark';
             applyTheme(newTheme);
-        });
-    }
-    
-    // Font size controls
-    const fontIncrease = document.getElementById('font-increase');
-    const fontDecrease = document.getElementById('font-decrease');
-    
-    if (fontIncrease) {
-        fontIncrease.addEventListener('click', () => {
-            applyFontSize(state.fontSize + 1);
-        });
-    }
-    
-    if (fontDecrease) {
-        fontDecrease.addEventListener('click', () => {
-            applyFontSize(state.fontSize - 1);
         });
     }
     
@@ -1771,34 +1734,6 @@ async function deleteSelectedModel() {
         }
     } catch (err) {
         showNotification('Error', `Delete failed: ${err.message}`);
-    }
-}
-
-async function downloadModel() {
-    const urlInput = document.getElementById('download-url');
-    const url = urlInput?.value;
-    
-    if (!url) {
-        showNotification('Warning', 'Please enter a HuggingFace URL.');
-        return;
-    }
-    
-    const modelsDir = await window.electronAPI.paths.getModelsDir();
-    const fileName = url.split('/').pop();
-    const destPath = `${modelsDir}/${fileName}`;
-    
-    try {
-        const result = await window.electronAPI.model.download(url, destPath);
-        
-        if (result.success) {
-            showNotification('Success', `Downloaded to: ${destPath}`);
-            // Re-scan models
-            await scanModels();
-        } else {
-            showNotification('Error', `Download failed: ${result.error}`);
-        }
-    } catch (err) {
-        showNotification('Error', `Download failed: ${err.message}`);
     }
 }
 
