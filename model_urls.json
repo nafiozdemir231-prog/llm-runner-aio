@@ -19,7 +19,7 @@
       "mmproj": "https://huggingface.co/google/gemma-4-26B-A4B-it-qat-q4_0-gguf/resolve/main/gemma-4-26B-it-mmproj.gguf"
     },
     "qwen3.8-27b-vision": {
-      "model": "https://huggingface.co/mudler/Qwen3.8-27B-APEX-GGUF/resolve/main/Qwen3.8-27B-APEX-I-Nano.gguf",
+      "model": "https://huggingface.co/mudler/Qwen3.8-27B-APEX-GGUF/resolve/main/Qwen3.8-27B-APEX-I-Mini.gguf",
       "mmproj": "https://huggingface.co/mudler/Qwen3.8-27B-APEX-GGUF/resolve/main/mmproj-Qwen3.8-27B-F16.gguf"
     }
   },
