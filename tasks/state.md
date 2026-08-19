@@ -1,32 +1,16 @@
-current_step: 2
-status: in_progress
+current_step: done
+status: complete
 verdict: PASS
-last_action: PyQt6 → Electron entegrasyonu Phase 1 + Phase 2 tamamlandı
-next_action: Phase 3 - Model Manager SHA256 verification + partial file cleanup
+last_action: Tüm proje salt-okuma denetimi tamamlandı; 39 bulgu (5 kritik, 6 yüksek, 12 orta, 12 düşük, 6 bilgi) tasks/hatalar.md'ye yazıldı
+next_action: none
+blocked: false
 
-## Phase 1: Server Manager Genişletme ✅ TAMAMLANDI
-### src/workers/server-manager.js
-- SearXNGWorker: settings.yml güncelleme + PYTHONPATH injection
-- OpenWebUIWorker: WEBUI_SECRET_KEY + 15+ env vars + delayed import_functions.py (15sn)
-- LlamaCppWorker: Dinamik BAT oluşturma + ctx-size desteği
-- VaneWorker: .next klasör temizleme + npm run dev pattern + SEARXNG_API_URL
-- Process tree kill: Leaf-first terminate → 10s wait → force kill fallback
-- Port bazlı emergency kill (netstat ile)
-- Health check auto-restart: Unresponsive sunucuları otomatik restart
+## Sonuç Özeti
+- Kritik: config kalıcılığı bozuk (launcher/ yok), toplu indirme ReferenceError (renderer.js:2272), db.importFunctions preload'da yok, tekil indirme "[object Promise]" yolu, .gitignore bozuk (node_modules/DLL ignore edilmiyor)
+- Yüksek: otobaşlatma çift kayıt + koşulsuz, orphan cleanup isme göre kill, sınırsız paralel indirme, preload ham IPC, ~4600 satır ölü legacy, host 0.0.0.0 fallback
+- Doğrulanan sağlam noktalar: sandbox/contextIsolation, 45 IPC kanalı tutarlı, 21 vision bölümü URL çözümleniyor, pencere kontrolü uyumlu
 
-## Phase 2: IPC Handlers ✅ TAMAMLANDI
-### electron/main.js
-- loadDatabase(): OpenWebUI DB swap (eski'yi .backup olarak yedekler)
-- calculateSHA256()/verifyModelSHA256(): Model hash doğrulama
-- updateMCPAdvisorFile(): mcp_web_reader.py dosyasını güncelle
-- Atomic config write: fs.fsyncSync() eklendi
-
-### electron/preload.js
-- database.load(), database.verifySHA256() eklendi
-- picoding.saveAdvisor() → mcp-update-advisor-file IPC channel'a yönlendirildi
-
-## PyQt6 Reference Files Read
-- launcher/tabs/system_detection.py — Hardware detection + INI matching
-- launcher/tabs/servers.py — 4 Worker class + graceful shutdown + health check
-- launcher/tabs/picoding.py — Project detection + PATH + MCP advisor
-- launcher/app.py — ConfigManager + LanguageManager + AppManager singleton
+## Notlar
+- Denetim sırasında kaynak dosyalarda DEĞİŞİKLİK YAPILMADI (kullanıcı talimatı)
+- Yeni dosyalar: tasks/hatalar.md (+ todo.md/state.md güncellemeleri)
+- Geçici script kullanılmadı
