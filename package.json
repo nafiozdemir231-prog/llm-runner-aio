@@ -16,14 +16,8 @@
   "author": "LLM Runner AIO Team",
   "license": "MIT",
   "dependencies": {
-    "better-sqlite3": "^11.0.0",
-    "crypto-js": "^4.2.0",
-    "electron-store": "^10.0.0",
-    "ini": "^5.0.0",
     "node-fetch": "^3.3.2",
-    "systeminformation": "^5.23.0",
-    "tree-kill": "^1.2.2",
-    "winston": "^3.15.0"
+    "tree-kill": "^1.2.2"
   },
   "devDependencies": {
     "electron": "^33.0.0",
@@ -52,27 +46,47 @@
       {
         "from": "searxng/",
         "to": "searxng/",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "openwebui/",
         "to": "openwebui/",
-        "filter": ["**/*", "!node_modules/**", ".git/**", "__pycache__/**"]
+        "filter": [
+          "**/*",
+          "!node_modules/**",
+          ".git/**",
+          "__pycache__/**"
+        ]
       },
       {
         "from": "Vane/",
         "to": "Vane/",
-        "filter": ["**/*", "!node_modules/**", ".git/**", "__pycache__/**", ".next/**", "out/**"]
+        "filter": [
+          "**/*",
+          "!node_modules/**",
+          ".git/**",
+          "__pycache__/**",
+          ".next/**",
+          "out/**"
+        ]
       },
       {
         "from": "llama.cpp-cuda13+vulkan/",
         "to": "llama.cpp-cuda13+vulkan/",
-        "filter": ["**/*.exe", "**/*.dll", "**/*.sys"]
+        "filter": [
+          "**/*.exe",
+          "**/*.dll",
+          "**/*.sys"
+        ]
       },
       {
         "from": "models/",
         "to": "models/",
-        "filter": ["**/*.gguf"]
+        "filter": [
+          "**/*.gguf"
+        ]
       }
     ],
     "asarUnpack": [
@@ -86,7 +100,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "assets/icon.ico",
@@ -110,7 +126,10 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "icon": "assets/icon.icns",
@@ -121,7 +140,9 @@
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "assets/icon.png",
