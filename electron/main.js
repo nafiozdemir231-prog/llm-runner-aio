@@ -41,18 +41,10 @@ if (process.platform === 'win32') {
 // Orphan Process Cleanup (Startup)
 // PyQt6'daki cleanup_orphan_processes() fonksiyonunun karşılığı
 // ============================================
-const TARGET_PROCESS_NAMES = [
-    'llama-server.exe',
-    'node.exe',      // Vane process'leri
-    'uvicorn.exe',   // OpenWebUI process'leri
-    'python.exe',    // SearXNG process'leri
-    'pythonw.exe'    // SearXNG process'leri
-];
 
 function cleanupOrphanProcesses() {
     console.log('[CLEANUP] Scanning for orphaned processes...');
 
-    const targetNames = TARGET_PROCESS_NAMES.map(n => n.toLowerCase());
     let killedCount = 0;
 
     try {
@@ -70,40 +62,44 @@ function cleanupOrphanProcesses() {
 
         const lines = output.trim().split('\n');
 
+        // Guvenli eslestirme (HAT-07):
+        // - Isim-ozel process'ler (llama-server/llama-bench): isim uzerinden kill
+        // - Genel yorumlayicilar (node/python/pythonw/uvicorn): YALNIZCA komut
+        //   satiri BU projeyi referans veriyorsa kill — sistemdeki baska
+        //   python/node process'lerine ASLA dokunulmaz.
+        const SAFE_NAME_MATCHES = ['llama-server', 'llama-bench'];
+        const INTERPRETER_BASES = ['node', 'python', 'pythonw', 'uvicorn'];
+        const projLower = PROJECT_DIR.toLowerCase().replace(/\\/g, '/');
+
         for (const line of lines) {
             try {
-                // CSV formatından parse et: "Process Name","PID",...
                 const match = line.match(/^"([^"]+)".*"(\d+)"/);
                 if (!match) continue;
 
                 const procName = match[1].toLowerCase();
                 const pid = parseInt(match[2], 10);
 
-                // Hedef isimlerde mi?
-                if (!targetNames.some(name => procName.includes(name.replace('.exe', '')))) {
-                    continue;
-                }
-
                 // Kendi process'lerimizi atla
                 if (pid === process.pid || pid === process.ppid) continue;
 
-                // node.exe için ekstra güvenlik: sadece bizim projemizle ilişkili olanlar
-                if (procName === 'node.exe') {
+                const baseName = procName.replace('.exe', '');
+                const isSafeName = SAFE_NAME_MATCHES.some(n => procName.includes(n));
+                const isInterpreter = INTERPRETER_BASES.includes(baseName);
+
+                if (!isSafeName && !isInterpreter) continue;
+
+                // Yorumlayici process'lerinde proje baglantisini dogrula
+                if (isInterpreter) {
+                    let cmdLine = '';
                     try {
-                        const taskInfo = execSync(`tasklist /FI "PID eq ${pid}" /V /FO CSV`, {
-                            encoding: 'utf8',
-                            timeout: 2000
-                        });
-
-                        const vaneDir = path.join(PROJECT_DIR, 'Vane');
-                        const hasProjectRef = taskInfo.includes('Vane') ||
-                                             taskInfo.includes(PROJECT_DIR);
-
-                        if (!hasProjectRef) continue;
+                        cmdLine = execSync(
+                            `powershell -NoProfile -Command "(Get-CimInstance Win32_Process -Filter 'ProcessId=${pid}').CommandLine"`,
+                            { encoding: 'utf8', timeout: 4000 }
+                        ).trim().toLowerCase().replace(/\\/g, '/');
                     } catch (e) {
-                        // Bilgi alamıyorsak skip
-                        continue;
+                        continue; // Bilgi alinamadiysa dokunma
                     }
+                    if (!cmdLine.includes(projLower)) continue;
                 }
 
                 // Process'i terminate et
@@ -112,14 +108,13 @@ function cleanupOrphanProcesses() {
                     execSync(`taskkill /PID ${pid} /T /F`, { timeout: 3000 });
                     killedCount++;
                 } catch (e) {
-                    // Zaten bitmiş olabilir
+                    // Zaten bitmis olabilir
                     console.log(`[CLEANUP] Skip (already dead?): PID ${pid}`);
                 }
             } catch (e) {
-                // Parse hatası - skip
+                // Parse hatasi - skip
             }
-        }
-    } catch (e) {
+        }    } catch (e) {
         console.log('[CLEANUP] tasklist command failed:', e.message);
     }
 
@@ -132,6 +127,14 @@ function cleanupOrphanProcesses() {
 let mainWindow;
 let tray = null;
 
+// Server durumları (tray menüsü için)
+const serverStates = {
+    searxng: { running: false, port: 8080 },
+    openwebui: { running: false, port: 3000 },
+    llamacpp: { running: false, port: 1234 },
+    vane: { running: false, port: 3001 }
+};
+
 // ============================================
 // Safe IPC sender — window destroy olduktan sonra hata vermez
 // ============================================
@@ -141,6 +144,30 @@ function safeSend(channel, data) {
             mainWindow.webContents.send(channel, data);
         }
     } catch {}
+}
+
+// ============================================
+// Single Source of Truth: Server State Setter
+// Tüm state güncellemeleri buradan geçer
+// ============================================
+function setServerState(type, isRunning, port = null) {
+    // Mevcut port'u koru, yeni port gelirse güncelle
+    const currentPort = port || (serverStates[type]?.port ?? 0);
+    
+    serverStates[type] = { 
+        ...serverStates[type], 
+        running: isRunning,
+        port: currentPort
+    };
+    
+    // 1. Tray menüsünü güncelle
+    updateTrayMenu();
+    
+    // 2. UI'ya güvenli bildirim gönder
+    const eventName = isRunning ? 'server-running' : 'server-stopped';
+    safeSend(eventName, { type, port: serverStates[type].port });
+    
+    console.log(`[STATE] ${type} → ${isRunning ? 'RUNNING' : 'STOPPED'} (port: ${currentPort})`);
 }
 
 function createMainWindow() {
@@ -286,24 +313,8 @@ function createTray() {
         }
     }
 
-    const contextMenu = Menu.buildFromTemplate([
-        {
-            label: 'Show LLM Runner',
-            click: () => {
-                if (mainWindow) {
-                    mainWindow.show();
-                    mainWindow.focus();
-                }
-            }
-        },
-        { type: 'separator' },
-        {
-            label: 'Exit',
-            click: () => {
-                app.quit();
-            }
-        }
-    ]);
+    // Dinamik menü oluştur (server durumlarına göre)
+    const contextMenu = buildTrayMenu();
 
     tray.setToolTip('LLM Runner AIO');
     tray.setContextMenu(contextMenu);
@@ -329,6 +340,99 @@ function createTray() {
     }
 
     return tray;
+}
+
+/**
+ * Tray menüsünü server durumlarına göre günceller
+ */
+function buildTrayMenu() {
+    const menuItems = [];
+    
+    // Ana menü başlığı
+    menuItems.push({
+        label: 'Show LLM Runner',
+        click: () => {
+            if (mainWindow) {
+                mainWindow.show();
+                mainWindow.focus();
+            }
+        }
+    });
+    
+    menuItems.push({ type: 'separator' });
+    
+    // Server kontrolleri
+    const serverNames = {
+        searxng: 'SearXNG',
+        openwebui: 'Open WebUI',
+        llamacpp: 'llama.cpp',
+        vane: 'Vane'
+    };
+    
+    for (const [type, name] of Object.entries(serverNames)) {
+        const state = serverStates[type];
+        if (state) {
+            if (state.running) {
+                // Sunucu çalışıyor → Durdur seçeneği
+                menuItems.push({
+                    label: `${name} ⏹ Stop`,
+                    click: async () => {
+                        console.log(`[TRAY] Stopping ${type}...`);
+                        try {
+                            await stopServer(type);
+                            console.log(`[TRAY] ${type} stopped successfully`);
+                        } catch (err) {
+                            console.error(`[TRAY] Failed to stop ${type}:`, err.message);
+                        }
+                    }
+                });
+            } else {
+                // Sunucu duruyor → Başlat seçeneği
+                menuItems.push({
+                    label: `${name} ▶ Start`,
+                    click: async () => {
+                        console.log(`[TRAY] Starting ${type}...`);
+                        try {
+                            const result = await startServer(type);
+                            if (result.success) {
+                                console.log(`[TRAY] ${type} started successfully on port ${result.port}`);
+                            } else {
+                                console.error(`[TRAY] Failed to start ${type}:`, result.error);
+                            }
+                        } catch (err) {
+                            console.error(`[TRAY] Failed to start ${type}:`, err.message);
+                        }
+                    }
+                });
+            }
+        }
+    }
+    
+    menuItems.push({ type: 'separator' });
+    
+    // Çıkış
+    menuItems.push({
+        label: 'Exit',
+        click: () => {
+            app.quit();
+        }
+    });
+    
+    return Menu.buildFromTemplate(menuItems);
+}
+
+/**
+ * Tray menüsünü yeniden oluşturur (server durumu değiştiğinde çağrılır)
+ */
+function updateTrayMenu() {
+    if (!tray) return;
+    
+    try {
+        const newMenu = buildTrayMenu();
+        tray.setContextMenu(newMenu);
+    } catch (err) {
+        console.error('[TRAY] Failed to update menu:', err.message);
+    }
 }
 
 // ============================================
@@ -454,6 +558,7 @@ function setupIPC() {
         const tempPath = configPath + '.tmp';
 
         try {
+            fs.mkdirSync(path.dirname(configPath), { recursive: true }); // HAT-01: dizin yoksa olustur
             fs.writeFileSync(tempPath, JSON.stringify(configData, null, 2), 'utf8');
             fs.renameSync(tempPath, configPath); // Atomic write
             return { success: true };
@@ -555,7 +660,19 @@ Write-Host 'Autostart disabled successfully'
     });
 
     ipcMain.handle('server-stop', async (event, serverType) => {
-        return stopServer(serverType);
+        // stopServer() zaten setServerState() üzerinden güncelliyor
+        return await stopServer(serverType);
+    });
+
+    // Tray menu guncelleme (renderer'dan manuel trigger icin)
+    ipcMain.handle('tray-update-menu', () => {
+        updateTrayMenu();
+        return { success: true };
+    });
+
+    // Server durumlarini al (renderer'dan sorgulama icin)
+    ipcMain.handle('get-server-states', () => {
+        return { ...serverStates };
     });
 
     // Model download (taskId ile progress takibi)
@@ -921,6 +1038,143 @@ if ($pathValue -and $pathValue -like "*$picodingPath*") {
         }
     });
 
+    // ============================================
+    // PiCoding Update Handler (Git Pull)
+    // ============================================
+    ipcMain.handle('picoding-update', async () => {
+        console.log('[IPC] picoding-update called');
+        
+        const logs = [];
+        const log = (msg) => {
+            logs.push(msg);
+            console.log(`[UPDATE] ${msg}`);
+        };
+        
+        try {
+            const picodingDir = path.join(PROJECT_DIR, 'picoding');
+            
+            if (!fs.existsSync(picodingDir)) {
+                return { success: false, message: `PiCoding dizini bulunamadı: ${picodingDir}`, logs };
+            }
+            
+            log(`Starting PiCoding update...`);
+            
+            // 1) Stash — local değişiklikleri geçici kaydet
+            const stashCmd = process.platform === 'win32' ? 'cmd' : '/bin/sh';
+            const stashArgs = process.platform === 'win32'
+                ? ['/c', 'git', 'stash', 'save', 'auto-picoding-update-stash']
+                : ['-c', 'git', 'stash', 'save', 'auto-picoding-update-stash'];
+            
+            return new Promise((resolve) => {
+                const stashChild = require('child_process').spawn(stashCmd, stashArgs, {
+                    cwd: picodingDir,
+                    shell: true,
+                    env: { ...process.env },
+                    stdio: ['pipe', 'pipe', 'pipe']
+                });
+                
+                let stashStdout = '';
+                let stashStderr = '';
+                
+                stashChild.stdout?.on('data', (data) => {
+                    stashStdout += data.toString();
+                });
+                
+                stashChild.stderr?.on('data', (data) => {
+                    stashStderr += data.toString();
+                });
+                
+                stashChild.on('close', (stashCode) => {
+                    log(`Stash completed (code: ${stashCode})`);
+                    
+                    // 2) Git pull
+                    const gitCmd = process.platform === 'win32' ? 'cmd' : '/bin/sh';
+                    const gitArgs = process.platform === 'win32'
+                        ? ['/c', 'git', 'pull']
+                        : ['-c', 'git', 'pull'];
+                    
+                    const gitChild = require('child_process').spawn(gitCmd, gitArgs, {
+                        cwd: picodingDir,
+                        shell: true,
+                        env: { ...process.env },
+                        stdio: ['pipe', 'pipe', 'pipe']
+                    });
+                    
+                    let pullStdout = '';
+                    let pullStderr = '';
+                    
+                    gitChild.stdout?.on('data', (data) => {
+                        const msg = data.toString();
+                        pullStdout += msg;
+                        log(msg.trim());
+                    });
+                    
+                    gitChild.stderr?.on('data', (data) => {
+                        const msg = data.toString();
+                        pullStderr += msg;
+                        log(`[ERROR] ${msg.trim()}`);
+                    });
+                    
+                    gitChild.on('close', (pullCode) => {
+                        if (pullCode !== 0) {
+                            log(`❌ Pull failed (code: ${pullCode})`);
+                            resolve({ success: false, message: `Update failed: ${pullStderr || 'Unknown error'}`, logs });
+                            return;
+                        }
+                        
+                        log(`✅ Pull successful! Restoring local changes...`);
+                        
+                        // 3) Stash pop
+                        try {
+                            const popCmd = process.platform === 'win32' ? 'cmd' : '/bin/sh';
+                            const popArgs = process.platform === 'win32'
+                                ? ['/c', 'git', 'stash', 'pop']
+                                : ['-c', 'git', 'stash', 'pop'];
+                            
+                            const popChild = require('child_process').spawn(popCmd, popArgs, {
+                                cwd: picodingDir,
+                                shell: true,
+                                env: { ...process.env },
+                                stdio: ['pipe', 'pipe', 'pipe']
+                            });
+                            
+                            popChild.on('close', (popCode) => {
+                                if (popCode === 0) {
+                                    log(`📦 Local changes restored.`);
+                                } else {
+                                    log(`⚠️ Could not restore stash (code: ${popCode}).`);
+                                }
+                                resolve({ success: true, message: `PiCoding updated successfully!`, logs });
+                            });
+                            
+                            popChild.on('error', () => {
+                                log(`⚠️ Stash pop failed.`);
+                                resolve({ success: true, message: `PiCoding updated (stash pop skipped)!`, logs });
+                            });
+                        } catch (e) {
+                            log(`⚠️ Stash pop exception: ${e.message}`);
+                            resolve({ success: true, message: `PiCoding updated (stash pop skipped)!`, logs });
+                        }
+                    });
+                    
+                    gitChild.on('error', (err) => {
+                        log(`Spawn error: ${err.message}`);
+                        resolve({ success: false, message: `Spawn error: ${err.message}`, logs });
+                    });
+                });
+                
+                stashChild.on('error', (err) => {
+                    log(`Stash spawn error: ${err.message}`);
+                    resolve({ success: false, message: `Stash error: ${err.message}`, logs });
+                });
+            });
+            
+        } catch (err) {
+            log(`Exception: ${err.message}`);
+            return { success: false, message: err.message, logs };
+        }
+    });
+
     // Model - Get Models from INI
     ipcMain.handle('model-get-models-from-ini', async (event, iniName) => {
         const iniPath = path.join(PROJECT_DIR, iniName);
@@ -1083,6 +1337,18 @@ if ($pathValue -and $pathValue -like "*$picodingPath*") {
     // ============================================
     ipcMain.handle('db-load', async (event, dbFilePath) => {
         return loadDatabase(dbFilePath);
+    });
+
+    // Function import (HAT-03): preload'dan gelen cagri icin nazik yanit.
+    // better-sqlite3 native modulu kurulu degilse 'unavailable' doner;
+    // renderer tarafinda try/catch ile yakalanip log'a yazilir.
+    ipcMain.handle('db-import-functions', async () => {
+        try {
+            require.resolve('better-sqlite3');
+        } catch (e) {
+            return { success: false, error: 'Database backend (better-sqlite3) not available on this machine' };
+        }
+        return { success: false, error: 'Function import is not implemented in the Electron port yet' };
     });
 
     // ============================================
@@ -1563,7 +1829,6 @@ async function startServer(serverType, options = {}) {
             const baseName = iniFile.replace('models.ini', '').replace('.ini', '');
             const batName = `start_${baseName}.bat`;
             const batPath = path.join(PROJECT_DIR, batName);
-            const ctxSize = options.ctxSize || 8192;
             const threads = options.threads || 10;
             const parallel = options.parallel || 1;
             const sleepIdle = options.sleepIdle || 1000;
@@ -1582,7 +1847,6 @@ cd /d "%~dp0"
 "${absoluteLlamaServer}" ^
   --host ${host} ^
   --port ${port} ^
-  --ctx-size ${ctxSize} ^
   --threads ${threads} ^
   --parallel ${parallel} ^
   --sleep-idle-seconds ${sleepIdle} ^
@@ -1596,7 +1860,7 @@ pause
             fs.writeFileSync(batPath, batContent, 'utf8');
             console.log(`[CONFIG] Bat file created: ${batName}`);
             console.log(`[CONFIG] INI (mutlak): ${absoluteIniPath}`);
-            console.log(`[CONFIG] Port: ${port}, Ctx-size: ${ctxSize}`);
+            console.log(`[CONFIG] Port: ${port}`);
             
             // PyQt6'daki start_process() ile ayni: shell=True for .bat/.cmd
             cmd = batPath;
@@ -1641,12 +1905,13 @@ pause
             }
             
             // SEARXNG_API_URL env değişkeni (eğer SearXNG çalışıyorsa)
+            // Next.js dev server HOSTNAME env var'ini kullanir (HOST degil!)
             const searxngUrl = `http://127.0.0.1:${options.searxngPort || 8080}`;
             env = {
                 ...process.env,
                 'SEARXNG_API_URL': searxngUrl,
                 'PORT': String(vanePort),
-                'HOST': host
+                'HOSTNAME': host   // Next.js bu variable'i okur
             };
             
             // CONFIG_PATH — Vane'in kendi config.json'ı varsa kullan (PyQt6 parity)
@@ -1654,6 +1919,120 @@ pause
             if (fs.existsSync(vaneConfigPath)) {
                 env['CONFIG_PATH'] = vaneConfigPath;
                 console.log(`[CONFIG] Vane config.json found: ${vaneConfigPath}`);
+            }
+            
+            // next.config.mjs'i runtime'da güncelle — host'a göre CORS ayarla
+            const nextConfigPath = path.join(vaneDir, 'next.config.mjs');
+            if (fs.existsSync(nextConfigPath)) {
+                let isLocalOnly = (host === '127.0.0.1' || host === 'localhost');
+                let configContent;
+                
+                if (isLocalOnly) {
+                    // This PC Only — sadece localhost erişebilir
+                    console.log(`[VANE] Config: This PC Only mode (localhost)`);
+                    configContent = `
+import pkg from './package.json' with { type: 'json' };
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'standalone',
+  allowedDevOrigins: ['127.0.0.1', 'localhost'],
+  images: {
+    remotePatterns: [
+      {
+        hostname: 's2.googleusercontent.com',
+      },
+    ],
+  },
+  serverExternalPackages: [
+    'pdf-parse',
+    'playwright',
+    'officeparser',
+    'file-type',
+  ],
+  outputFileTracingIncludes: {
+    '/api/**': [
+      './node_modules/@napi-rs/canvas/**',
+      './node_modules/@napi-rs/canvas-linux-x64-gnu/**',
+      './node_modules/@napi-rs/canvas-linux-x64-musl/**',
+    ],
+  },
+  env: {
+    NEXT_PUBLIC_VERSION: pkg.version,
+  },
+  turbopack: {
+    root: process.cwd(),
+  },
+};
+
+export default nextConfig;
+`;
+                } else {
+                    // Local Network — tüm ağ erişimi
+                    console.log(`[VANE] Config: Local Network mode (all origins)`);
+                    configContent = `
+import path from 'node:path';
+import pkg from './package.json' with { type: 'json' };
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'standalone',
+  allowedDevOrigins: ['127.0.0.1', 'localhost', '*', '192.168.*.*', '10.*.*.*', '172.16.*.*'],
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET,OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: '*',
+          },
+        ],
+      },
+    ];
+  },
+  images: {
+    remotePatterns: [
+      {
+        hostname: 's2.googleusercontent.com',
+      },
+    ],
+  },
+  serverExternalPackages: [
+    'pdf-parse',
+    'playwright',
+    'officeparser',
+    'file-type',
+  ],
+  outputFileTracingIncludes: {
+    '/api/**': [
+      './node_modules/@napi-rs/canvas/**',
+      './node_modules/@napi-rs/canvas-linux-x64-gnu/**',
+      './node_modules/@napi-rs/canvas-linux-x64-musl/**',
+    ],
+  },
+  env: {
+    NEXT_PUBLIC_VERSION: pkg.version,
+  },
+  turbopack: {
+    root: process.cwd(),
+  },
+};
+
+export default nextConfig;
+`;
+                }
+                
+                fs.writeFileSync(nextConfigPath, configContent);
+                console.log(`[VANE] next.config.mjs updated for host: ${host}`);
             }
             
             // npm'yi shell:true ile çalıştır — boşluklu path sorunu olmaması icin
@@ -1725,15 +2104,16 @@ pause
             try {
                 console.log(`[${serverType}] Exited with code ${code}, signal ${signal}`);
                 runningServers.delete(serverType);
-                if (mainWindow && !mainWindow.isDestroyed()) {
-                    mainWindow.webContents.send('server-stopped', { type: serverType });
-                }
+                setServerState(serverType, false);
             } catch {}
         });
 
         // Health check'a kadar bekle
         await waitForServerReady(port, 30000);
 
+        // Single Source of Truth ile state güncelle
+        setServerState(serverType, true, port);
+        
         return { success: true, pid: child.pid, port };
     } catch (err) {
         console.error(`[${serverType}] Start failed:`, err.message);
@@ -1763,12 +2143,12 @@ async function stopServer(serverType) {
                     execSync('taskkill /PID ' + rootPid + ' /T /F', { timeout: 5000 });
                     console.log('[STOP] Killed cmd.exe wrapper PID ' + rootPid);
                 } catch (e) {
-                    console.warn('[STOP] Could not kill cmd.exe PID ' + rootPid + ': ' + e.message);
+                        console.warn('[STOP] Could not kill cmd.exe PID ' + rootPid + ': ' + e.message);
                 }
             }
             
             runningServers.delete(serverType);
-            safeSend('server-stopped', { type: serverType });
+            setServerState(serverType, false);
             return { success: true, method: 'powerShell' };
         } catch (e) {
             console.warn('[STOP] PowerShell kill failed: ' + e.message);
@@ -1827,12 +2207,12 @@ async function stopServer(serverType) {
             }
             
             runningServers.delete(serverType);
-            safeSend('server-stopped', { type: serverType });
+            setServerState(serverType, false);
             return { success: true, method: 'netstat', killed: killedCount };
         } catch (e) {
             console.error(`[STOP] ❌ Vane kill failed with error: ${e.message}`);
             runningServers.delete(serverType);
-            safeSend('server-stopped', { type: serverType });
+            setServerState(serverType, false);
             return { success: false, error: e.message, method: 'vane-fallback' };
         }
     }
@@ -1841,7 +2221,7 @@ async function stopServer(serverType) {
     if (!child) {
         console.warn(`[${serverType}] No child process found for stop`);
         runningServers.delete(serverType);
-        safeSend('server-stopped', { type: serverType });
+        setServerState(serverType, false);
         return { success: false, error: 'No running process found' };
     }
     
@@ -1864,9 +2244,12 @@ async function stopServer(serverType) {
         }
 
         runningServers.delete(serverType);
+        setServerState(serverType, false);
         return { success: true };
     } catch (err) {
         console.error(`[${serverType}] Stop failed:`, err.message);
+        runningServers.delete(serverType);
+        setServerState(serverType, false);
         return { success: false, error: err.message };
     }
 }
@@ -2040,57 +2423,139 @@ function waitForServerReady(port, timeoutMs = 30000) {
     });
 }
 
+// Indirme sabitleri (HAT-08/HAT-24)
+const DOWNLOAD_OVERALL_TIMEOUT_MS = 30 * 60 * 1000; // Dosya basina genel son tarih (30 dk)
+const IDLE_TIMEOUT_MS = 60 * 1000;                  // 60 sn veri gelmezse kes
+const MAX_DOWNLOAD_RETRIES = 3;                     // Basarisiz deneme sonrasi tekrar sayisi
+
+/**
+ * Tek denemelik indirme (resume destekli). Basari durumunda .part dosyasi
+ * hedef konuma tasinir. Basarida/kesilmede hata firlatir; retry disarda yapilir.
+ */
+function pipeToDisk(response, destFolder, partialPath, taskId, baseBytes, totalBytes, controller, overallTimer) {
+    return new Promise((resolve, reject) => {
+        let downloaded = baseBytes;
+        let lastActivity = Date.now();
+        let settled = false;
+
+        const settle = (fn, val) => {
+            if (settled) return;
+            settled = true;
+            clearInterval(idleCheck);
+            clearTimeout(overallTimer);
+            fn(val);
+        };
+
+        const fileStream = fs.createWriteStream(partialPath, { flags: baseBytes > 0 ? 'a' : 'w' });
+
+        // Idle kontrolu: sure boyunca veri gelmezse kes (HAT-08)
+        const idleCheck = setInterval(() => {
+            if (Date.now() - lastActivity > IDLE_TIMEOUT_MS) {
+                try { controller.abort(); } catch (e) {}
+                settle(reject, new Error('Idle timeout: no data received for 60s'));
+            }
+        }, 5000);
+
+        response.body.on('data', (chunk) => {
+            lastActivity = Date.now();
+            downloaded += chunk.length;
+            if (totalBytes > 0) {
+                const percent = Math.min(100, Math.round((downloaded / totalBytes) * 100));
+                safeSend('download-progress', { taskId, percent, downloaded, total: totalBytes });
+            }
+        });
+
+        fileStream.on('finish', () => {
+            fileStream.close();
+            try {
+                if (fs.existsSync(destFolder)) fs.unlinkSync(destFolder);
+                fs.renameSync(partialPath, destFolder);
+            } catch (renameErr) {
+                settle(reject, new Error('Rename failed: ' + renameErr.message));
+                return;
+            }
+            settle(resolve, { success: true, path: destFolder });
+        });
+
+        fileStream.on('error', (err) => settle(reject, err));
+        response.body.on('error', (err) => settle(reject, err));
+        response.body.on('close', () => {
+            // Akis beklenmedik kesildi (network drop/abort) ve finish gelmediyse
+            if (!settled) {
+                try { fileStream.destroy(); } catch (e) {}
+                settle(reject, new Error('Download stream closed unexpectedly'));
+            }
+        });
+    });
+}
+
+async function downloadAttempt(fetchImpl, url, destFolder, partialPath, taskId, deadline) {
+    const existing = fs.existsSync(partialPath) ? fs.statSync(partialPath).size : 0;
+    const remainingMs = Math.max(5000, deadline - Date.now());
+
+    const doFetch = (headers) => {
+        const controller = new AbortController();
+        const overallTimer = setTimeout(() => { try { controller.abort(); } catch (e) {} }, remainingMs);
+        return fetchImpl(url, { headers, signal: controller.signal })
+            .then((resp) => ({ resp, controller, overallTimer }))
+            .catch((err) => { clearTimeout(overallTimer); throw err; });
+    };
+
+    let { resp, controller, overallTimer } = await doFetch(existing > 0 ? { 'Range': `bytes=${existing}-` } : {});
+
+    // Sunucu Range'i desteklemiyor (206 yerine 200) → sifirdan basla (HAT-24)
+    if (existing > 0 && resp.status === 200) {
+        try { controller.abort(); } catch (e) {}
+        clearTimeout(overallTimer);
+        fs.rmSync(partialPath, { force: true });
+        ({ resp, controller, overallTimer } = await doFetch({}));
+    }
+
+    if (!resp.ok && resp.status !== 206) {
+        clearTimeout(overallTimer);
+        throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    }
+
+    const contentLength = parseInt(resp.headers.get('content-length') || '0', 10);
+    const base = resp.status === 206 ? existing : 0;
+    const total = resp.status === 206 ? (contentLength > 0 ? base + contentLength : 0) : contentLength;
+
+    return pipeToDisk(resp, destFolder, partialPath, taskId, base, total, controller, overallTimer);
+}
+
 async function downloadModel(url, destFolder, taskId) {
     const { default: fetch } = await import('node-fetch');
-    const fs = require('fs');
 
     try {
-        // Destination dizinini oluştur (varsa)
         const destDir = path.dirname(destFolder);
         if (!fs.existsSync(destDir)) {
             fs.mkdirSync(destDir, { recursive: true });
             console.log('[DOWNLOAD] Created directory:', destDir);
         }
 
-        const response = await fetch(url);
+        const partialPath = destFolder + '.part';
+        const deadline = Date.now() + DOWNLOAD_OVERALL_TIMEOUT_MS;
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        for (let attempt = 1; attempt <= MAX_DOWNLOAD_RETRIES + 1; attempt++) {
+            try {
+                const result = await downloadAttempt(fetch, url, destFolder, partialPath, taskId, deadline);
+                if (result.success) {
+                    console.log(`[DOWNLOAD] Completed (attempt ${attempt}): ${destFolder}`);
+                    return result;
+                }
+                break;
+            } catch (err) {
+                console.error(`[DOWNLOAD] Attempt ${attempt}/${MAX_DOWNLOAD_RETRIES + 1} failed: ${err.message}`);
+                if (Date.now() >= deadline) break;
+                const backoff = 2000 * Math.pow(2, attempt - 1);
+                console.log(`[DOWNLOAD] Retrying in ${backoff}ms (partial size: ${fs.existsSync(partialPath) ? fs.statSync(partialPath).size : 0} bytes)`);
+                await new Promise(r => setTimeout(r, backoff));
+            }
         }
 
-        const totalSize = response.headers.get('content-length');
-        let downloaded = 0;
-
-        const fileStream = fs.createWriteStream(destFolder);
-
-        return new Promise((resolve, reject) => {
-            response.body.pipe(fileStream);
-
-            response.body.on('data', (chunk) => {
-                downloaded += chunk.length;
-
-                // Progress event gönder (taskId ile)
-                if (totalSize) {
-                    const percent = Math.round((downloaded / parseInt(totalSize, 10)) * 100);
-                    safeSend('download-progress', { taskId, percent, downloaded, total: parseInt(totalSize, 10) });
-                }
-            });
-
-            fileStream.on('finish', () => {
-                fileStream.close();
-                resolve({ success: true, path: destFolder });
-            });
-
-            fileStream.on('error', (err) => {
-                fs.unlink(destFolder, () => {}); // Partial dosyayı sil
-                reject(err);
-            });
-
-            response.body.on('error', (err) => {
-                fs.unlink(destFolder, () => {});
-                reject(err);
-            });
-        });
+        // Tum denemeler basarisiz → partial dosyayi temizle
+        try { fs.rmSync(partialPath, { force: true }); } catch (e) {}
+        return { success: false, error: `Download failed after ${MAX_DOWNLOAD_RETRIES + 1} attempts` };
     } catch (err) {
         console.error('[DOWNLOAD] Failed:', err.message);
         return { success: false, error: err.message };
@@ -2100,16 +2565,37 @@ async function downloadModel(url, destFolder, taskId) {
 // ============================================
 // App Lifecycle Events
 // ============================================
+// Tek instance kilidi (HAT-06): ikinci kopya acildiginda o cikar, mevcut pencere odaklanir
+const singleInstanceLockAcquired = app.requestSingleInstanceLock();
+if (!singleInstanceLockAcquired) {
+    console.warn('[APP] Another instance is already running — quitting.');
+    app.quit();
+} else {
+    app.on('second-instance', () => {
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.show();
+            mainWindow.focus();
+        }
+    });
+}
+
 app.whenReady().then(() => {
-    // Orphan process temizliği
+    if (!singleInstanceLockAcquired) return;
+    // Orphan process temizligi
     cleanupOrphanProcesses();
 
     // Default menu bar'i gizle (File, Edit, View, Window, Help)
     Menu.setApplicationMenu(null);
     console.log('[UI] Default menu bar hidden');
 
-    // Registry sync — her baslangicta guncel VBS yolunu yaz
-    syncAutostartRegistry();
+    // Registry sync — YALNIZCA autostart aktifse (HAT-06: kullanici kapatmis olsa da registry bozulmasin)
+    try {
+        execSync('reg query "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\LLMRunnerAIO"', { encoding: 'utf8' });
+        syncAutostartRegistry();
+    } catch (e) {
+        console.log('[AUTOSTART] Disabled — skipping registry sync');
+    }
 
     // IPC handlers kurulumu
     setupIPC();
@@ -2245,6 +2731,210 @@ ipcMain.handle('notification-error', (_event, title, message) => {
 ipcMain.handle('notification-confirm', (_event, title, message) => {
     console.log(`[NOTIFICATION CONFIRM]: ${title} - ${message}`);
     return { confirmed: true };
+});
+
+// ============================================
+// Server Update Handler
+// ============================================
+ipcMain.handle('server-update', async (_event, serverType) => {
+    console.log(`[IPC] server-update called for: ${serverType}`);
+    
+    const logs = [];
+    const log = (msg) => {
+        logs.push(msg);
+        console.log(`[UPDATE] ${msg}`);
+    };
+    
+    try {
+        log(`Starting ${serverType} update...`);
+        
+        // Sunucuyu durdur (çalışıyorsa)
+        const serverInfo = runningServers.get(serverType);
+        if (serverInfo?.child) {
+            log(`Stopping ${serverType} before update...`);
+            try {
+                treeKill(serverInfo.child.pid, 'SIGTERM');
+            } catch (e) {
+                log(`Warning: Could not stop ${serverType}: ${e.message}`);
+            }
+        }
+        
+        // Server dizinini bul — PROJECT_DIR (proje kökü) kullan
+        let serverDir;
+        if (serverType === 'searxng') {
+            serverDir = path.join(PROJECT_DIR, 'searxng');
+        } else if (serverType === 'openwebui') {
+            serverDir = path.join(PROJECT_DIR, 'openwebui');
+        } else if (serverType === 'vane') {
+            serverDir = path.join(PROJECT_DIR, 'Vane');
+        } else {
+            return { success: false, message: `Unknown server type: ${serverType}`, logs };
+        }
+        
+        // Git dizini kontrolü
+        if (!fs.existsSync(serverDir)) {
+            return { success: false, message: `Server directory not found: ${serverDir}`, logs };
+        }
+        
+        // ✨ YENİ: .git klasörü kontrolü — git pull sadece repo olan dizinlerde calisir
+        const gitDir = path.join(serverDir, '.git');
+        if (!fs.existsSync(gitDir)) {
+            // ✨ Versiyon kontrolü + manuel güncelleme talimatları
+            const currentVersion = fs.existsSync(path.join(PROJECT_DIR, 'VERSION')) 
+                ? fs.readFileSync(path.join(PROJECT_DIR, 'VERSION'), 'utf8').trim() 
+                : 'unknown';
+            
+            return { 
+                success: false, 
+                message: `${serverType} dizini bir Git repository değil. Manuel güncelleme gerekli.`,
+                logs: [
+                    ...logs,
+                    `📦 Current version: ${currentVersion}`,
+                    `⬇️  Download latest version from official source`,
+                    `📋 Steps:`,
+                    `   1. Stop ${serverType} server`,
+                    `   2. Backup important data (databases, configs)`,
+                    `   3. Download new version`,
+                    `   4. Extract to project directory`,
+                    `   5. Restore your data to new version`
+                ],
+                currentVersion: currentVersion,
+                needsManualUpdate: true
+            };
+        }
+        
+        log(`Running git pull in ${serverDir}...`);
+        
+        // ====== DATABASE KORUMA (openwebui.db hariç her şeyi günceller) ======
+        let dbBackupPath = null;
+        let dbOriginalPath = path.join(serverDir, 'openwebui.db');
+        
+        if (serverType === 'openwebui' && fs.existsSync(dbOriginalPath)) {
+            // Database'i güvenlik alanına taşıyarak koru
+            const tempDir = path.join(PROJECT_DIR, '.temp_backup');
+            fs.mkdirSync(tempDir, { recursive: true });
+            dbBackupPath = path.join(tempDir, `openwebui.db.${Date.now()}.bak`);
+            
+            fs.copyFileSync(dbOriginalPath, dbBackupPath);
+            fs.unlinkSync(dbOriginalPath); // Git'ten temizlenmesi için sil
+            log(`🛡️ Database protected: moved to backup (${dbBackupPath.split('/').pop()})`);
+        }
+        
+        return new Promise((resolve) => {
+            // 1) Stash — local değişiklikleri geçici kaydet
+            const stashCmd = process.platform === 'win32' ? 'cmd' : '/bin/sh';
+            const stashArgs = process.platform === 'win32'
+                ? ['/c', 'git', 'stash', 'save', 'auto-update-stash']
+                : ['-c', 'git', 'stash', 'save', 'auto-update-stash'];
+            
+            const stashChild = require('child_process').spawn(stashCmd, stashArgs, {
+                cwd: serverDir,
+                shell: true,
+                env: { ...process.env },
+                stdio: ['pipe', 'pipe', 'pipe']
+            });
+            
+            let stashStdout = '';
+            let stashStderr = '';
+            
+            stashChild.stdout?.on('data', (data) => {
+                stashStdout += data.toString();
+            });
+            
+            stashChild.stderr?.on('data', (data) => {
+                stashStderr += data.toString();
+            });
+            
+            stashChild.on('close', (stashCode) => {
+                // Stash başarılı veya zaten stash yoksa devam et
+                log(`Stash completed (code: ${stashCode})`);
+                
+                // 2) Git pull — temiz güncelleme
+                const gitCmd = process.platform === 'win32' ? 'cmd' : '/bin/sh';
+                const gitArgs = process.platform === 'win32'
+                    ? ['/c', 'git', 'pull']
+                    : ['-c', 'git', 'pull'];
+                
+                const gitChild = require('child_process').spawn(gitCmd, gitArgs, {
+                    cwd: serverDir,
+                    shell: true,
+                    env: { ...process.env },
+                    stdio: ['pipe', 'pipe', 'pipe']
+                });
+                
+                let pullStdout = '';
+                let pullStderr = '';
+                
+                gitChild.stdout?.on('data', (data) => {
+                    const msg = data.toString();
+                    pullStdout += msg;
+                    log(msg.trim());
+                });
+                
+                gitChild.stderr?.on('data', (data) => {
+                    const msg = data.toString();
+                    pullStderr += msg;
+                    log(`[ERROR] ${msg.trim()}`);
+                });
+                
+                gitChild.on('close', (pullCode) => {
+                    if (pullCode !== 0) {
+                        // Pull başarısız — database'i geri koy ve stash'i geri al
+                        log(`❌ Pull failed (code: ${pullCode}), restoring database...`);
+                        restoreDatabase();
+                        resolve({ success: false, message: `Update failed: ${pullStderr || 'Unknown error'}`, logs });
+                        return;
+                    }
+                    
+                    log(`✅ Pull successful! Restoring database...`);
+                    
+                    // Database'i geri koy
+                    restoreDatabase();
+                    
+                    resolve({ success: true, message: `${serverType} updated successfully!`, logs });
+                });
+                
+                gitChild.on('error', (err) => {
+                    log(`Spawn error: ${err.message}`);
+                    restoreDatabase();
+                    resolve({ success: false, message: `Spawn error: ${err.message}`, logs });
+                });
+            });
+            
+            stashChild.on('error', (err) => {
+                log(`Stash spawn error: ${err.message}`);
+                restoreDatabase();
+                resolve({ success: false, message: `Stash error: ${err.message}`, logs });
+            });
+            
+            // Database geri yükleme fonksiyonu
+            function restoreDatabase() {
+                if (dbBackupPath && fs.existsSync(dbBackupPath)) {
+                    try {
+                        // Backup'tan orijinale kopyala
+                        fs.copyFileSync(dbBackupPath, dbOriginalPath);
+                        log(`🛡️ Database restored: openwebui.db (${fs.statSync(dbBackupPath).size} bytes)`);
+                        
+                        // Temp backup'ı temizle
+                        const tempDir = path.dirname(dbBackupPath);
+                        fs.readdirSync(tempDir).forEach(file => {
+                            if (file.startsWith('openwebui.db.')) {
+                                const oldBackup = path.join(tempDir, file);
+                                fs.unlinkSync(oldBackup);
+                            }
+                        });
+                        log(`🧹 Old backups cleaned up.`);
+                    } catch (e) {
+                        log(`⚠️ Failed to restore database: ${e.message}`);
+                    }
+                }
+            }
+        });
+        
+    } catch (err) {
+        log(`Exception: ${err.message}`);
+        return { success: false, message: err.message, logs };
+    }
 });
 
 // ============================================

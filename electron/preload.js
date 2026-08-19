@@ -8,11 +8,14 @@
  * Renderer process sadece bu API'ye erişebilir
  */
 
-const { contextBridge, ipcRenderer, shell } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
 // ============================================
 // Güvenli API Maruziyeti (contextBridge.exposeInMainWorld)
 // ============================================
+// HAT-09: Renderer'in dinleyebildigi event kanallari (beyaz liste)
+const ALLOWED_EVENT_CHANNELS = ['server-log', 'server-error', 'server-stopped', 'server-running'];
+
 contextBridge.exposeInMainWorld('electronAPI', {
 
     // ============================================
@@ -79,23 +82,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
         stop: (serverType) => ipcRenderer.invoke('server-stop', serverType),
 
         /**
-         * Sunucu durumu kontrolü
-         * PyQt6'da: ServerWorker.is_running
-         */
-        getStatus: (serverType) => {
-            return new Promise((resolve) => {
-                const handler = (event, data) => {
-                    if (data.type === serverType) {
-                        ipcRenderer.removeListener('server-status', handler);
-                        resolve(data);
-                    }
-                };
-                ipcRenderer.on('server-status', handler);
-                ipcRenderer.send('get-server-status', serverType);
-            });
-        },
-
-        /**
          * Sunucu log mesajlarını dinle
          * PyQt6'da: QTextEdit.append() - stdout/stderr stream
          */
@@ -117,7 +103,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
          */
         onStop: (callback) => {
             ipcRenderer.on('server-stopped', (event, data) => callback(data));
-        }
+        },
+
+        /**
+         * Sunucu güncelle
+         * PyQt6'da: yok - Electron特有 fonksiyon
+         */
+        update: (serverType) => ipcRenderer.invoke('server-update', serverType)
     },
 
     // ============================================
@@ -131,18 +123,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
         download: (url, destFolder, taskId) => ipcRenderer.invoke('model-download', url, destFolder, taskId),
 
         /**
-         * İndirme ilerlemesini dinle (onProgress/onDownloadProgress birleştirildi)
+         * İndirme ilerlemesini dinle (tek API - HAT-14)
          * PyQt6'da: pyqtSignal(value) → QProgressBar.setValue()
+         * Donen fonksiyon listener'i kaldirir (off()).
          */
         onProgress: (callback) => {
-            ipcRenderer.on('download-progress', (event, data) => callback(data));
-        },
-
-        /**
-         * İndirme ilerlemesini taskId ile dinle (per-model progress)
-         */
-        onDownloadProgress: (callback) => {
-            ipcRenderer.on('download-progress', (event, data) => callback(data));
+            const handler = (event, data) => callback(data);
+            ipcRenderer.on('download-progress', handler);
+            return () => ipcRenderer.removeListener('download-progress', handler);
         },
 
         /**
@@ -235,7 +223,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
          * API'den mevcut modelleri listele
          * Provider turune gore otomatik endpoint secimi
          */
-        fetchModels: (apiUrl, apiKey, providerType) => ipcRenderer.invoke('picoding-fetch-models', apiUrl, apiKey, providerType)
+        fetchModels: (apiUrl, apiKey, providerType) => ipcRenderer.invoke('picoding-fetch-models', apiUrl, apiKey, providerType),
+
+        /**
+         * PiCoding repository'ini guncelle (git pull)
+         */
+        update: () => ipcRenderer.invoke('picoding-update')
     },
 
 
@@ -306,56 +299,27 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
 
     // ============================================
-    // System Information (systeminformation paketi)
-    // ============================================
-    system: {
-        /**
-         * Sistem bilgilerini al (CPU, memory, OS, diskler)
-         * PyQt6'da: psutil + os.uname()
-         */
-        getInfo: () => ipcRenderer.invoke('system-getinfo'),
-
-        /**
-         * Port kontrolü
-         * PyQt6'da: is_port_in_use() utility
-         */
-        checkPort: (port) => ipcRenderer.invoke('system-check-port', port)
-    },
-
-    // ============================================
     // Event Listeners (pyqtSignal pattern'ının JS karşılığı)
     // ============================================
     events: {
         /**
-         * Generic event listener ekle
-         * PyQt6'da: signal.connect(callback)
+         * Beyaz listedeki event kanallarindan birini dinle (HAT-09)
+         * Ham IPC yuzeyi kapandi; listede olmayan kanal engellenir.
          */
         on: (eventName, callback) => {
+            if (!ALLOWED_EVENT_CHANNELS.includes(eventName)) {
+                console.warn('[PRELOAD] Engellenen event kanali:', eventName);
+                return;
+            }
             ipcRenderer.on(eventName, (event, ...args) => callback(...args));
         },
 
         /**
-         * Tek seferlik event listener
-         * PyQt6'da: signal.connect_once(callback)
-         */
-        once: (eventName, callback) => {
-            ipcRenderer.once(eventName, (event, ...args) => callback(...args));
-        },
-
-        /**
-         * Event listener'ı kaldır
-         * PyQt6'da: signal.disconnect(callback)
+         * Event listener'i kaldir (yalnizca beyaz listede)
          */
         removeListener: (eventName, callback) => {
+            if (!ALLOWED_EVENT_CHANNELS.includes(eventName)) return;
             ipcRenderer.removeListener(eventName, callback);
-        },
-
-        /**
-         * Event gönder
-         * PyQt6'da: signal.emit(data)
-         */
-        send: (eventName, data) => {
-            ipcRenderer.send(eventName, data);
         }
     },
 
@@ -363,22 +327,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // App Control (QCoreApplication karşılığı)
     // ============================================
     app: {
-        /**
-         * Uygulamayı yeniden başlat
-         */
-        restart: () => ipcRenderer.invoke('app-restart'),
-
-        /**
-         * Uygulamayı kapat
-         * PyQt6'da: qapp.quit()
-         */
-        quit: () => ipcRenderer.invoke('app-quit'),
-
-        /**
-         * Uygulama sürümünü al
-         */
-        getVersion: () => ipcRenderer.invoke('app-version'),
-
         /**
          * Platform bilgisini al
          */
@@ -435,6 +383,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
         load: (dbFilePath) => ipcRenderer.invoke('db-load', dbFilePath),
 
         /**
+         * Fonksiyonlari veritabani'na ic aktar (HAT-03)
+         * Main tarafinda desteklenmiyorsa nazik hata doner.
+         */
+        importFunctions: () => ipcRenderer.invoke('db-import-functions'),
+
+        /**
          * Model SHA256 doğrula
          * PyQt6'da: _calculate_sha256() + hash karşılaştırması
          */
@@ -468,6 +422,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
         minimize: () => ipcRenderer.send('window-minimize'),
         maximize: () => ipcRenderer.send('window-maximize'),
         close: () => ipcRenderer.send('window-close')
+    },
+    
+    // ============================================
+    // System Tray Management
+    // ============================================
+    tray: {
+        /**
+         * Tray menüsünü güncelle
+         */
+        updateMenu: () => ipcRenderer.invoke('tray-update-menu'),
+        
+        /**
+         * Server durumlarını al
+         */
+        getServerStates: () => ipcRenderer.invoke('get-server-states')
     }
 });
 
@@ -482,8 +451,7 @@ console.log('[PRELOAD] World API exposed: window.electronAPI');
 // ============================================
 if (process.argv.includes('--dev')) {
     window.__electronDev = {
-        ipcSend: (channel, data) => ipcRenderer.send(channel, data),
-        ipcInvoke: (channel, data) => ipcRenderer.invoke(channel, data),
+        // HAT-09: ham ipcSend/ipcInvoke kaldirildi (genis IPC yuzeyi)
         listChannels: () => {
             console.log('[DEV] Available IPC channels:');
             console.log('  - config-read / config-write');
@@ -492,6 +460,7 @@ if (process.argv.includes('--dev')) {
             console.log('  - server-start / server-stop');
             console.log('  - model-download');
             console.log('  - cleanup-orphan-processes');
+            console.log('  - tray-update-menu / get-server-states');
         }
     };
     console.log('[DEV] Developer helpers attached to window.__electronDev');
