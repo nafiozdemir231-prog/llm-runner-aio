@@ -1021,10 +1021,6 @@ input[type="checkbox"] {
     color: var(--text-primary);
 }
 
-.hidden {
-    display: none;
-}
-
 /* Picoding Path Display */
 #picoding-path-display {
     background-color: var(--bg-tertiary);
@@ -1033,6 +1029,8 @@ input[type="checkbox"] {
     padding: 10px;
     color: var(--text-secondary);
     margin-bottom: 8px;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 /* ============================================ */

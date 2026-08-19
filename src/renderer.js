@@ -23,10 +23,10 @@ const state = {
     languages: {},
     hardware: null,
     servers: {
-        searxng: { running: false, port: 8080, host: '0.0.0.0' },
+        searxng: { running: false, port: 8080, host: '127.0.0.1' },
         openwebui: { running: false, port: 3000, host: '127.0.0.1' },
-        llamacpp: { running: false, port: 1234, host: '0.0.0.0' },
-        vane: { running: false, port: 3001, host: '0.0.0.0' }
+        llamacpp: { running: false, port: 1234, host: '127.0.0.1' },
+        vane: { running: false, port: 3001, host: '127.0.0.1' }
     },
     models: [],
     selectedModel: null
@@ -49,19 +49,39 @@ function formatBytes(bytes) {
 }
 
 /**
- * Notification toast gosterir
- * PyQt6'da: QMessageBox veya custom toast widget
+ * HTML entity escape (markup bozulmasi/enjeksiyon korumasi)
  */
-function showNotification(title, message, level = 'info') {
-    // Mevcut notification sistemi varsa kullan, yoksa console.log
-    if (window.electronAPI && window.electronAPI.notification) {
-        window.electronAPI.notification.show(title, message);
-    }
-    console.log(`[NOTIFICATION ${level.toUpperCase()}]: ${title} - ${message}`);
+function escHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
 }
 
-// ============================================
-// Initialization
+/**
+ * Sinirli es zamanlilik ile gorev calistirma havuzu (indirme concurrency cap)
+ */
+async function runWithConcurrency(items, limit, fn) {
+    const results = [];
+    let cursor = 0;
+    const workers = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
+        while (true) {
+            const i = cursor++;
+            if (i >= items.length) break;
+            try {
+                results.push(await fn(items[i]));
+            } catch (e) {
+                results.push({ success: false, name: items[i].name, error: e.message });
+            }
+        }
+    });
+    await Promise.all(workers);
+    return results;
+}
+
+
 // ============================================
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('[RENDERER] LLM Runner AIO initialized');
@@ -127,6 +147,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('[INIT] setupEventListeners failed:', err);
     }
     
+    // ✨ YENİ: Main process'ten mevcut server durumlarını senkronize et
+    try {
+        await syncInitialServerStates();
+        console.log('[INIT] Server states synchronized with main process');
+    } catch (err) {
+        console.error('[INIT] Initial state sync failed:', err.message);
+    }
+    
     // Auto-start individual servers if enabled
     if (state.config.auto_start_servers) {
         console.log('[AUTO] Checking auto-start for individual servers...');
@@ -143,17 +171,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const portInput = document.getElementById(`${srv.type}-port`);
                 const hostInput = document.getElementById(`${srv.type}-host`);
                 const port = parseInt(portInput?.value || (srv.type === 'searxng' ? 8080 : srv.type === 'openwebui' ? 3000 : srv.type === 'vane' ? 3001 : 1234));
-                const host = hostInput?.value || '0.0.0.0';
+                const host = hostInput?.value || '127.0.0.1';
                 
                 // llama.cpp için INI preset'i de gönder
                 const startOptions = { port, host };
                 if (srv.type === 'llamacpp' && state.config.selected_ini) {
                     startOptions.iniPreset = state.config.selected_ini;
-                    const ctxEl = document.getElementById('llamacpp-ctx');
-                    if (ctxEl) {
-                        startOptions.ctxSize = parseInt(ctxEl.value) || 8192;
-                    }
-                    console.log(`[AUTO] llama.cpp INI: ${startOptions.iniPreset}, Ctx: ${startOptions.ctxSize}`);
+                    console.log(`[AUTO] llama.cpp INI: ${startOptions.iniPreset}`);
                 }
                 
                 const browserId = `btn-open-${srv.type}`;
@@ -179,6 +203,46 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ============================================
+// Initial State Sync (Main Process → Renderer)
+// ============================================
+async function syncInitialServerStates() {
+    try {
+        // Main process'ten anlık durumu al
+        const currentStates = await window.electronAPI.tray.getServerStates();
+        
+        console.log('[SYNC] Received server states from main:', JSON.stringify(currentStates));
+        
+        // Her sunucu için UI durumunu güncelle
+        for (const [type, s] of Object.entries(currentStates)) {
+            state.servers[type].running = s.running;
+            state.servers[type].port = s.port || state.servers[type].port;
+            
+            // Butonları ve status textini güncelle
+            updateServerStatus(type, s.running);
+            
+            if (s.running) {
+                // Stop butonu aktif
+                const stopBtn = document.getElementById(`btn-stop-${type}`);
+                if (stopBtn) stopBtn.disabled = false;
+                
+                // Browser butanı aktif + URL güncelle
+                const host = state.servers[type].host || '127.0.0.1';
+                updateBrowserButton(
+                    `btn-open-${type}`, 
+                    true, 
+                    `http://${host === '0.0.0.0' ? '127.0.0.1' : host}:${s.port}`
+                );
+                
+                appendToLog(type, 'Synced — Running on port ' + s.port);
+            }
+        }
+    } catch (err) {
+        console.error('[SYNC] Failed to get initial states:', err.message);
+        throw err;
+    }
+}
+
+// ============================================
 // Config & Language Loading
 // ============================================
 async function loadConfig() {
@@ -197,10 +261,55 @@ async function loadConfig() {
 // ============================================
 // Auto Hardware Detection on Startup
 // ============================================
+const HW_CACHE_KEY = 'hw-detect-cache-v1';
+const HW_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+function readHwCache() {
+    try {
+        const cached = JSON.parse(localStorage.getItem(HW_CACHE_KEY) || 'null');
+        if (cached && typeof cached.ts === 'number' && Date.now() - cached.ts < HW_CACHE_TTL_MS) {
+            return { gpuName: cached.gpuName, vramGb: cached.vramGb, ramGb: cached.ramGb, cpuName: cached.cpuName, iniMatch: cached.iniMatch };
+        }
+    } catch (e) { /* cache gecersiz */ }
+    return null;
+}
+
+function writeHwCache(hw) {
+    try {
+        localStorage.setItem(HW_CACHE_KEY, JSON.stringify({
+            ts: Date.now(),
+            gpuName: hw.gpuName,
+            vramGb: hw.vramGb,
+            ramGb: hw.ramGb,
+            cpuName: hw.cpuName,
+            iniMatch: hw.iniMatch
+        }));
+    } catch (e) { /* storage dolu olabilir */ }
+}
+
 async function autoDetectAndSaveHardware() {
     try {
+        // HAT-22: Her acilista donanim tespiti tekrarlaniyordu — 24s cache kullan
+        // (manuel Detect butonu her zaman taze tespit yapar)
+        const cached = readHwCache();
+        if (cached) {
+            console.log('[HARDWARE] Cached detection used (<24h) — skipping full detect');
+            state.hardware = cached;
+            updateHardwareDisplay(cached);
+            const cfgFromCache = { ...state.config };
+            cfgFromCache.vram_gb = cached.vramGb;
+            cfgFromCache.ram_gb = cached.ramGb;
+            cfgFromCache.gpu_name = cached.gpuName || '';
+            cfgFromCache.cpu_name = cached.cpuName || '';
+            if (cached.iniMatch) cfgFromCache.selected_ini = cached.iniMatch;
+            await window.electronAPI.config.write(cfgFromCache);
+            state.config = cfgFromCache;
+            return cached;
+        }
+
         console.log('[HARDWARE] Auto-detecting hardware on startup...');
         const hw = await window.electronAPI.hardware.detect();
+        writeHwCache(hw);
         
         // Save to config immediately
         const updatedConfig = { ...state.config };
@@ -255,9 +364,9 @@ async function restorePreviousSelection() {
         // Restore server hosts
         const hostFields = [
             { key: 'searxng_host', id: 'searxng-host', defaultVal: '127.0.0.1' },
-            { key: 'openwebui_host', id: 'openwebui-host', defaultVal: '0.0.0.0' },
-            { key: 'llamacpp_host', id: 'llamacpp-host', defaultVal: '0.0.0.0' },
-            { key: 'vane_host', id: 'vane-host', defaultVal: '0.0.0.0' }
+            { key: 'openwebui_host', id: 'openwebui-host', defaultVal: '127.0.0.1' },
+            { key: 'llamacpp_host', id: 'llamacpp-host', defaultVal: '127.0.0.1' },
+            { key: 'vane_host', id: 'vane-host', defaultVal: '127.0.0.1' }
         ];
         
         for (const field of hostFields) {
@@ -265,12 +374,6 @@ async function restorePreviousSelection() {
             if (el) {
                 el.value = state.config[field.key] ?? field.defaultVal;
             }
-        }
-        
-        // Restore llama.cpp settings
-        const llamacppCtx = document.getElementById('llamacpp-ctx');
-        if (llamacppCtx) {
-            llamacppCtx.value = state.config.llamacpp_ctx || 65536;
         }
         
         // Restore auto-start checkboxes
@@ -327,10 +430,9 @@ async function saveAllSettings() {
             llamacpp_port: parseInt(document.getElementById('llamacpp-port')?.value) || 1234,
             vane_port: parseInt(document.getElementById('vane-port')?.value) || 3001,
             searxng_host: document.getElementById('searxng-host')?.value || '127.0.0.1',
-            openwebui_host: document.getElementById('openwebui-host')?.value || '0.0.0.0',
-            llamacpp_host: document.getElementById('llamacpp-host')?.value || '0.0.0.0',
-            vane_host: document.getElementById('vane-host')?.value || '0.0.0.0',
-            llamacpp_ctx: parseInt(document.getElementById('llamacpp-ctx')?.value) || 65536,
+            openwebui_host: document.getElementById('openwebui-host')?.value || '127.0.0.1',
+            llamacpp_host: document.getElementById('llamacpp-host')?.value || '127.0.0.1',
+            vane_host: document.getElementById('vane-host')?.value || '127.0.0.1',
             llamacpp_threads: parseInt(document.getElementById('llamacpp-threads')?.value) || 10,
             llamacpp_parallel: parseInt(document.getElementById('llamacpp-parallel')?.value) || 1,
             llamacpp_sleep_idle: parseInt(document.getElementById('llamacpp-sleep-idle')?.value) || 1000,
@@ -931,22 +1033,15 @@ document.getElementById('settings-font-decrease')?.addEventListener('click', () 
 // ============================================
 const autoSaveInputs = [
     'searxng-port', 'openwebui-port', 'llamacpp-port', 'vane-port',
-    'searxng-host', 'openwebui-host', 'llamacpp-host', 'vane-host',
-    'llamacpp-ctx'
+    'searxng-host', 'openwebui-host', 'llamacpp-host', 'vane-host'
 ];
 
 autoSaveInputs.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
+        // Yalnizca 'change' (Enter/blur) uzerine kaydet — her tus vurusunda config yazma stormu olmasin
         el.addEventListener('change', () => {
             saveAllSettings();
-        });
-        // Also save on input for real-time updates
-        el.addEventListener('input', () => {
-            clearTimeout(el._saveTimeout);
-            el._saveTimeout = setTimeout(() => {
-                saveAllSettings();
-            }, 500); // Debounce 500ms
         });
     }
 });
@@ -974,6 +1069,7 @@ async function detectHardware() {
     try {
         const hw = await window.electronAPI.hardware.detect();
         state.hardware = hw;
+        writeHwCache(hw);
         
         // Update UI — null kontrolleri ile
         updateHardwareDisplay(hw);
@@ -1024,12 +1120,13 @@ function setupServerControls() {
     
     // Individual server start/stop buttons
     const servers = [
-        { type: 'searxng', startId: 'btn-start-searxng', stopId: 'btn-stop-searxng', browserId: 'btn-open-searxng', portId: 'searxng-port', hostId: 'searxng-host', statusId: 'searxng-status', logId: 'searxng-log' },
-        { type: 'openwebui', startId: 'btn-start-openwebui', stopId: 'btn-stop-openwebui', browserId: 'btn-open-openwebui', portId: 'openwebui-port', hostId: 'openwebui-host', statusId: 'openwebui-status', logId: 'openwebui-log' },
+        { type: 'searxng', startId: 'btn-start-searxng', stopId: 'btn-stop-searxng', updateId: null, browserId: 'btn-open-searxng', portId: 'searxng-port', hostId: 'searxng-host', statusId: 'searxng-status', logId: 'searxng-log' },
+        { type: 'openwebui', startId: 'btn-start-openwebui', stopId: 'btn-stop-openwebui', updateId: 'btn-update-openwebui', browserId: 'btn-open-openwebui', portId: 'openwebui-port', hostId: 'openwebui-host', statusId: 'openwebui-status', logId: 'openwebui-log' },
         { 
             type: 'llamacpp', 
             startId: 'btn-start-llamacpp', 
             stopId: 'btn-stop-llamacpp', 
+            updateId: null,
             browserId: 'btn-open-llamacpp',
             portId: 'llamacpp-port', 
             hostId: 'llamacpp-host', 
@@ -1037,7 +1134,7 @@ function setupServerControls() {
             statusId: 'llamacpp-status', 
             logId: 'llamacpp-log' 
         },
-        { type: 'vane', startId: 'btn-start-vane', stopId: 'btn-stop-vane', browserId: 'btn-open-vane', portId: 'vane-port', hostId: 'vane-host', statusId: 'vane-status', logId: 'vane-log' }
+        { type: 'vane', startId: 'btn-start-vane', stopId: 'btn-stop-vane', updateId: null, browserId: 'btn-open-vane', portId: 'vane-port', hostId: 'vane-host', statusId: 'vane-status', logId: 'vane-log' }
     ];
     
     // IPC Event Listeners (Server logs)
@@ -1055,6 +1152,7 @@ function setupServerControls() {
     });
 
     window.electronAPI.events.on('server-stopped', (data) => {
+        if (!state.servers[data.type]) return;
         state.servers[data.type].running = false;
         updateServerStatus(data.type, false);
         appendToLog(data.type, 'Stopped.');
@@ -1062,6 +1160,23 @@ function setupServerControls() {
         // Sunucu durduysa start butonunu tekrar aktif et
         const startBtn = document.getElementById(`btn-start-${data.type}`);
         if (startBtn) startBtn.disabled = false;
+    });
+
+    // Tray'den veya main process'ten gelen running eventi
+    window.electronAPI.events.on('server-running', (data) => {
+        if (!state.servers[data.type]) return;
+        state.servers[data.type].running = true;
+        state.servers[data.type].port = data.port || state.servers[data.type].port;
+        updateServerStatus(data.type, true);
+        appendToLog(data.type, 'Running.');
+        
+        // Stop butonunu aktif et
+        const stopBtn = document.getElementById(`btn-stop-${data.type}`);
+        if (stopBtn) stopBtn.disabled = false;
+        
+        // Browser butanini guncelle
+        const host = state.servers[data.type].host || '127.0.0.1';
+        updateBrowserButton(`btn-open-${data.type}`, true, `http://${host}:${data.port}`);
     });
     
     servers.forEach(server => {
@@ -1072,7 +1187,7 @@ function setupServerControls() {
         if (startBtn) {
             startBtn.addEventListener('click', async () => {
                 const port = parseInt(document.getElementById(server.portId)?.value || server.port);
-                const host = document.getElementById(server.hostId)?.value || '0.0.0.0';
+                const host = document.getElementById(server.hostId)?.value || '127.0.0.1';
                 
                 startBtn.disabled = true;
                 appendToLog(server.type, `Starting on ${host}:${port}...`);
@@ -1098,13 +1213,6 @@ function setupServerControls() {
                             appendToLog('system', `Using INI preset: ${options.iniPreset}`);
                         }
                     }
-                    // Context size — PyQt6'daki lc_ctx ile ayni
-                    const ctxEl = document.getElementById('llamacpp-ctx');
-                    if (ctxEl) {
-                        options.ctxSize = parseInt(ctxEl.value) || 8192;
-                        appendToLog('system', `llama.cpp ctx-size: ${options.ctxSize}`);
-                    }
-                    
                     // CPU Threads
                     const threadsEl = document.getElementById('llamacpp-threads');
                     if (threadsEl) {
@@ -1184,6 +1292,64 @@ function setupServerControls() {
                 window.electronAPI.shell.openExternal(url);
             });
         }
+        
+        // Update button handler (sadece openwebui için)
+        if (server.updateId) {
+            const updateBtn = document.getElementById(server.updateId);
+            if (updateBtn) {
+                updateBtn.addEventListener('click', async () => {
+                    updateBtn.disabled = true;
+                    updateBtn.textContent = '⏳ Updating...';
+                    appendToLog(server.type, `[UPDATE] Starting ${server.type} update...`);
+                    
+                    try {
+                        const result = await window.electronAPI.server.update(server.type);
+                        
+                        if (result.success) {
+                            const lang = state.languages || {};
+                            showNotification(lang['update_success'] || 'Success', `${server.type} ${lang['update_success'] || 'updated successfully!'}`);
+                            appendToLog(server.type, `[UPDATE] ✅ ${server.type} updated successfully!`);
+                            
+                            // Otomatik restart
+                            appendToLog(server.type, `[UPDATE] Restarting ${server.type}...`);
+                            setTimeout(async () => {
+                                const port = parseInt(document.getElementById(server.portId)?.value || 3000);
+                                const host = document.getElementById(server.hostId)?.value || '127.0.0.1';
+                                const startResult = await window.electronAPI.server.start(server.type, { port, host });
+                                if (startResult.success) {
+                                    state.servers[server.type].running = true;
+                                    updateServerStatus(server.type, true);
+                                    updateBrowserButton(server.browserId, true, `http://${host === '0.0.0.0' ? '127.0.0.1' : host}:${port}`);
+                                    appendToLog(server.type, `[UPDATE] ${server.type} restarted successfully!`);
+                                } else {
+                                    appendToLog(server.type, `[ERROR] Restart failed: ${startResult.error}`, true);
+                                }
+                            }, 2000);
+                        } else if (result.needsManualUpdate) {
+                            // ✨ Manuel güncelleme gerekli
+                            const lang = state.languages || {};
+                            showNotification(
+                                'Manual Update Required', 
+                                `Please update ${server.type} manually.\n\nCurrent version: ${result.currentVersion || 'unknown'}\n\nSteps:\n1. Stop the server\n2. Backup your data\n3. Download new version\n4. Extract and restore data`
+                            );
+                            appendToLog(server.type, `[UPDATE] ⚠️ Manual update required: ${result.message}`, true);
+                            result.logs.forEach(log => appendToLog(server.type, log));
+                        } else {
+                            const lang = state.languages || {};
+                            showNotification('Error', `${server.type} ${lang['update_error']?.replace('{error}', result.message) || 'update failed'}`);
+                            appendToLog(server.type, `[UPDATE] ❌ Failed: ${result.message}`, true);
+                        }
+                    } catch (err) {
+                        const lang = state.languages || {};
+                        showNotification('Error', `${lang['update_error']?.replace('{error}', err.message) || 'Update error'}`);
+                        appendToLog(server.type, `[UPDATE] ❌ Error: ${err.message}`, true);
+                    }
+                    
+                    updateBtn.disabled = false;
+                    updateBtn.textContent = '🔄 Update';
+                });
+            }
+        }
     });
     
     // Global start/stop all
@@ -1245,14 +1411,19 @@ function setupServerControls() {
                 // ====== IMPORT FUNCTIONS (PyQt6'da: import_functions.py çalıştırma) ======
                 appendToLog('openwebui', '[INFO] Importing functions from function/ directory...');
                 
-                const importResult = await window.electronAPI.db.importFunctions();
+                let importResult;
+                try {
+                    importResult = await window.electronAPI.db.importFunctions();
+                } catch (impErr) {
+                    appendToLog('openwebui', `[WARN] Function import unavailable/failed: ${impErr.message}`, true);
+                }
                 
-                if (importResult.success) {
+                if (importResult && importResult.success) {
                     let msg = `[INFO] Functions imported: ${importResult.functionsAdded || 0} added, ${importResult.functionsUpdated || 0} updated`;
                     msg += `\nTools: ${importResult.toolsAdded || 0} added, ${importResult.toolsUpdated || 0} updated`;
                     appendToLog('openwebui', msg);
-                } else {
-                    appendToLog('openwebui', `[WARN] Function import failed: ${importResult.error || importResult.message}`, true);
+                } else if (importResult) {
+                    appendToLog('openwebui', `[WARN] Function import failed:: ${importResult.error || importResult.message}`, true);
                 }
                 
                 // OpenWebUI calisiyorsa yeniden baslat
@@ -1299,8 +1470,8 @@ async function startAllServers() {
     for (const type of types) {
         const portInput = document.getElementById(`${type}-port`);
         const hostInput = document.getElementById(`${type}-host`);
-        const port = parseInt(portInput?.value || 8080);
-        const host = hostInput?.value || '0.0.0.0';
+        const port = parseInt(portInput?.value || (type === 'searxng' ? 8080 : type === 'openwebui' ? 3000 : type === 'vane' ? 3001 : 1234));
+        const host = hostInput?.value || '127.0.0.1';
         
         appendToLog(type, `Starting ${type} on ${host}:${port}...`);
         
@@ -1467,7 +1638,6 @@ async function scanModels() {
 window.updateDeleteButtonState = function() {
     const checkboxes = document.querySelectorAll('#model-list input[type="checkbox"]:checked');
     const deleteBtn = document.getElementById('btn-delete-selected');
-    console.log('[DEBUG] updateDeleteButtonState called, checked:', checkboxes.length, 'deleteBtn:', !!deleteBtn);
     if (deleteBtn) {
         deleteBtn.disabled = checkboxes.length === 0;
     }
@@ -1481,12 +1651,9 @@ function setupModelListEvents() {
         return;
     }
     
-    console.log('[DEBUG] Setting up model list event delegation');
-    
     listEl.addEventListener('click', (e) => {
         // Checkbox tiklama
         if (e.target.type === 'checkbox') {
-            console.log('[DEBUG] checkbox CLICKED! checked:', e.target.checked);
             updateDeleteButtonState();
             return;
         }
@@ -1499,7 +1666,6 @@ function setupModelListEvents() {
             
             // Checkbox durumunu tersine çevir
             checkbox.checked = !checkbox.checked;
-            console.log('[DEBUG] li clicked, checkbox toggled to:', checkbox.checked);
             
             // Model secimi
             selectModel(index);
@@ -1531,9 +1697,9 @@ function renderModelList(files) {
                 <input type="checkbox" data-model-index="${index}">
                 <span class="checkmark"></span>
             </label>
-            <span class="model-name">${model.name}</span>
+            <span class="model-name">${escHtml(model.name)}</span>
             <span class="muted model-size">${formatBytes(model.size)}</span>
-            <span class="muted model-path">${model.relativePath || ''}</span>
+            <span class="muted model-path">${escHtml(model.relativePath || '')}</span>
         </li>
     `).join('');
     
@@ -1564,16 +1730,13 @@ async function deleteSelectedModel() {
         return;
     }
     
-    // Secilen modelleri topla
-    const selectedModels = Array.from(checkboxes).map(cb => {
-        const li = cb.closest('li');
-        const index = parseInt(li?.dataset.index);
-        return state.models.files[index];
-    }).filter(m => m !== undefined);
-    
     // Onay dialogu - PyQT6'daki QMessageBox.question() karsiligi
-    const names = selectedModels.map(m => `- ${m.name}`).join('\n');
-    const message = `Delete ${selectedModels.length} model(s)?\n\n${names}\n\nThis cannot be undone.`;
+    const names = Array.from(checkboxes).map(cb => {
+        const nameEl = cb.closest('li')?.querySelector('.model-name');
+        return `- ${nameEl ? nameEl.textContent : '?'}`;
+    }).join('\n');
+    
+    const message = `Delete ${checkboxes.length} model(s)?\n\n${names}\n\nThis cannot be undone.`;
     
     const confirmed = await window.electronAPI.notification.confirm(
         'Confirm Delete',
@@ -1581,6 +1744,15 @@ async function deleteSelectedModel() {
     );
     
     if (!confirmed) return;
+    
+    // Onaydan SONRA taze secimi oku (dialog acikken liste degismisse eski index kullanilmaz)
+    const selectedModels = Array.from(document.querySelectorAll('#model-list input[type="checkbox"]:checked')).map(cb => {
+        const li = cb.closest('li');
+        const index = parseInt(li?.dataset.index);
+        return state.models.files[index];
+    }).filter(m => m !== undefined);
+    
+    if (selectedModels.length === 0) return;
     
     // Dosya yollarini al
     const filePaths = selectedModels.map(m => m.path);
@@ -1611,7 +1783,7 @@ async function downloadModel() {
         return;
     }
     
-    const modelsDir = window.electronAPI.paths.getModelsDir();
+    const modelsDir = await window.electronAPI.paths.getModelsDir();
     const fileName = url.split('/').pop();
     const destPath = `${modelsDir}/${fileName}`;
     
@@ -1653,6 +1825,7 @@ function updateDownloadProgress(percent, downloaded, total) {
 
 // Per-model progress tracking
 const perModelProgressData = {}; // taskId -> { status, percent, downloaded, total }
+const MAX_CONCURRENT_DOWNLOADS = 3; // Es zamanli indirme limiti (bant genisligi/rate-limit koruması)
 let currentDownloadTasks = []; // module-level scope for task lookup
 let eventListenersSetup = false; // Prevent duplicate IPC listener registration
 
@@ -1685,7 +1858,7 @@ function createPerModelProgressBar(taskId) {
     item.className = 'per-model-item';
     item.id = `per-model-${taskId}`;
     item.innerHTML = `
-        <span class="per-model-label">${task.name}</span>
+        <span class="per-model-label">${escHtml(task.name)}</span>
         <div class="per-model-bar-container">
             <div class="per-model-fill" style="width: 0%"></div>
         </div>
@@ -1816,8 +1989,7 @@ function setupPicodingControls() {
             if (result.success) {
                 // PyQt6 gibi: path + detected markers göster
                 const markerText = result.markers?.length > 0 ? `(Detected: ${result.markers.join(', ')})` : '';
-                document.getElementById('picoding-path-display').textContent = 
-                    `${result.path}\n${markerText}`.replace(/\s*\n\s*/g, '\n');
+                document.getElementById('picoding-path-display').textContent = `${result.path}\n${markerText}`;
                 showNotification('Success', `Project detected at: ${result.path}`);
             } else if (result.needManualSelect) {
                 // PyQt6'daki QFileDialog.getExistingDirectory karşılığı
@@ -1851,6 +2023,35 @@ function setupPicodingControls() {
                     showNotification('Error', `Failed to add to PATH: ${result.error}`);
                 }
             }
+        });
+    }
+    
+    // Update PiCoding button (Git Pull)
+    const updatePicodingBtn = document.getElementById('btn-update-picoding');
+    if (updatePicodingBtn) {
+        updatePicodingBtn.addEventListener('click', async () => {
+            updatePicodingBtn.disabled = true;
+            const lang = state.languages || {};
+            updatePicodingBtn.textContent = lang['update_starting'] || '⏳ Updating...';
+            appendToLog('picoding', '[UPDATE] Starting PiCoding update...');
+            
+            try {
+                const result = await window.electronAPI.picoding.update();
+                
+                if (result.success) {
+                    showNotification(lang['update_success'] || 'Success', `PiCoding ${lang['update_success']?.replace('!', '') || 'updated successfully!'}`);
+                    appendToLog('picoding', `[UPDATE] ✅ PiCoding updated successfully!`);
+                } else {
+                    showNotification('Error', `${lang['update_error']?.replace('{error}', result.message) || 'Update failed'}`);
+                    appendToLog('picoding', `[UPDATE] ❌ Failed: ${result.message}`, true);
+                }
+            } catch (err) {
+                showNotification('Error', `${lang['update_error']?.replace('{error}', err.message) || 'Update error'}`);
+                appendToLog('picoding', `[UPDATE] ❌ Error: ${err.message}`, true);
+            }
+            
+            updatePicodingBtn.disabled = false;
+            updatePicodingBtn.textContent = lang['btn_update_picoding'] || '🔄 Update PiCoding';
         });
     }
     
@@ -1926,6 +2127,7 @@ function setupPicodingControls() {
         saveAdvisorBtn.addEventListener('click', async () => {
             const advisorUrl = document.getElementById('advisor-url')?.value;
             const apiKey = document.getElementById('advisor-key')?.value;
+            const providerType = document.getElementById('provider-type')?.value || 'auto';
             
             // Select'ten veya custom input'tan model al
             let modelName = document.getElementById('advisor-model-custom')?.value;
@@ -1933,8 +2135,14 @@ function setupPicodingControls() {
                 modelName = document.getElementById('advisor-model')?.value;
             }
             
-            if (!advisorUrl || !apiKey || !modelName) {
-                showNotification('Warning', 'Please fill in all MCP Advisor fields.');
+            if (!advisorUrl || !modelName) {
+                showNotification('Warning', 'Please enter API URL and select a model.');
+                return;
+            }
+            
+            // Yerel API'ler (Ollama, LM Studio) icin API Key zorunlu degil
+            if (providerType !== 'ollama' && providerType !== 'lmstudio' && !apiKey) {
+                showNotification('Warning', 'Please enter API Key (or select local provider type).');
                 return;
             }
             
@@ -2020,8 +2228,8 @@ function renderSystemModelList(models) {
     
     listEl.innerHTML = models.map((model, index) => `
         <li data-index="${index}">
-            <span>[${model.name}]</span>
-            <span class="muted">${model.model_url ? '✓ Ready' : '✗ No URL'}</span>
+            <span>[${escHtml(model.name)}]</span>
+            <span class="muted">${(model.model_file || model.model_url) ? '✓ Ready' : '✗ No URL'}</span>
         </li>
     `).join('');
 }
@@ -2116,15 +2324,21 @@ async function downloadAllModels(models, selectedIni) {
     // Store tasks for progress tracking
     currentDownloadTasks = downloadTasks;
     
+    // Progress bar'lari simdiden olustur (ilk event gelmeden de gorunur olsun)
+    for (const task of downloadTasks) {
+        perModelProgressData[task.id] = { status: 'waiting', percent: 0, downloaded: 0, total: 0 };
+        createPerModelProgressBar(task.id);
+    }
+    
     console.log(`[Download] Total tasks: ${downloadTasks.length + skippedCount}, Skipped (exists): ${skippedCount}, To download: ${downloadTasks.length}`);
     if (skippedCount > 0) {
         appendToLog('system', `⏭️ Skipped ${skippedCount} file(s) already downloaded`);
     }
-    updateDownloadStatus(`⚡ Starting ${downloadTasks.length} downloads in parallel...`);
-    appendToLog('system', `⚡ Parallel download started: ${downloadTasks.length} files`);
+    updateDownloadStatus(`⚡ Starting ${downloadTasks.length} downloads (max ${MAX_CONCURRENT_DOWNLOADS} concurrent)...`);
+    appendToLog('system', `⚡ Download started: ${downloadTasks.length} files (max ${MAX_CONCURRENT_DOWNLOADS} concurrent)`);
     
     // Tüm görevleri PARALEL çalıştır
-    const results = await Promise.allSettled(downloadTasks.map(async (task) => {
+    const results = await runWithConcurrency(downloadTasks, MAX_CONCURRENT_DOWNLOADS, async (task) => {
         const folderName = task.name.replace('-vision', '').replace('-Vision', '');
         const logLabel = task.type === 'model' ? 'Model' : 'MMProj';
         
@@ -2136,18 +2350,19 @@ async function downloadAllModels(models, selectedIni) {
         if (result.success) {
             completedCount++;
             markPerModelComplete(task.id, true);
-            appendToLog('system', `✅ [${logLabel}] Completed: ${task.name} (${formatBytes(downloaded || 0)})`);
+            const doneBytes = perModelProgressData[task.id]?.downloaded || 0;
+            appendToLog('system', `✅ [${logLabel}] Completed: ${task.name} (${formatBytes(doneBytes)})`);
             return { success: true, name: task.name, type: logLabel };
         } else {
             markPerModelComplete(task.id, false, result.error);
             appendToLog('system', `❌ [${logLabel}] Error: ${task.name} - ${result.error}`, true);
             return { success: false, name: task.name, error: result.error };
         }
-    }));
+    });
     
     // Sonuçları özetle
-    const successes = results.filter(r => r.status === 'fulfilled' && r.value?.success).length;
-    const failures = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value?.success)).length;
+    const successes = results.filter(r => r.success).length;
+    const failures = results.filter(r => !r.success).length;
     
     updateDownloadStatus(`✅ Complete! ${successes}/${downloadTasks.length} successful, ${failures} failed`);
     appendToLog('system', `\n🎉 Download complete: ${successes} succeeded, ${failures} failed out of ${downloadTasks.length} files`);

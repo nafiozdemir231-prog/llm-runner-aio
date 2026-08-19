@@ -256,11 +256,12 @@
                                 <span id="desc-openwebui" class="info-desc">Web-based chat interface with AI integration</span>
                             </div>
                             
-                            <!-- Start/Stop/Browser Buttons (Her zaman gorunur) -->
+                            <!-- Start/Stop/Browser/Update Buttons (Her zaman gorunur) -->
                             <div class="server-controls">
                                 <div class="btn-group">
                                     <button id="btn-start-openwebui" class="start-btn">▶ Start</button>
                                     <button id="btn-stop-openwebui" class="stop-btn" disabled>⏹ Stop</button>
+                                    <button id="btn-update-openwebui" class="secondary-btn" data-i18n="btn_update">🔄 Update</button>
                                     <button id="btn-open-openwebui" class="browser-btn" disabled>🌐 Open in Browser</button>
                                 </div>
                             </div>
@@ -337,21 +338,7 @@
                                     <label data-i18n="label_port">Port:</label>
                                     <input type="number" id="llamacpp-port" value="1234" min="1" max="65535">
                                 </div>
-                                <div class="form-row">
-                                    <label data-i18n="label_context_size">Context Size:</label>
-                                    <select id="llamacpp-ctx">
-                                        <option value="4096">4,096</option>
-                                        <option value="8192" selected>8,192</option>
-                                        <option value="16384">16,384</option>
-                                        <option value="32768">32,768</option>
-                                        <option value="49152">49,152</option>
-                                        <option value="65536">65,536</option>
-                                        <option value="98304">98,304</option>
-                                        <option value="131072">131,072</option>
-                                        <option value="196608">196,608</option>
-                                        <option value="262144">262,144</option>
-                                    </select>
-                                </div>
+
                                 <div class="form-row">
                                     <label data-i18n="label_bind_to">Bind to:</label>
                                     <select id="llamacpp-host">
@@ -409,6 +396,7 @@
                             <div class="btn-group">
                                 <button id="btn-detect-project" class="secondary-btn">🔍 Detect Project</button>
                                 <button id="btn-add-to-path" class="secondary-btn">➕ Add to PATH</button>
+                                <button id="btn-update-picoding" class="secondary-btn" data-i18n="btn_update_picoding">🔄 Update PiCoding</button>
                             </div>
                         </fieldset>
                     </div>
