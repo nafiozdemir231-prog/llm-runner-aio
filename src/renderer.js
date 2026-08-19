@@ -708,12 +708,6 @@ function applyTheme(theme) {
     state.theme = theme;
     document.documentElement.setAttribute('data-theme', theme);
     
-    // Update theme toggle button icon
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-        themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
-    }
-    
     // Save to config
     window.electronAPI.config.write({ ...state.config, theme });
 }
@@ -782,15 +776,6 @@ function setupEventListeners() {
             switchTab(tab);
         });
     });
-    
-    // Theme toggle
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-            const newTheme = state.theme === 'dark' ? 'light' : 'dark';
-            applyTheme(newTheme);
-        });
-    }
     
     // Window controls (Minimize/Maximize/Close)
     const btnMinimize = document.getElementById('btn-minimize');
