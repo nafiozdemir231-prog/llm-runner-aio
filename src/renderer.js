@@ -26,7 +26,8 @@ const state = {
         searxng: { running: false, port: 8080, host: '127.0.0.1' },
         openwebui: { running: false, port: 3000, host: '127.0.0.1' },
         llamacpp: { running: false, port: 1234, host: '127.0.0.1' },
-        vane: { running: false, port: 3001, host: '127.0.0.1' }
+        vane: { running: false, port: 3001, host: '127.0.0.1' },
+        wan2gp: { running: false, port: 7860, host: '127.0.0.1', installed: false }
     },
     models: [],
     selectedModel: null
@@ -351,7 +352,8 @@ async function restorePreviousSelection() {
             { key: 'searxng_port', id: 'searxng-port', defaultVal: 8080 },
             { key: 'openwebui_port', id: 'openwebui-port', defaultVal: 3000 },
             { key: 'llamacpp_port', id: 'llamacpp-port', defaultVal: 1234 },
-            { key: 'vane_port', id: 'vane-port', defaultVal: 3001 }
+            { key: 'vane_port', id: 'vane-port', defaultVal: 3001 },
+            { key: 'wan2gp_port', id: 'wan2gp-port', defaultVal: 7860 }
         ];
         
         for (const field of portFields) {
@@ -366,7 +368,8 @@ async function restorePreviousSelection() {
             { key: 'searxng_host', id: 'searxng-host', defaultVal: '127.0.0.1' },
             { key: 'openwebui_host', id: 'openwebui-host', defaultVal: '127.0.0.1' },
             { key: 'llamacpp_host', id: 'llamacpp-host', defaultVal: '127.0.0.1' },
-            { key: 'vane_host', id: 'vane-host', defaultVal: '127.0.0.1' }
+            { key: 'vane_host', id: 'vane-host', defaultVal: '127.0.0.1' },
+            { key: 'wan2gp_host', id: 'wan2gp-host', defaultVal: '127.0.0.1' }
         ];
         
         for (const field of hostFields) {
@@ -429,10 +432,13 @@ async function saveAllSettings() {
             openwebui_port: parseInt(document.getElementById('openwebui-port')?.value) || 3000,
             llamacpp_port: parseInt(document.getElementById('llamacpp-port')?.value) || 1234,
             vane_port: parseInt(document.getElementById('vane-port')?.value) || 3001,
+            wan2gp_port: parseInt(document.getElementById('wan2gp-port')?.value) || 7860,
+            wan2gp_preset: document.getElementById('wan2gp-preset')?.value || '',
             searxng_host: document.getElementById('searxng-host')?.value || '127.0.0.1',
             openwebui_host: document.getElementById('openwebui-host')?.value || '127.0.0.1',
             llamacpp_host: document.getElementById('llamacpp-host')?.value || '127.0.0.1',
             vane_host: document.getElementById('vane-host')?.value || '127.0.0.1',
+            wan2gp_host: document.getElementById('wan2gp-host')?.value || '127.0.0.1',
             llamacpp_threads: parseInt(document.getElementById('llamacpp-threads')?.value) || 10,
             llamacpp_parallel: parseInt(document.getElementById('llamacpp-parallel')?.value) || 1,
             llamacpp_sleep_idle: parseInt(document.getElementById('llamacpp-sleep-idle')?.value) || 1000,
@@ -811,6 +817,14 @@ function setupEventListeners() {
     // Server controls
     setupServerControls();
     
+    // Wan2GP: kurulum durumu + Setup butonu + kurulum log akisi
+    refreshWan2gpStatus();
+    const wgpSetupBtn = document.getElementById('btn-wan2gp-setup');
+    if (wgpSetupBtn) wgpSetupBtn.addEventListener('click', () => runWan2gpSetup());
+    window.electronAPI.wan2gp.onSetupLog((data) => {
+        appendToLog('wan2gp', data.message);
+    });
+    
     // Model management
     setupModelControls();
     
@@ -983,8 +997,8 @@ document.getElementById('settings-font-decrease')?.addEventListener('click', () 
 // Auto-save on Server Port/Host Changes
 // ============================================
 const autoSaveInputs = [
-    'searxng-port', 'openwebui-port', 'llamacpp-port', 'vane-port',
-    'searxng-host', 'openwebui-host', 'llamacpp-host', 'vane-host'
+    'searxng-port', 'openwebui-port', 'llamacpp-port', 'vane-port', 'wan2gp-port',
+    'searxng-host', 'openwebui-host', 'llamacpp-host', 'vane-host', 'wan2gp-host'
 ];
 
 autoSaveInputs.forEach(id => {
@@ -1064,6 +1078,95 @@ async function detectHardware() {
 // ============================================
 // Server Controls
 // ============================================
+let wan2gpSetupInFlight = false;
+
+/**
+ * Wan2GP kurulum durumunu sorgular ve UI'ya yansitir.
+ */
+async function refreshWan2gpStatus() {
+    try {
+        const st = await window.electronAPI.wan2gp.status();
+        state.servers.wan2gp.installed = !!st.installed;
+
+        const sel = document.getElementById('wan2gp-preset');
+        const startBtn = document.getElementById('btn-start-wan2gp');
+        const setupBtn = document.getElementById('btn-wan2gp-setup');
+        const stateSpan = document.getElementById('wan2gp-setup-state');
+        if (!sel) return;
+
+        // Preset listesini doldur
+        const saved = state.config.wan2gp_preset;
+        sel.innerHTML = '';
+        for (const p of st.presets) {
+            const opt = document.createElement('option');
+            opt.value = p.path;
+            opt.textContent = p.brand.toUpperCase() + ' / ' + p.gen;
+            sel.appendChild(opt);
+        }
+        const preferred = saved || st.recommended;
+        if (preferred && st.presets.some(p => p.path === preferred)) {
+            sel.value = preferred;
+        } else if (st.presets.length > 0) {
+            sel.selectedIndex = 0;
+        }
+
+        // Start butonu ancak kurulum tamamsa aktif
+        if (startBtn) startBtn.disabled = !st.installed || state.servers.wan2gp.running;
+
+        // Setup butonu metni/durumu
+        if (setupBtn) {
+            setupBtn.disabled = !!st.setupRunning;
+            setupBtn.textContent = st.installed ? '\ud83d\udce6 Re-setup' : '\ud83d\udce6 Setup';
+        }
+        if (stateSpan) {
+            stateSpan.textContent = st.installed ? '\u2713 Installed' : (st.cloned ? '\u23f3 Partially set up' : 'Not installed');
+        }
+    } catch (err) {
+        console.error('[WAN2GP] Status query failed:', err.message);
+    }
+}
+
+/**
+ * Wan2GP kurulumu calistirir (clone + ayri venv + pip install).
+ */
+async function runWan2gpSetup() {
+    if (wan2gpSetupInFlight) return;
+    const sel = document.getElementById('wan2gp-preset');
+    const preset = sel ? sel.value : null;
+    if (!preset) {
+        showNotification('Warning', 'No GPU preset selected.', 'warning');
+        return;
+    }
+
+    const st = await window.electronAPI.wan2gp.status().catch(() => null);
+    let prereqText = '';
+    if (st && Array.isArray(st.prereqs) && st.prereqs.length > 0) {
+        prereqText = '\n\nPrerequisites (' + preset + '):\n' + st.prereqs.join('\n');
+    }
+    const diskNote = '\n\n\u26a0 This downloads several GB of packages and may take 10-30 minutes.';
+    const confirmed = await window.electronAPI.notification.confirm(
+        'Wan2GP Setup',
+        'Install Wan2GP for "' + preset + '"?\n\nThe repository will be cloned into Wan2GP/ and a dedicated virtual environment (venvs/wan2gp) will be created.' + prereqText + diskNote
+    );
+    if (!confirmed) return;
+
+    wan2gpSetupInFlight = true;
+    const setupBtn = document.getElementById('btn-wan2gp-setup');
+    if (setupBtn) setupBtn.disabled = true;
+    appendToLog('wan2gp', '[SETUP] Starting...');
+
+    const result = await window.electronAPI.wan2gp.setup({ preset });
+    wan2gpSetupInFlight = false;
+    if (result.success) {
+        appendToLog('wan2gp', '[SETUP] Complete.');
+        showNotification('Info', 'Wan2GP setup complete.', 'info');
+    } else {
+        appendToLog('wan2gp', '[SETUP] FAILED: ' + result.error, true);
+        showNotification('Error', 'Wan2GP setup failed: ' + result.error, 'error');
+    }
+    await refreshWan2gpStatus();
+}
+
 function setupServerControls() {
     // Prevent duplicate IPC listener registration on re-entry
     if (eventListenersSetup) return;
@@ -1085,7 +1188,8 @@ function setupServerControls() {
             statusId: 'llamacpp-status', 
             logId: 'llamacpp-log' 
         },
-        { type: 'vane', startId: 'btn-start-vane', stopId: 'btn-stop-vane', updateId: null, browserId: 'btn-open-vane', portId: 'vane-port', hostId: 'vane-host', statusId: 'vane-status', logId: 'vane-log' }
+        { type: 'vane', startId: 'btn-start-vane', stopId: 'btn-stop-vane', updateId: null, browserId: 'btn-open-vane', portId: 'vane-port', hostId: 'vane-host', statusId: 'vane-status', logId: 'vane-log' },
+        { type: 'wan2gp', startId: 'btn-start-wan2gp', stopId: 'btn-stop-wan2gp', updateId: null, browserId: 'btn-open-wan2gp', portId: 'wan2gp-port', hostId: 'wan2gp-host', statusId: 'wan2gp-status', logId: 'wan2gp-log' }
     ];
     
     // IPC Event Listeners (Server logs)
@@ -1439,7 +1543,7 @@ async function startAllServers() {
 }
 
 async function stopAllServers() {
-    const types = ['searxng', 'openwebui', 'llamacpp', 'vane'];
+    const types = ['searxng', 'openwebui', 'llamacpp', 'vane', 'wan2gp'];
     
     for (const type of types) {
         appendToLog(type, `Stopping ${type}...`);

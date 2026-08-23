@@ -376,6 +376,66 @@
                             </div>
                         </fieldset>
                     </div>
+
+                    <div class="server-section">
+                        <fieldset>
+                            <legend>🎬 Wan2GP - Video Generation</legend>
+
+                            <div class="server-info">
+                                <span id="desc-wan2gp" class="info-desc">AI video/image generation (Wan 2.x) — runs in its own environment, one-time setup required</span>
+                            </div>
+
+                            <!-- Kurulum (Setup) -->
+                            <div class="server-controls">
+                                <div class="btn-group">
+                                    <button id="btn-wan2gp-setup" class="secondary-btn">📦 Setup</button>
+                                    <span id="wan2gp-setup-state"></span>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <label data-i18n="label_wan2gp_preset">GPU Preset:</label>
+                                <select id="wan2gp-preset"></select>
+                            </div>
+
+                            <!-- Start/Stop/Browser Buttons -->
+                            <div class="server-controls">
+                                <div class="btn-group">
+                                    <button id="btn-start-wan2gp" class="start-btn" disabled>▶ Start</button>
+                                    <button id="btn-stop-wan2gp" class="stop-btn" disabled>⏹ Stop</button>
+                                    <button id="btn-open-wan2gp" class="browser-btn" disabled>🌐 Open in Browser</button>
+                                </div>
+                            </div>
+
+                            <div class="server-status">
+                                Status: <span class="status-text-label">Stopped</span> <span id="wan2gp-status" class="status-indicator stopped">Stopped</span>
+                            </div>
+
+                            <!-- Config Toggle Button -->
+                            <button id="btn-hide-wan2gp-config" class="secondary-btn small-btn" data-i18n="hide_config_btn" onclick="toggleConfigPanel('wan2gp-config', this)">🔧 Hide Config</button>
+
+                            <!-- Wan2GP Config (Gizli) -->
+                            <div id="wan2gp-config" class="server-config hidden">
+                                <div class="form-row">
+                                    <label data-i18n="label_port">Port:</label>
+                                    <input type="number" id="wan2gp-port" value="7860" min="1" max="65535">
+                                </div>
+
+                                <div class="form-row">
+                                    <label data-i18n="label_bind_to">Bind to:</label>
+                                    <select id="wan2gp-host">
+                                        <option value="127.0.0.1">This PC Only</option>
+                                        <option value="0.0.0.0">Local Network</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="log-panel">
+                                <button class="log-toggle" onclick="toggleLogPanel('wan2gp-log', this)">📋 Logs ▾</button>
+                                <textarea id="wan2gp-log" class="log-area hidden" readonly placeholder="Wan2GP logs..."></textarea>
+                            </div>
+                        </fieldset>
+                    </div>
                 </div>
                 
                 <!-- Global Actions -->

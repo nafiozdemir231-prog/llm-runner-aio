@@ -14,7 +14,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Güvenli API Maruziyeti (contextBridge.exposeInMainWorld)
 // ============================================
 // HAT-09: Renderer'in dinleyebildigi event kanallari (beyaz liste)
-const ALLOWED_EVENT_CHANNELS = ['server-log', 'server-error', 'server-stopped', 'server-running'];
+const ALLOWED_EVENT_CHANNELS = ['server-log', 'server-error', 'server-stopped', 'server-running', 'wan2gp-setup-log'];
 
 contextBridge.exposeInMainWorld('electronAPI', {
 
@@ -110,6 +110,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
          * PyQt6'da: yok - Electron特有 fonksiyon
          */
         update: (serverType) => ipcRenderer.invoke('server-update', serverType)
+    },
+
+    // ============================================
+    // Wan2GP (video üretimi) — durum & kurulum
+    // ============================================
+    wan2gp: {
+        /**
+         * Kurulum durumu (clone/venv/pip işaretleri + önerilen preset)
+         */
+        status: () => ipcRenderer.invoke('wan2gp-status'),
+
+        /**
+         * Kurulumu çalıştır (clone + ayrı venv + pip install)
+         */
+        setup: (options) => ipcRenderer.invoke('wan2gp-setup', options),
+
+        /**
+         * Kurulum ilerleme loglarını dinle
+         */
+        onSetupLog: (callback) => {
+            ipcRenderer.on('wan2gp-setup-log', (event, data) => callback(data));
+        }
     },
 
     // ============================================

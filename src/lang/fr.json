@@ -148,6 +148,7 @@
   "legend_llamacpp": "🦙 llama.cpp - AI Engine",
   "legend_vane": "🌐 Vane - AI Answer Engine",
   "label_bind_to": "Bind to:",
+  "label_wan2gp_preset": "Preset GPU :",
   "opt_this_pc": "This PC Only",
   "opt_local_network": "Local Network",
   "status_label": "Status:",

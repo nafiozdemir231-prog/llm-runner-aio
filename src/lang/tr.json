@@ -148,6 +148,7 @@
   "legend_llamacpp": "🦙 llama.cpp - AI Motoru",
   "legend_vane": "🌐 Vane - AI Cevap Motoru",
   "label_bind_to": "Bağlanacak Adres:",
+  "label_wan2gp_preset": "GPU Preseti:",
   "opt_this_pc": "Sadece Bu PC",
   "opt_local_network": "Yerel Ağda Yayınla",
   "status_label": "Durum:",

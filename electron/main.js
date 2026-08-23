@@ -14,9 +14,10 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, shell, dialog } = require('elec
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const { spawn, execSync } = require('child_process');
+const { spawn, execSync, spawnSync } = require('child_process');
 const treeKill = require('tree-kill');
 const presetStore = require('./preset-store');
+const wan2gpDetect = require('./wan2gp-detect');
 
 // ============================================
 // Path Resolution (Cross-Platform Portability)
@@ -133,7 +134,8 @@ const serverStates = {
     searxng: { running: false, port: 8080 },
     openwebui: { running: false, port: 3000 },
     llamacpp: { running: false, port: 1234 },
-    vane: { running: false, port: 3001 }
+    vane: { running: false, port: 3001 },
+    wan2gp: { running: false, port: 7860 }
 };
 
 // ============================================
@@ -367,7 +369,8 @@ function buildTrayMenu() {
         searxng: 'SearXNG',
         openwebui: 'Open WebUI',
         llamacpp: 'llama.cpp',
-        vane: 'Vane'
+        vane: 'Vane',
+        wan2gp: 'Wan2GP'
     };
     
     for (const [type, name] of Object.entries(serverNames)) {
@@ -664,6 +667,87 @@ Write-Host 'Autostart disabled successfully'
         // stopServer() zaten setServerState() üzerinden güncelliyor
         return await stopServer(serverType);
     });
+    // ============================================
+    // Wan2GP (video üretimi) — durum & kurulum
+    // ============================================
+    ipcMain.handle('wan2gp-status', async () => {
+        const hw = await detectHardware();
+        const recommended = wan2gpDetect.mapGpuToWan2gpPreset(hw.gpuName);
+        const presets = wan2gpDetect.listPresets(WAN2GP_PRESETS_DIR);
+        let prereqs = [];
+        if (recommended) {
+            try {
+                const mdPath = path.join(WAN2GP_PRESETS_DIR, recommended.path, 'KURULUM.md');
+                prereqs = wan2gpDetect.extractPrereqs(fs.readFileSync(mdPath, 'utf8'));
+            } catch {}
+        }
+        return {
+            gpuName: hw.gpuName || '',
+            recommended: recommended ? recommended.path : null,
+            presets,
+            cloned: fs.existsSync(path.join(WAN2GP_DIR, 'wgp.py')),
+            venvExists: fs.existsSync(path.join(WAN2GP_VENV_DIR, 'Scripts', 'python.exe')),
+            installed: fs.existsSync(path.join(WAN2GP_VENV_DIR, '.wan2gp-installed')),
+            prereqs,
+            setupRunning: wan2gpSetupRunning
+        };
+    });
+
+    ipcMain.handle('wan2gp-setup', async (event, options = {}) => {
+        if (wan2gpSetupRunning) return { success: false, error: 'Setup already in progress.' };
+        wan2gpSetupRunning = true;
+        const send = (message) => safeSend('wan2gp-setup-log', { message });
+        try {
+            const presetRel = options.preset;
+            if (!presetRel || !/^[a-z]+\/[a-z0-9-]+$/.test(presetRel)) {
+                throw new Error('No valid preset selected.');
+            }
+            const reqFile = path.join(WAN2GP_PRESETS_DIR, presetRel, 'requirements.txt');
+            if (!fs.existsSync(reqFile)) throw new Error('Preset requirements.txt not found: ' + presetRel);
+
+            // 1) Git kontrolü
+            try { execSync('git --version', { encoding: 'utf8', timeout: 5000 }); }
+            catch { throw new Error('Git was not found in PATH. Install Git for Windows first.'); }
+
+            // 2) Clone (yalnızca bir kez, shallow)
+            if (!fs.existsSync(path.join(WAN2GP_DIR, 'wgp.py'))) {
+                send('[SETUP] Cloning Wan2GP repository (can take a few minutes)...');
+                execSync('git clone --depth 1 ' + WAN2GP_REPO_URL, { cwd: PROJECT_DIR, timeout: 15 * 60 * 1000, stdio: 'pipe' });
+                send('[SETUP] Repository cloned.');
+            }
+
+            // 3) Python bul (3.11 tercih edilir)
+            const py = findWan2gpPython();
+            send('[SETUP] Using Python: ' + [py.cmd].concat(py.args).join(' '));
+
+            // 4) Ayrı sanal ortam (venv) oluştur
+            const venvPy = path.join(WAN2GP_VENV_DIR, 'Scripts', 'python.exe');
+            if (!fs.existsSync(venvPy)) {
+                send('[SETUP] Creating virtual environment: venvs\\wan2gp');
+                fs.mkdirSync(path.dirname(WAN2GP_VENV_DIR), { recursive: true });
+                const mk = spawnSync(py.cmd, py.args.concat(['-m', 'venv', WAN2GP_VENV_DIR]), { cwd: PROJECT_DIR, timeout: 5 * 60 * 1000 });
+                if (!fs.existsSync(venvPy)) {
+                    throw new Error('Virtual environment creation failed: ' + ((mk && mk.stderr) ? String(mk.stderr).slice(-500) : 'unknown error'));
+                }
+            }
+
+            // 5) Bağımlılıkları kur (akışlı çıktı)
+            send('[SETUP] Installing dependencies for "' + presetRel + '" — this can take 10-30 minutes...');
+            await runWan2gpStreaming([venvPy, '-m', 'pip', 'install', '-r', reqFile], send);
+
+            // 6) Tamamlandı işareti
+            fs.writeFileSync(path.join(WAN2GP_VENV_DIR, '.wan2gp-installed'), new Date().toISOString());
+            send('[SETUP] Setup complete. You can now start Wan2GP.');
+            return { success: true };
+        } catch (err) {
+            console.error('[WAN2GP-SETUP] Failed:', err.message);
+            send('[SETUP] FAILED: ' + err.message);
+            return { success: false, error: err.message };
+        } finally {
+            wan2gpSetupRunning = false;
+        }
+    });
+
 
     // Tray menu guncelleme (renderer'dan manuel trigger icin)
     ipcMain.handle('tray-update-menu', () => {
@@ -1748,6 +1832,67 @@ async function getTranslation(langCode, key, params = {}) {
 // ============================================
 const runningServers = new Map(); // serverType → { child, port }
 
+// ============================================
+// Wan2GP yardımcıları (video üretimi servisi)
+// ============================================
+const WAN2GP_REPO_URL = 'https://github.com/deepbeepmeep/Wan2GP.git';
+const WAN2GP_DIR = path.join(PROJECT_DIR, 'Wan2GP');
+const WAN2GP_VENV_DIR = path.join(PROJECT_DIR, 'venvs', 'wan2gp');
+const WAN2GP_PRESETS_DIR = path.join(PROJECT_DIR, 'wan2gp-presets');
+let wan2gpSetupRunning = false;
+
+/**
+ * Wan2GP için sistem Python'unu bulur (3.11 tercih edilir).
+ * @returns {{cmd:string, args:string[]}} ör. { cmd: 'py', args: ['-3.11'] }
+ */
+function findWan2gpPython() {
+    const candidates = [
+        { cmd: 'py', args: ['-3.11'] },
+        { cmd: 'py', args: ['-3'] },
+        { cmd: 'python', args: [] }
+    ];
+    for (const cand of candidates) {
+        try {
+            const res = spawnSync(cand.cmd, cand.args.concat(['-c', 'import sys;print("%d.%d" % sys.version_info[:2])']), { encoding: 'utf8', timeout: 10000 });
+            const out = (res.stdout || '').trim();
+            if (/^\d+\.\d+$/.test(out)) {
+                if (!out.startsWith('3.11')) {
+                    console.warn('[WAN2GP] Tercih edilen Python 3.11, bulunan ' + out + ' — devam ediliyor.');
+                }
+                return cand;
+            }
+        } catch {}
+    }
+    throw new Error('Uygun Python bulunamadı. Önce Python 3.11 kurun.');
+}
+
+/**
+ * Komutu çalıştırır, çıktı satırlarını `send` ile akıtarak bekler.
+ * Başarısız olursa son satırları içeren hata fırlatır.
+ */
+async function runWan2gpStreaming(commandArgs, send) {
+    return new Promise((resolve, reject) => {
+        const child = spawn(commandArgs[0], commandArgs.slice(1), { cwd: PROJECT_DIR, windowsHide: true });
+        let tailOut = '';
+        let tailErr = '';
+        const forward = (chunk) => {
+            chunk.toString().split(/\r?\n/).forEach(line => {
+                if (line.trim()) send(line);
+            });
+        };
+        child.stdout.on('data', d => { tailOut += d.toString(); if (tailOut.length > 20000) tailOut = tailOut.slice(-10000); forward(d); });
+        child.stderr.on('data', d => { tailErr += d.toString(); if (tailErr.length > 20000) tailErr = tailErr.slice(-10000); forward(d); });
+        child.on('error', (err) => reject(new Error('Launch failed: ' + err.message)));
+        child.on('exit', (code) => {
+            if (code === 0) resolve();
+            else {
+                const detail = (tailErr || tailOut).split(/\r?\n/).slice(-15).join('\n') || 'no output';
+                reject(new Error('Process exited with code ' + code + '. Last lines:\n' + detail));
+            }
+        });
+    });
+}
+
 async function startServer(serverType, options = {}) {
     const port = options.port || 8080;
     const host = options.host || '0.0.0.0';
@@ -2148,6 +2293,21 @@ export default nextConfig;
             break;
         }
 
+        case 'wan2gp': {
+            const wan2gpPort = port;
+            const wgpVenvPy = path.join(WAN2GP_VENV_DIR, 'Scripts', 'python.exe');
+            if (!fs.existsSync(wgpVenvPy)) {
+                return { success: false, error: 'Wan2GP environment is not ready. Run setup first.' };
+            }
+            if (!fs.existsSync(path.join(WAN2GP_DIR, 'wgp.py'))) {
+                return { success: false, error: 'Wan2GP source files not found. Run setup first.' };
+            }
+            cmd = wgpVenvPy;
+            args = [path.join(WAN2GP_DIR, 'wgp.py')];
+            cwd = WAN2GP_DIR;
+            env = { ...process.env, SERVER_PORT: String(wan2gpPort), SERVER_NAME: host };
+            break;
+        }
         default:
             return { success: false, error: `Unknown server type: ${serverType}` };
     }
@@ -2176,6 +2336,7 @@ export default nextConfig;
         else if (typeof openwebuiPort !== 'undefined' && openwebuiPort !== null) effectivePort = openwebuiPort;
         else if (typeof searxngPort !== 'undefined' && searxngPort !== null) effectivePort = searxngPort;
         else if (typeof llamaPort !== 'undefined' && llamaPort !== null) effectivePort = llamaPort;
+        else if (typeof wan2gpPort !== 'undefined') effectivePort = wan2gpPort;
         
         runningServers.set(serverType, { child, port: effectivePort });
         
@@ -2214,7 +2375,7 @@ export default nextConfig;
         });
 
         // Health check'a kadar bekle
-        await waitForServerReady(port, 30000);
+        await waitForServerReady(port, serverType === 'wan2gp' ? 300000 : 30000);
 
         // Single Source of Truth ile state güncelle
         setServerState(serverType, true, port);
