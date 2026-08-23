@@ -1,4 +1,18 @@
 {
+  "vram10ram32models.ini": {
+    "qwen3.6-vision": {
+      "model": "https://huggingface.co/mudler/Qwen3.6-35B-A3B-APEX-GGUF/resolve/main/Qwen3.6-35B-A3B-APEX-I-Compact.gguf",
+      "mmproj": "https://huggingface.co/mudler/Qwen3.6-35B-A3B-APEX-GGUF/resolve/main/mmproj.gguf"
+    },
+    "gemma-4-vision": {
+      "model": "https://huggingface.co/google/gemma-4-26B-A4B-it-qat-q4_0-gguf/resolve/main/gemma-4-26B_q4_0-it.gguf",
+      "mmproj": "https://huggingface.co/google/gemma-4-26B-A4B-it-qat-q4_0-gguf/resolve/main/gemma-4-26B-it-mmproj.gguf"
+    },
+    "qwen3.8-27b-vision": {
+      "model": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-UD-IQ2_S.gguf",
+      "mmproj": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/mmproj-F16.gguf"
+    }
+  },
   "vram12ram32models.ini": {
     "qwen3.6-vision": {
       "model": "https://huggingface.co/mudler/Qwen3.6-35B-A3B-APEX-GGUF/resolve/main/Qwen3.6-35B-A3B-APEX-I-Compact.gguf",
@@ -7,6 +21,10 @@
     "gemma-4-vision": {
       "model": "https://huggingface.co/google/gemma-4-26B-A4B-it-qat-q4_0-gguf/resolve/main/gemma-4-26B_q4_0-it.gguf",
       "mmproj": "https://huggingface.co/google/gemma-4-26B-A4B-it-qat-q4_0-gguf/resolve/main/gemma-4-26B-it-mmproj.gguf"
+    },
+    "qwen3.8-27b-vision": {
+      "model": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-UD-IQ2_S.gguf",
+      "mmproj": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/mmproj-F16.gguf"
     }
   },
   "vram16ram32models.ini": {
@@ -19,8 +37,8 @@
       "mmproj": "https://huggingface.co/google/gemma-4-26B-A4B-it-qat-q4_0-gguf/resolve/main/gemma-4-26B-it-mmproj.gguf"
     },
     "qwen3.8-27b-vision": {
-      "model": "https://huggingface.co/mudler/Qwen3.8-27B-APEX-GGUF/resolve/main/Qwen3.8-27B-APEX-I-Mini.gguf",
-      "mmproj": "https://huggingface.co/mudler/Qwen3.8-27B-APEX-GGUF/resolve/main/mmproj-Qwen3.8-27B-F16.gguf"
+      "model": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-UD-IQ3_S.gguf",
+      "mmproj": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/mmproj-F16.gguf"
     }
   },
   "vram24ram32models.ini": {
@@ -51,6 +69,9 @@
     "qwen3.5-4b-vision": {
       "model": "https://huggingface.co/bartowski/Qwen_Qwen3.5-4B-GGUF/resolve/main/Qwen_Qwen3.5-4B-Q4_K_M.gguf",
       "mmproj": "https://huggingface.co/bartowski/Qwen_Qwen3.5-4B-GGUF/resolve/main/mmproj-Qwen_Qwen3.5-4B-f16.gguf"
+    },
+    "Ling-3.0-tiny": {
+      "model": "https://huggingface.co/vincespeed/Ling-3.0-tiny-APEX-GGUF/resolve/main/Ling-3.0-tiny-i-compact.gguf"
     }
   },
   "vram4ram32models.ini": {
@@ -75,6 +96,9 @@
     "qwen3.5-9b-vision": {
       "model": "https://huggingface.co/bartowski/Qwen_Qwen3.5-9B-GGUF/resolve/main/Qwen_Qwen3.5-9B-IQ3_M.gguf",
       "mmproj": "https://huggingface.co/bartowski/Qwen_Qwen3.5-9B-GGUF/resolve/main/mmproj-Qwen_Qwen3.5-9B-f16.gguf"
+    },
+    "Ling-3.0-tiny": {
+      "model": "https://huggingface.co/vincespeed/Ling-3.0-tiny-APEX-GGUF/resolve/main/Ling-3.0-tiny-i-compact.gguf"
     }
   },
   "vram6ram32models.ini": {
@@ -103,6 +127,10 @@
     "gemma-4-e4b-vision": {
       "model": "https://huggingface.co/google/gemma-4-E4B-it-qat-q4_0-gguf/resolve/main/gemma-4-E4B_q4_0-it.gguf",
       "mmproj": "https://huggingface.co/google/gemma-4-E4B-it-qat-q4_0-gguf/resolve/main/gemma-4-E4B-it-mmproj.gguf"
+    },
+    "qwen3.8-27b-vision": {
+      "model": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-UD-IQ1_S.gguf",
+      "mmproj": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/mmproj-F16.gguf"
     }
   }
 }

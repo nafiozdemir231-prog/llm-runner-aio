@@ -101,17 +101,23 @@
                                     <option value="">Auto-Detect or Select...</option>
                                 </select>
                                 <button id="btn-load-ini" class="secondary-btn">Load</button>
+                                <button id="btn-open-ini" class="secondary-btn" data-i18n="btn_open_ini" title="Secili INI dosyasini varsayilan uygulamada ac">📄 Open INI</button>
                             </div>
                             
                             <div id="ini-info" class="help-text">(Run Detect Hardware to auto-select)</div>
                         </fieldset>
-                        
+                    </div>
+                    
+                    <!-- Sag kolon: Download Models + ilerleme -->
+                    <div class="section-group">
                         <!-- Download Models Section -->
                         <fieldset>
                             <legend>Download Models</legend>
                             
                             <div class="download-all-section">
                                 <button id="btn-download-all" class="primary-btn">⬇ Download All Models</button>
+                                <button id="btn-add-model" class="secondary-btn" data-i18n="btn_add_model">＋ Add Model</button>
+                                <button id="btn-check-all-urls" class="secondary-btn" data-i18n="btn_check_all_urls">🔍 Check URLs</button>
                             </div>
                             
                             <div id="model-list-container">
@@ -520,6 +526,46 @@ Pi Coding Agent - Setup and Usage Instructions:
     <!-- ============================================ -->
     <!-- Settings Modal — PyQt6 QDialog karşılığı -->
     <!-- ============================================ -->
+    <!-- ============================================ -->
+    <!-- Model Editor Modal (aktif INI bolumu + model_urls.json) -->
+    <!-- ============================================ -->
+    <div id="model-editor-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-i18n="panel_model_editor">Add / Edit Model</h2>
+                <button id="close-model-editor" class="close-btn">×</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label data-i18n="label_section_name">Model Name (section)</label>
+                    <div class="form-row"><input type="text" id="me-name" placeholder="my-model-vision" autocomplete="off"></div>
+                </div>
+
+                <div class="setting-group">
+                    <label data-i18n="label_download_url">Model URL (.gguf)</label>
+                    <div class="form-row"><input type="text" id="me-url" placeholder="https://huggingface.co/user/repo/resolve/main/model.gguf" autocomplete="off"></div>
+                </div>
+
+                <div class="setting-group">
+                    <label data-i18n="label_mmproj_url">MMProj URL (optional)</label>
+                    <div class="form-row"><input type="text" id="me-mmproj" placeholder="https://huggingface.co/user/repo/resolve/main/mmproj.gguf" autocomplete="off"></div>
+                </div>
+
+                <div class="setting-group">
+                    <label data-i18n="label_local_path">Local Path (auto)</label>
+                    <div id="me-local-path" class="help-text">—</div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="me-save" class="primary-btn" data-i18n="btn_save">Save</button>
+                <button id="me-cancel" class="secondary-btn" data-i18n="btn_cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <div id="settings-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content">

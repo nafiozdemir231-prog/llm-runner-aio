@@ -831,6 +831,9 @@ function setupEventListeners() {
     // System Detection model controls
     setupSystemModelControls();
     
+    // GUI model management (Add/Edit/Delete active INI + URL health)
+    setupModelEditorModal();
+    
     // Server log/event listeners (yeni stil - events API)
     // Bunlar setupServerControls() icersinde de tanimlanmis, oraya bakin.
     
@@ -1865,6 +1868,9 @@ async function loadINIPresets(autoSelect = null) {
             showNotification('Config Auto-Selected', `Using ${autoSelect} for your GPU`);
         }
         
+        // GUI model management: listeyi yenile
+        refreshPresetModelList(true);
+        
         console.log(`[INI] Loaded ${presets.length} presets`);
     } catch (err) {
         console.error('[INI] Failed to load presets:', err.message);
@@ -1893,6 +1899,27 @@ function setupINICallbacks() {
             
             appendToLog('system', `Loaded INI preset: ${selected}`);
             showNotification('Config Loaded', `Using ${selected}`);
+            
+            // GUI model management: listeyi yenile
+            refreshPresetModelList();
+        });
+    }
+
+    const openBtn = document.getElementById('btn-open-ini');
+    if (openBtn) {
+        openBtn.addEventListener('click', async () => {
+            const selected = iniSelect?.value;
+            if (!selected) {
+                showNotification('Warning', 'Please select a GPU config file first');
+                return;
+            }
+
+            const res = await window.electronAPI.model.openIniFile(selected);
+            if (res && res.success) {
+                appendToLog('system', 'Opened INI file: ' + selected);
+            } else {
+                showNotification('Error', (res && res.error) || 'INI dosyasi acilamadi');
+            }
         });
     }
 }
@@ -2098,6 +2125,224 @@ async function loadAdvisorSettings() {
 // ============================================
 // System Detection Model Controls
 // ============================================
+// ============================================
+// GUI model yonetimi: aktif INI bolumleri + model_urls.json
+// ============================================
+let presetListContext = { iniName: null, models: [] };
+
+async function refreshPresetModelList(silentIfEmpty) {
+    const select = document.getElementById('ini-select');
+    const listEl = document.getElementById('system-model-list');
+    if (!select || !listEl) return;
+    const iniName = select.value;
+    if (!iniName) {
+        if (!silentIfEmpty) renderSystemModelList([], null);
+        return;
+    }
+    try {
+        const res = await window.electronAPI.model.getSections(iniName);
+        if (!res || !res.success) {
+            if (res && res.error) console.warn('[PresetStore]', res.error);
+            return;
+        }
+        const models = (res.sections || []).filter(s => s && s.name && s.name !== '*');
+        presetListContext = { iniName: iniName, models: models };
+        renderSystemModelList(models, iniName);
+    } catch (err) {
+        console.error('[PresetStore] getSections failed:', err);
+    }
+}
+
+function openModelEditor(sectionName, prefill) {
+    const modal = document.getElementById('model-editor-modal');
+    if (!modal) return;
+    const nameInput = document.getElementById('me-name');
+    const urlInput = document.getElementById('me-url');
+    const mmInput = document.getElementById('me-mmproj');
+    if (sectionName && prefill) {
+        nameInput.value = sectionName;
+        nameInput.readOnly = true;
+        urlInput.value = prefill.model || '';
+        mmInput.value = prefill.mmproj || '';
+    } else {
+        nameInput.readOnly = false;
+        nameInput.value = '';
+        urlInput.value = '';
+        mmInput.value = '';
+    }
+    updateLocalPathPreview();
+    modal.classList.remove('hidden');
+}
+
+function closeModelEditor() {
+    const modal = document.getElementById('model-editor-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function updateLocalPathPreview() {
+    const el = document.getElementById('me-local-path');
+    const nameEl = document.getElementById('me-name');
+    const urlEl = document.getElementById('me-url');
+    const mmEl = document.getElementById('me-mmproj');
+    if (!el || !nameEl || !urlEl) return;
+    const name = (nameEl.value || '').trim();
+    const url = (urlEl.value || '').trim();
+    const mm = mmEl ? (mmEl.value || '').trim() : '';
+    if (!name || !url) {
+        el.textContent = '—';
+        return;
+    }
+    const folder = name.replace('-vision', '').replace('-Vision', '');
+    const file = url.split('/').pop() || '';
+    let txt = 'models/' + folder + '/' + file;
+    if (mm) {
+        const mmFile = mm.split('/').pop() || '';
+        txt += '\nmmproj: models/' + folder + '/' + mmFile;
+    }
+    el.textContent = txt;
+}
+
+async function saveModelEditor() {
+    const iniSelect = document.getElementById('ini-select');
+    const iniName = iniSelect ? iniSelect.value : null;
+    if (!iniName) {
+        showNotification('Error', 'Please select an INI file first.');
+        return;
+    }
+    const name = (document.getElementById('me-name').value || '').trim();
+    const url = (document.getElementById('me-url').value || '').trim();
+    const mm = (document.getElementById('me-mmproj').value || '').trim();
+    if (!/^[A-Za-z0-9._-]+$/.test(name)) {
+        showNotification('Error', 'Invalid model name. Use letters, numbers, dot, dash, underscore.');
+        return;
+    }
+    if (!/^https?:\/\//.test(url)) {
+        showNotification('Error', 'Model URL must start with http:// or https://');
+        return;
+    }
+    if (mm && !/^https?:\/\//.test(mm)) {
+        showNotification('Error', 'MMProj URL must start with http:// or https://');
+        return;
+    }
+    try {
+        const res = await window.electronAPI.model.saveSection({
+            iniName: iniName,
+            sectionName: name,
+            modelUrl: url,
+            mmprojUrl: mm || ''
+        });
+        if (!res || !res.success) throw new Error(res && res.error ? res.error : 'save failed');
+        closeModelEditor();
+        showNotification('Saved', '"' + name + '" ' + (res.mode === 'added' ? 'added' : 'updated') + ' (' + iniName + ')');
+        await refreshPresetModelList();
+    } catch (err) {
+        showNotification('Error', 'Save failed: ' + err.message);
+    }
+}
+
+async function checkUrlsForRow(index) {
+    const ctx = presetListContext;
+    const model = ctx.models[index];
+    if (!model || !ctx.iniName) return;
+    const statusEl = document.getElementById('urlstatus-' + index);
+    if (statusEl) {
+        statusEl.textContent = '… checking';
+        statusEl.className = 'url-status';
+    }
+    try {
+        const u = await window.electronAPI.model.getUrlsFromJSON(ctx.iniName, model.name);
+        const urls = [];
+        if (u && typeof u === 'object') {
+            if (u.model) urls.push(u.model);
+            if (u.mmproj) urls.push(u.mmproj);
+        }
+        if (urls.length === 0) {
+            if (statusEl) {
+                statusEl.textContent = 'no URL';
+                statusEl.className = 'url-status bad';
+            }
+            return;
+        }
+        const res = await window.electronAPI.model.checkUrls(urls);
+        const parts = [];
+        let allOk = true;
+        for (const r of ((res && res.results) || [])) {
+            if (r.ok) {
+                parts.push(String(r.status) + (r.size ? ' · ' + formatBytes(r.size) : ''));
+            } else {
+                allOk = false;
+                parts.push(r.error || ('HTTP ' + r.status));
+            }
+        }
+        if (statusEl) {
+            statusEl.textContent = parts.join(', ');
+            statusEl.className = 'url-status ' + (allOk ? 'ok' : 'bad');
+        }
+    } catch (err) {
+        if (statusEl) {
+            statusEl.textContent = 'error';
+            statusEl.className = 'url-status bad';
+        }
+    }
+}
+
+async function checkAllUrls() {
+    const ctx = presetListContext;
+    if (!ctx.iniName || !ctx.models || ctx.models.length === 0) {
+        showNotification('Info', 'No model list loaded. Select an INI file first.');
+        return;
+    }
+    showNotification('URL Check', 'Checking ' + ctx.models.length + ' model URLs…');
+    for (let i = 0; i < ctx.models.length; i++) {
+        await checkUrlsForRow(i);
+    }
+    showNotification('URL Check', 'Done.');
+}
+
+async function handleRowAction(action, index) {
+    const ctx = presetListContext;
+    const model = ctx.models[index];
+    if (!model || !ctx.iniName) return;
+    if (action === 'delete') {
+        const sure = confirm('Delete "' + model.name + '" from ' + ctx.iniName + '? Its URL record in model_urls.json will be removed too.');
+        if (!sure) return;
+        try {
+            const res = await window.electronAPI.model.deleteSection(ctx.iniName, model.name);
+            if (!res || !res.success) throw new Error(res && res.error ? res.error : 'delete failed');
+            showNotification('Deleted', '"' + model.name + '" removed (INI: ' + res.iniRemoved + ', JSON: ' + res.jsonRemoved + ')');
+            await refreshPresetModelList();
+        } catch (err) {
+            showNotification('Error', 'Delete failed: ' + err.message);
+        }
+    } else if (action === 'edit') {
+        let prefill = { model: '', mmproj: ''};
+        try {
+            const u = await window.electronAPI.model.getUrlsFromJSON(ctx.iniName, model.name);
+            if (u && typeof u === 'object') prefill = { model: u.model || '', mmproj: u.mmproj || ''};
+        } catch (_) {}
+        openModelEditor(model.name, prefill);
+    } else if (action === 'check') {
+        await checkUrlsForRow(index);
+    }
+}
+
+function setupModelEditorModal() {
+    const modal = document.getElementById('model-editor-modal');
+    if (!modal) return;
+    const overlay = modal.querySelector('.modal-overlay');
+    const closeBtn = document.getElementById('close-model-editor');
+    const cancelBtn = document.getElementById('me-cancel');
+    const saveBtn = document.getElementById('me-save');
+    const closeModal = () => modal.classList.add('hidden');
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    if (overlay) overlay.addEventListener('click', closeModal);
+    if (saveBtn) saveBtn.addEventListener('click', saveModelEditor);
+    ['me-name', 'me-url', 'me-mmproj'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateLocalPathPreview);
+    });
+}
 function setupSystemModelControls() {
     // Download All Models button
     const downloadAllBtn = document.getElementById('btn-download-all');
@@ -2128,7 +2373,7 @@ function setupSystemModelControls() {
                 }
                 
                 // Model listesini göster
-                renderSystemModelList(models);
+                renderSystemModelList(models, selectedIni);
                 
                 // İndirme işlemini başlat
                 console.log('[UI] Starting downloadAllModels...');
@@ -2140,18 +2385,74 @@ function setupSystemModelControls() {
             }
         });
     }
+    
+    // Add Model butonu
+    const addModelBtn = document.getElementById('btn-add-model');
+    if (addModelBtn) {
+        addModelBtn.addEventListener('click', () => {
+            const iniSel = document.getElementById('ini-select');
+            if (!iniSel || !iniSel.value) {
+                showNotification('Warning', 'Please select an INI file first.');
+                return;
+            }
+            openModelEditor(null);
+        });
+    }
+    
+    // Check URLs butonu
+    const checkAllBtn = document.getElementById('btn-check-all-urls');
+    if (checkAllBtn) {
+        checkAllBtn.addEventListener('click', checkAllUrls);
+    }
+    
+    // Satir aksiyonlari (event delegation)
+    const sysListEl = document.getElementById('system-model-list');
+    if (sysListEl) {
+        sysListEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('.mini-btn');
+            if (!btn) return;
+            const li = btn.closest('li[data-index]');
+            if (!li) return;
+            const index = Number(li.getAttribute('data-index'));
+            if (btn.classList.contains('act-check')) handleRowAction('check', index);
+            else if (btn.classList.contains('act-edit')) handleRowAction('edit', index);
+            else if (btn.classList.contains('act-del')) handleRowAction('delete', index);
+        });
+    }
+    
+    // INI secimi degisince listeyi yenile
+    const iniSelChange = document.getElementById('ini-select');
+    if (iniSelChange) {
+        iniSelChange.addEventListener('change', () => refreshPresetModelList());
+    }
 }
 
-function renderSystemModelList(models) {
+function renderSystemModelList(models, iniName) {
     const listEl = document.getElementById('system-model-list');
     if (!listEl) return;
+    presetListContext.iniName = iniName !== undefined ? iniName : presetListContext.iniName;
+    presetListContext.models = models || [];
     
-    listEl.innerHTML = models.map((model, index) => `
-        <li data-index="${index}">
+    if (!models || models.length === 0) {
+        listEl.innerHTML = '<li class="empty-message">No models.</li>';
+        return;
+    }
+    
+    listEl.innerHTML = models.map((model, index) => {
+        const k = model.keys || {};
+        const ready = k.model || k.model_file || model.model_file || model.model_url;
+        return `
+        <li data-index="${index}" data-name="${escHtml(model.name)}">
             <span>[${escHtml(model.name)}]</span>
-            <span class="muted">${(model.model_file || model.model_url) ? '✓ Ready' : '✗ No URL'}</span>
-        </li>
-    `).join('');
+            <span class="muted">${ready ? '✓ Ready' : '✗ No model key'}</span>
+            <span class="url-status" id="urlstatus-${index}"></span>
+            <span class="model-row-actions">
+                <button type="button" class="mini-btn act-check" title="Check URL">🔍</button>
+                <button type="button" class="mini-btn act-edit" title="Edit">✎</button>
+                <button type="button" class="mini-btn mini-danger act-del" title="Delete">🕑</button>
+            </span>
+        </li>`;
+    }).join('');
 }
 
 async function downloadAllModels(models, selectedIni) {

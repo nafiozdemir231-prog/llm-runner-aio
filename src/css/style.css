@@ -1134,5 +1134,68 @@ input[type="checkbox"] {
     border: 2px solid var(--border);
     border-radius: var(--radius-lg);
     margin-bottom: 16px;
+}
 
+/* ============================================ */
+/* GUI model yonetimi: satir aksiyonlari + URL durumu */
+/* ============================================ */
+.model-row-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+}
 
+.mini-btn {
+    padding: 1px 6px;
+    font-size: 12px;
+    line-height: 1.5;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: inherit;
+    cursor: pointer;
+    border-radius: var(--radius);
+    transition: background-color 0.2s ease;
+}
+
+.mini-btn:hover {
+    background-color: var(--bg-secondary);
+}
+
+.mini-danger:hover {
+    border-color: var(--danger);
+}
+
+.url-status {
+    font-size: 11px;
+    opacity: 0.85;
+}
+
+.url-status.ok {
+    color: var(--success);
+}
+
+.url-status.bad {
+    color: var(--danger);
+}
+
+#me-local-path {
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* ============================================ */
+/* System sekmesi: iki kolonlu yerlesim (.system-two-col-note) */
+/* Sol: Detected Hardware + Models Configuration */
+/* Sag: Download Models + Download Progress     */
+/* ============================================ */
+#tab-system .panel-body {
+    grid-template-columns: minmax(300px, 5fr) minmax(360px, 7fr);
+    max-width: none;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    #tab-system .panel-body {
+        grid-template-columns: 1fr;
+    }
+}

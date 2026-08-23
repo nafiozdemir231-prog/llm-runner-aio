@@ -16,6 +16,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { spawn, execSync } = require('child_process');
 const treeKill = require('tree-kill');
+const presetStore = require('./preset-store');
 
 // ============================================
 // Path Resolution (Cross-Platform Portability)
@@ -1330,6 +1331,110 @@ if ($pathValue -and $pathValue -like "*$picodingPath*") {
 
         return result;
     });
+
+    // ============================================
+    // GUI model yonetimi: aktif INI bolumleri + model_urls.json
+    // (preset-store.js modulu — minimal mudahale)
+    // ============================================
+    ipcMain.handle('preset-get-sections', async (event, iniName) => {
+        try {
+            presetStore.assertSafeIniName(iniName);
+            const iniPath = path.join(PROJECT_DIR, iniName);
+            if (!fs.existsSync(iniPath)) return { success: false, error: 'INI not found: ' + iniName };
+            const sections = presetStore.listSections(iniPath);
+            return { success: true, sections };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
+
+    ipcMain.handle('preset-save-section', async (event, payload) => {
+        try {
+            const p = payload || {};
+            presetStore.assertSafeIniName(p.iniName);
+            const iniPath = path.join(PROJECT_DIR, p.iniName);
+            const urlsJsonPath = path.join(PROJECT_DIR, 'model_urls.json');
+            const res = presetStore.saveSection({
+                iniPath: iniPath,
+                urlsJsonPath: urlsJsonPath,
+                iniName: p.iniName,
+                sectionName: p.sectionName,
+                modelUrl: p.modelUrl,
+                mmprojUrl: p.mmprojUrl
+            });
+            return Object.assign({ success: true }, res);
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
+
+    ipcMain.handle('preset-delete-section', async (event, iniName, sectionName) => {
+        try {
+            presetStore.assertSafeIniName(iniName);
+            const iniPath = path.join(PROJECT_DIR, iniName);
+            const urlsJsonPath = path.join(PROJECT_DIR, 'model_urls.json');
+            const res = presetStore.deleteSection({ iniPath, urlsJsonPath, iniName, sectionName });
+            return Object.assign({ success: true }, res);
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
+
+    // URL saglik kontrolu (istek uzerine): once HEAD, gerekirse 1 bayt'lik GET
+    async function probeUrl(url) {
+        const baseHeaders = { 'User-Agent': 'LLM-Runner-AIO/1.0' };
+        try {
+            const resp = await fetch(url, { method: 'HEAD', headers: baseHeaders, signal: AbortSignal.timeout(10000), redirect: 'follow' });
+            const len = resp.headers.get('content-length');
+            if (resp.ok) return { url: url, ok: true, status: resp.status, size: len ? Number(len) : null };
+            return { url: url, ok: false, status: resp.status, size: null };
+        } catch (e1) {
+            try {
+                const resp2 = await fetch(url, { method: 'GET', headers: Object.assign({}, baseHeaders, { Range: 'bytes=0-0' }), signal: AbortSignal.timeout(10000), redirect: 'follow' });
+                const cr = resp2.headers.get('content-range');
+                const cl = resp2.headers.get('content-length');
+                await resp2.text().catch(function () {});
+                if (resp2.ok || resp2.status === 206) {
+                    let size = null;
+                    if (cr && cr.indexOf('/') >= 0) {
+                        const t = Number(cr.split('/')[1]);
+                        if (!isNaN(t) && t > 0) size = t;
+                    } else if (cl) {
+                        size = Number(cl);
+                    }
+                    return { url: url, ok: true, status: resp2.status, size: size };
+                }
+                return { url: url, ok: false, status: resp2.status, size: null };
+            } catch (e2) {
+                const nm = e2 && e2.name;
+                return { url: url, ok: false, status: null, error: (nm === 'TimeoutError' || nm === 'AbortError') ? 'timeout' : 'unreachable' };
+            }
+        }
+    }
+
+    ipcMain.handle('ini-open-file', async (event, iniName) => {
+        try {
+            presetStore.assertSafeIniName(iniName);
+            const full = path.join(PROJECT_DIR, String(iniName));
+            if (!fs.existsSync(full)) throw new Error('Dosya bulunamadi: ' + String(iniName));
+            const err = await shell.openPath(full);
+            if (err) throw new Error(err);
+            return { success: true };
+        } catch (error) {
+            console.error('[ini-open-file] Hata:', error.message);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('url-check', async (event, urls) => {
+        const list = Array.isArray(urls) ? urls.filter(function (u) { return typeof u === 'string'; }).slice(0, 20) : [];
+        const results = [];
+        for (const u of list) {
+            results.push(await probeUrl(u));
+        }
+        return { success: true, results: results };
+    });
+
 
     // ============================================
     // NEW: Database Load Handler

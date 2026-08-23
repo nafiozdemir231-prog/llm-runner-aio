@@ -188,6 +188,42 @@ contextBridge.exposeInMainWorld('electronAPI', {
          */
         fileExists: (filePath) => {
             return ipcRenderer.invoke('file-exists', filePath);
+        },
+
+        /**
+         * Aktif INI'nin bölüm listesini al (GUI model yönetimi)
+         */
+        getSections: (iniName) => {
+            return ipcRenderer.invoke('preset-get-sections', iniName);
+        },
+
+        /**
+         * Model bölümünü ekle/düzenle (INI + model_urls.json)
+         * payload: { iniName, sectionName, modelUrl, mmprojUrl? }
+         */
+        saveSection: (payload) => {
+            return ipcRenderer.invoke('preset-save-section', payload);
+        },
+
+        /**
+         * Model bölümünü sil (INI + model_urls.json kaydi birlikte)
+         */
+        deleteSection: (iniName, sectionName) => {
+            return ipcRenderer.invoke('preset-delete-section', iniName, sectionName);
+        },
+
+        /**
+         * Secili INI dosyasini sistem varsayilan uygulamasinda ac
+         */
+        openIniFile: (iniName) => {
+            return ipcRenderer.invoke('ini-open-file', iniName);
+        },
+
+        /**
+         * URL sağlık kontrolü (istek üzerine, otomatik değil)
+         */
+        checkUrls: (urls) => {
+            return ipcRenderer.invoke('url-check', urls);
         }
     },
 
