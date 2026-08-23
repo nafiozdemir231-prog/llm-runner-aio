@@ -140,6 +140,16 @@ if exist "electron\create_shortcut.py" (
     echo.
 )
 
+REM Sync Pi configuration files
+echo Syncing Pi configuration...
+%VENV_PYTHON% sync_pi_config.py
+if errorlevel 1 (
+    echo [WARNING] Pi config sync failed.
+) else (
+    echo [OK] Pi config synced
+)
+echo.
+
 echo ========================================
 echo   Starting LLM Runner AIO (Electron)...
 echo ========================================
