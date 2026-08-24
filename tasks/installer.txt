@@ -3,22 +3,6 @@ Ayıklama sonrasında çalıştır : LLM-Runner-AIO\run.bat
 
 Hariç tutulacak dosyalar
 
-D:\OpenCode\LLM-Runner-AIO\.git D:\OpenCode\LLM-Runner-AIO\tasks D:\OpenCode\LLM-Runner-AIO\venv D:\OpenCode\LLM-Runner-AIO\openwebui\.git D:\OpenCode\LLM-Runner-AIO\searxng\.git D:\OpenCode\LLM-Runner-AIO\Vane\.git D:\OpenCode\LLM-Runner-AIO\openwebui\openwebui.db-wal D:\OpenCode\LLM-Runner-AIO\openwebui\openwebui.db D:\OpenCode\LLM-Runner-AIO\openwebui\openwebui.db-shm
-
-
+D:\OpenCode\LLM-Runner-AIO\tasks D:\OpenCode\LLM-Runner-AIO\venv D:\OpenCode\LLM-Runner-AIO\.git D:\OpenCode\LLM-Runner-AIO\.temp_backup D:\OpenCode\LLM-Runner-AIO\openwebui\.git D:\OpenCode\LLM-Runner-AIO\searxng\.git D:\OpenCode\LLM-Runner-AIO\Vane\.git D:\OpenCode\LLM-Runner-AIO\openwebui\openwebui.db D:\OpenCode\LLM-Runner-AIO\openwebui\openwebui.db-shm D:\OpenCode\LLM-Runner-AIO\openwebui\openwebui.db-wal D:\OpenCode\LLM-Runner-AIO\models D:\OpenCode\LLM-Runner-AIO\openwebui\.git D:\OpenCode\LLM-Runner-AIO\searxng\.git D:\OpenCode\LLM-Runner-AIO\Vane\.git D:\OpenCode\LLM-Runner-AIO\Vane.next D:\OpenCode\LLM-Runner-AIO\.webui_secret_key
 
 LLM Runner AIO - Automatic Installation
-
-
-
-D:/OpenCode/LLM-Runner-AIO/src/index.html
-D:/OpenCode/LLM-Runner-AIO/electron/preload.js
-D:/OpenCode/LLM-Runner-AIO/src/workers/server-manager.js
-D:/OpenCode/LLM-Runner-AIO/electron/main.js
-D:/OpenCode/LLM-Runner-AIO/src/renderer.js
-D:/OpenCode/LLM-Runner-AIO/src/lang/
-
-
-Sıstem tepsisi(system tray) uygulama sag klık acılan menuye 4 sunucuyuda durdurup baslatma secenegı ayrı ayrı ekleyebilirmisin.tum dillere de entegre olucak sekilde.
-
-
