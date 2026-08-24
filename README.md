@@ -61,6 +61,8 @@ vram4ram16models.ini, vram6ram16models.ini
 
 * qwen3.5-9B
 
+All of the model lists above can be managed directly from the GUI — no manual INI editing needed (see “GUI Model Manager” in Key Features).
+
 * SearXNG (Completely private local web search) link: https://github.com/searxng/searxng
 
 * Pi Coding (Pi is a minimal agent harness) link: https://github.com/earendil-works/pi
@@ -80,6 +82,8 @@ Optional integrated service. Press "Setup" in the Wan2GP card (System tab): the 
 * No Manual Installation Required: It is a single 2 GB .exe file. Simply double-click and wait for the installation to complete. It automatically installs Python, Node, and all necessary dependencies within a local virtual environment (venv).
 
 * Automatic Hardware Detection: The application automatically detects your GPU/VRAM and configures your system according to a specific hardware profile (VRAM options: 4GB, 6GB, 8GB, 12GB, 16GB, 24GB, and 32GB). * Smart Model Downloader: Simply select an auto-detection profile and click the model download button. The application filters and downloads models that perfectly match your VRAM capacity and configures llama.cpp accordingly.
+
+* GUI Model Manager: Add, edit, or remove models straight from the System tab. The app rewrites the active preset INI safely (comments and order preserved), keeps the corresponding download URLs in sync in `model_urls.json`, and offers one-click URL health checks for a single model or for every model at once.
 
 * Built-in Video Generation (Wan2GP): The app detects your GPU generation, picks the right package (NVIDIA GTX 10xx – RTX 50xx, AMD RX 6xxx / 7xxx / 9xxx / APU, Intel Arc), and lets you install, start, stop and monitor the Wan2GP server from the same screen. Port and network binding are configurable (default port: 7860).
 
