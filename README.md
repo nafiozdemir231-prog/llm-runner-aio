@@ -28,38 +28,61 @@ Searxng and `llama.cpp` server settings are pre-configured. You can also load fu
 
 * `llama.cpp` (Pre-compiled CUDA 13 + Vulkan versions) link: https://github.com/ggml-org/llama.cpp
 
-These are the versions I have configured. 
-vram12ram32models.ini, vram16ram32models.ini, 
+These are the versions I have configured (every model below ships with chat, vision and coding profiles):
+
+gpu1vram10ram32models.ini, gpu1vram12ram32models.ini, gpu1vram16ram32models.ini
 
 * qwen3.6-35B-A3B
 
-* gemma-4-26B-A4B
+* gemma-4-26B
 
-vram4ram32models.ini, vram6ram32models.ini, vram8ram32models.ini
+* qwen3.8-27B
+
+gpu1vram8ram32models.ini
 
 * qwen3.6-35B-A3B
 
-* gemma-4-26B-A4B
+* gemma-4-26B
 
-*gemma-4-E4B
+* gemma-4-E4B
 
-vram24ram32models.ini
+* qwen3.8-27B
 
-* qwen3.6-27B
+gpu1vram4ram32models.ini, gpu1vram6ram32models.ini
 
-*gemma-4-26B-A4B
+* qwen3.6-35B-A3B
 
-vram32ram32models.ini
+* gemma-4-26B
 
-* qwen3.6-27B
+* gemma-4-E4B
+
+gpu1vram24ram32models.ini
+
+* qwen3.8-27B
+
+* gemma-4-26B
+
+gpu1vram32ram32models.ini
+
+* qwen3.8-27B
 
 * gemma-4-31B
 
-vram4ram16models.ini, vram6ram16models.ini
+gpu1vram4ram16models.ini
+
+* gemma-4-E4B
+
+* qwen3.5-4B
+
+* Ling-3.0-tiny
+
+gpu1vram6ram16models.ini
 
 * gemma-4-E4B
 
 * qwen3.5-9B
+
+* Ling-3.0-tiny
 
 All of the model lists above can be managed directly from the GUI — no manual INI editing needed (see “GUI Model Manager” in Key Features).
 
