@@ -749,6 +749,25 @@ Write-Host 'Autostart disabled successfully'
     });
 
 
+    // Wan2GP repo guncelleme (git pull)
+    ipcMain.handle('wan2gp-update', async (event) => {
+        const wgpFile = path.join(WAN2GP_DIR, 'wgp.py');
+        if (!fs.existsSync(wgpFile)) {
+            return { success: false, error: 'Wan2GP repo not found. Run Setup first.' };
+        }
+        const send = (message) => safeSend('wan2gp-setup-log', { message });
+        try {
+            send('[UPDATE] Pulling latest Wan2GP code (git pull --ff-only)...');
+            await runWan2gpStreaming(['git', '-C', WAN2GP_DIR, 'pull', '--ff-only'], send);
+            send('[UPDATE] Repository updated.');
+            return { success: true };
+        } catch (err) {
+            console.error('[WAN2GP-UPDATE] Failed:', err.message);
+            send('[UPDATE] FAILED: ' + err.message);
+            return { success: false, error: err.message };
+        }
+    });
+
     // Tray menu guncelleme (renderer'dan manuel trigger icin)
     ipcMain.handle('tray-update-menu', () => {
         updateTrayMenu();

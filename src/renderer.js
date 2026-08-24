@@ -163,15 +163,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             { key: 'auto_start_searxng', type: 'searxng' },
             { key: 'auto_start_openwebui', type: 'openwebui' },
             { key: 'auto_start_vane', type: 'vane' },
-            { key: 'auto_start_llamacpp', type: 'llamacpp' }
+            { key: 'auto_start_llamacpp', type: 'llamacpp' },
+            { key: 'auto_start_wan2gp', type: 'wan2gp' }
         ];
         
         for (const srv of serverMap) {
             if (state.config[srv.key]) {
                 console.log(`[AUTO] Starting ${srv.type}...`);
+                
+                // Wan2GP: kurulmamissa otomatik baslatma yapma
+                if (srv.type === 'wan2gp') {
+                    try {
+                        const st = await window.electronAPI.wan2gp.status();
+                        if (!st.installed) {
+                            console.log('[AUTO] Wan2GP not installed - skipping.');
+                            continue;
+                        }
+                    } catch (e) {
+                        console.log('[AUTO] Wan2GP status check failed - skipping.');
+                        continue;
+                    }
+                }
+                
                 const portInput = document.getElementById(`${srv.type}-port`);
                 const hostInput = document.getElementById(`${srv.type}-host`);
-                const port = parseInt(portInput?.value || (srv.type === 'searxng' ? 8080 : srv.type === 'openwebui' ? 3000 : srv.type === 'vane' ? 3001 : 1234));
+                const port = parseInt(portInput?.value || (srv.type === 'searxng' ? 8080 : srv.type === 'openwebui' ? 3000 : srv.type === 'vane' ? 3001 : srv.type === 'wan2gp' ? 7860 : 1234));
                 const host = hostInput?.value || '127.0.0.1';
                 
                 // llama.cpp için INI preset'i de gönder
@@ -385,7 +401,8 @@ async function restorePreviousSelection() {
             { key: 'auto_start_searxng', id: 'cb-auto-searxng' },
             { key: 'auto_start_openwebui', id: 'cb-auto-openwebui' },
             { key: 'auto_start_vane', id: 'cb-auto-vane' },
-            { key: 'auto_start_llamacpp', id: 'cb-auto-llamacpp' }
+            { key: 'auto_start_llamacpp', id: 'cb-auto-llamacpp' },
+            { key: 'auto_start_wan2gp', id: 'cb-auto-wan2gp' }
         ];
         
         for (const check of autoStartChecks) {
@@ -449,6 +466,7 @@ async function saveAllSettings() {
             auto_start_openwebui: !!document.getElementById('cb-auto-openwebui')?.checked,
             auto_start_vane: !!document.getElementById('cb-auto-vane')?.checked,
             auto_start_llamacpp: !!document.getElementById('cb-auto-llamacpp')?.checked,
+            auto_start_wan2gp: !!document.getElementById('cb-auto-wan2gp')?.checked,
             start_with_windows: !!document.getElementById('cb-start-windows')?.checked
         };
         
@@ -670,7 +688,8 @@ function updateUIText() {
         { id: 'section_searxng', key: 'section_searxng' },
         { id: 'section_openwebui', key: 'section_openwebui' },
         { id: 'section_vane', key: 'section_vane' },
-        { id: 'section_llamacpp', key: 'section_llamacpp' }
+        { id: 'section_llamacpp', key: 'section_llamacpp' },
+        { id: 'section_wan2gp', key: 'section_wan2gp' }
     ];
     document.querySelectorAll('.server-checkboxes label span').forEach((label, i) => {
         if (s[serverLabels[i].key]) label.textContent = s[serverLabels[i].key];
@@ -743,6 +762,8 @@ function applyFontSize(size) {
 // ============================================
 // Tab Switching Logic
 // ============================================
+const HOME_SITE_URL = 'https://www.aihublocal.com/llm/configs';
+
 function switchTab(tabName) {
     // Hide all panels
     document.querySelectorAll('.tab-panel').forEach(panel => {
@@ -764,6 +785,14 @@ function switchTab(tabName) {
     const targetBtn = document.querySelector(`[data-tab="${tabName}"]`);
     if (targetBtn) {
         targetBtn.classList.add('active');
+    }
+    
+    // aihublocal sekmesi: siteyi ilk acilisinda tembel yukle
+    if (tabName === 'home') {
+        const frame = document.getElementById('home-site-frame');
+        if (frame && !frame.getAttribute('src')) {
+            frame.src = HOME_SITE_URL;
+        }
     }
     
     state.currentTab = tabName;
@@ -821,6 +850,8 @@ function setupEventListeners() {
     refreshWan2gpStatus();
     const wgpSetupBtn = document.getElementById('btn-wan2gp-setup');
     if (wgpSetupBtn) wgpSetupBtn.addEventListener('click', () => runWan2gpSetup());
+    const wgpUpdateBtn = document.getElementById('btn-wan2gp-update');
+    if (wgpUpdateBtn) wgpUpdateBtn.addEventListener('click', () => runWan2gpUpdate());
     window.electronAPI.wan2gp.onSetupLog((data) => {
         appendToLog('wan2gp', data.message);
     });
@@ -972,7 +1003,8 @@ function populateSettingsForm() {
         { id: 'cb-auto-searxng', key: 'auto_start_searxng' },
         { id: 'cb-auto-openwebui', key: 'auto_start_openwebui' },
         { id: 'cb-auto-vane', key: 'auto_start_vane' },
-        { id: 'cb-auto-llamacpp', key: 'auto_start_llamacpp' }
+        { id: 'cb-auto-llamacpp', key: 'auto_start_llamacpp' },
+        { id: 'cb-auto-wan2gp', key: 'auto_start_wan2gp' }
     ];
     serverCbs.forEach(cb => {
         const el = document.getElementById(cb.id);
@@ -1118,6 +1150,10 @@ async function refreshWan2gpStatus() {
             setupBtn.disabled = !!st.setupRunning;
             setupBtn.textContent = st.installed ? '\ud83d\udce6 Re-setup' : '\ud83d\udce6 Setup';
         }
+        
+        // Update butonu: repo klonlanmis ve servis calismiyorsa aktif
+        const updateBtn = document.getElementById('btn-wan2gp-update');
+        if (updateBtn) updateBtn.disabled = !st.cloned || state.servers.wan2gp.running;
         if (stateSpan) {
             stateSpan.textContent = st.installed ? '\u2713 Installed' : (st.cloned ? '\u23f3 Partially set up' : 'Not installed');
         }
@@ -1163,6 +1199,30 @@ async function runWan2gpSetup() {
     } else {
         appendToLog('wan2gp', '[SETUP] FAILED: ' + result.error, true);
         showNotification('Error', 'Wan2GP setup failed: ' + result.error, 'error');
+    }
+    await refreshWan2gpStatus();
+}
+
+let wan2gpUpdateInFlight = false;
+
+/**
+ * Wan2GP reposunu son surume gunceller (git pull --ff-only).
+ */
+async function runWan2gpUpdate() {
+    if (wan2gpUpdateInFlight) return;
+    const updateBtn = document.getElementById('btn-wan2gp-update');
+    wan2gpUpdateInFlight = true;
+    if (updateBtn) updateBtn.disabled = true;
+    appendToLog('wan2gp', '[UPDATE] Starting...');
+
+    const result = await window.electronAPI.wan2gp.update().catch(e => ({ success: false, error: e.message }));
+    wan2gpUpdateInFlight = false;
+    if (result.success) {
+        appendToLog('wan2gp', '[UPDATE] Complete.');
+        showNotification('Success', 'Wan2GP repository updated.');
+    } else {
+        appendToLog('wan2gp', '[UPDATE] FAILED: ' + result.error, true);
+        showNotification('Error', 'Wan2GP update failed: ' + result.error, 'error');
     }
     await refreshWan2gpStatus();
 }

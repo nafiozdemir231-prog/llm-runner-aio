@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; frame-src https://www.aihublocal.com;">
     <title>LLM Runner AIO</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -20,6 +20,9 @@
         <div class="toolbar-center">
             <!-- Tab Navigation — PyQt6 QTabWidget karşılığı -->
             <div id="tab-bar">
+                <button data-tab="home" class="tab-btn" title="aihublocal.com — Community LLM Configurations">
+                    🌐 <span data-i18n="tab_home">aihublocal</span>
+                </button>
                 <button data-tab="system" class="tab-btn active" title="System Detection & Configuration">
                     🔍 <span data-i18n="tab_system">System Detection</span>
                 </button>
@@ -57,6 +60,11 @@
     <div id="main-container">
         <!-- Tab Panels — PyQt6 QTabWidget panel'leri -->
         <div id="tabs-content">
+            <!-- Tab 0: aihublocal (embedded website) -->
+            <div id="tab-home" class="tab-panel">
+                <iframe id="home-site-frame" title="aihublocal.com"></iframe>
+            </div>
+
             <!-- Tab 1: System Detection -->
             <div id="tab-system" class="tab-panel active">
                 <div class="panel-header">
@@ -404,6 +412,7 @@
                                     <button id="btn-start-wan2gp" class="start-btn" disabled>▶ Start</button>
                                     <button id="btn-stop-wan2gp" class="stop-btn" disabled>⏹ Stop</button>
                                     <button id="btn-open-wan2gp" class="browser-btn" disabled>🌐 Open in Browser</button>
+                                    <button id="btn-wan2gp-update" class="secondary-btn" disabled>🔄 Update</button>
                                 </div>
                             </div>
 
@@ -701,6 +710,10 @@ Pi Coding Agent - Setup and Usage Instructions:
                         <label>
                             <input type="checkbox" id="cb-auto-llamacpp" class="server-autostart-cb">
                             <span data-i18n="section_llamacpp">llama.cpp - AI Engine</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="cb-auto-wan2gp" class="server-autostart-cb">
+                            <span data-i18n="section_wan2gp">Wan2GP - Video Generation</span>
                         </label>
                     </div>
                 </div>

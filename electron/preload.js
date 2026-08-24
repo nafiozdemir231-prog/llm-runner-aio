@@ -127,6 +127,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
         setup: (options) => ipcRenderer.invoke('wan2gp-setup', options),
 
         /**
+         * Repo'yu son sürüme güncelle (git pull)
+         */
+        update: () => ipcRenderer.invoke('wan2gp-update'),
+
+        /**
          * Kurulum ilerleme loglarını dinle
          */
         onSetupLog: (callback) => {
