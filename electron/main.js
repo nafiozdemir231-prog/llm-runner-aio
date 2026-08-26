@@ -15,6 +15,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { spawn, execSync, spawnSync } = require('child_process');
+const { bootstrapGitDir } = require('./git-bootstrap');
 const treeKill = require('tree-kill');
 const presetStore = require('./preset-store');
 const wan2gpDetect = require('./wan2gp-detect');
@@ -735,6 +736,12 @@ Write-Host 'Autostart disabled successfully'
             send('[SETUP] Installing dependencies for "' + presetRel + '" — this can take 10-30 minutes...');
             await runWan2gpStreaming([venvPy, '-m', 'pip', 'install', '-r', reqFile], send);
 
+            // 5b) Repo'nun kendi requirements.txt — paket surumleri kodla senkron kalsin (mmgp vb.)
+            const repoReqFile = path.join(WAN2GP_DIR, 'requirements.txt');
+            if (fs.existsSync(repoReqFile)) {
+                send('[SETUP] Syncing packages with repo requirements.txt (fixes any version drift)...');
+                await runWan2gpStreaming([venvPy, '-m', 'pip', 'install', '-r', repoReqFile], send);
+            }
             // 6) Tamamlandı işareti
             fs.writeFileSync(path.join(WAN2GP_VENV_DIR, '.wan2gp-installed'), new Date().toISOString());
             send('[SETUP] Setup complete. You can now start Wan2GP.');
@@ -759,6 +766,13 @@ Write-Host 'Autostart disabled successfully'
         try {
             send('[UPDATE] Pulling latest Wan2GP code (git pull --ff-only)...');
             await runWan2gpStreaming(['git', '-C', WAN2GP_DIR, 'pull', '--ff-only'], send);
+            // Pull sonrasi bagimlilik senkronu — repo'nun kendi requirements.txt (mmgp vb. kodla senkron)
+            const wgpVenvPy = path.join(WAN2GP_VENV_DIR, 'Scripts', 'python.exe');
+            const wgpRepoReq = path.join(WAN2GP_DIR, 'requirements.txt');
+            if (fs.existsSync(wgpRepoReq) && fs.existsSync(wgpVenvPy)) {
+                send('[UPDATE] Syncing dependencies with repo requirements.txt...');
+                await runWan2gpStreaming([wgpVenvPy, '-m', 'pip', 'install', '-r', wgpRepoReq], send);
+            }
             send('[UPDATE] Repository updated.');
             return { success: true };
         } catch (err) {
@@ -1859,6 +1873,13 @@ const WAN2GP_DIR = path.join(PROJECT_DIR, 'Wan2GP');
 const WAN2GP_VENV_DIR = path.join(PROJECT_DIR, 'venvs', 'wan2gp');
 const WAN2GP_PRESETS_DIR = path.join(PROJECT_DIR, 'wan2gp-presets');
 let wan2gpSetupRunning = false;
+
+// Kurucu (installer) servis klasorlerini .git olmadan tasirabilir.
+// Update butonu boyle bir klasore rastlayinca buradaki remote ile git'i icine kurar.
+const SERVER_GIT_REMOTES = {
+    openwebui: { url: 'https://github.com/open-webui/open-webui.git', branch: 'main' },
+    searxng: { url: 'https://github.com/searxng/searxng.git', branch: 'master' }
+};
 
 /**
  * Wan2GP için sistem Python'unu bulur (3.11 tercih edilir).
@@ -3061,36 +3082,7 @@ ipcMain.handle('server-update', async (_event, serverType) => {
             return { success: false, message: `Server directory not found: ${serverDir}`, logs };
         }
         
-        // ✨ YENİ: .git klasörü kontrolü — git pull sadece repo olan dizinlerde calisir
-        const gitDir = path.join(serverDir, '.git');
-        if (!fs.existsSync(gitDir)) {
-            // ✨ Versiyon kontrolü + manuel güncelleme talimatları
-            const currentVersion = fs.existsSync(path.join(PROJECT_DIR, 'VERSION')) 
-                ? fs.readFileSync(path.join(PROJECT_DIR, 'VERSION'), 'utf8').trim() 
-                : 'unknown';
-            
-            return { 
-                success: false, 
-                message: `${serverType} dizini bir Git repository değil. Manuel güncelleme gerekli.`,
-                logs: [
-                    ...logs,
-                    `📦 Current version: ${currentVersion}`,
-                    `⬇️  Download latest version from official source`,
-                    `📋 Steps:`,
-                    `   1. Stop ${serverType} server`,
-                    `   2. Backup important data (databases, configs)`,
-                    `   3. Download new version`,
-                    `   4. Extract to project directory`,
-                    `   5. Restore your data to new version`
-                ],
-                currentVersion: currentVersion,
-                needsManualUpdate: true
-            };
-        }
-        
-        log(`Running git pull in ${serverDir}...`);
-        
-        // ====== DATABASE KORUMA (openwebui.db hariç her şeyi günceller) ======
+        // ====== DATABASE KORUMA (hem pull hem bootstrap yolunda korur) ======
         let dbBackupPath = null;
         let dbOriginalPath = path.join(serverDir, 'openwebui.db');
         
@@ -3104,6 +3096,71 @@ ipcMain.handle('server-update', async (_event, serverType) => {
             fs.unlinkSync(dbOriginalPath); // Git'ten temizlenmesi için sil
             log(`🛡️ Database protected: moved to backup (${dbBackupPath.split('/').pop()})`);
         }
+        
+        // Database geri yükleme fonksiyonu
+        function restoreDatabase() {
+            if (dbBackupPath && fs.existsSync(dbBackupPath)) {
+                try {
+                    // Backup'tan orijinale kopyala
+                    fs.copyFileSync(dbBackupPath, dbOriginalPath);
+                    log(`🛡️ Database restored: openwebui.db (${fs.statSync(dbBackupPath).size} bytes)`);
+                    
+                    // Temp backup'ı temizle
+                    const tempDir = path.dirname(dbBackupPath);
+                    fs.readdirSync(tempDir).forEach(file => {
+                        if (file.startsWith('openwebui.db.')) {
+                            const oldBackup = path.join(tempDir, file);
+                            fs.unlinkSync(oldBackup);
+                        }
+                    });
+                    log(`🧹 Old backups cleaned up.`);
+                } catch (e) {
+                    log(`⚠️ Failed to restore database: ${e.message}`);
+                }
+            }
+        }
+        
+        // ✨ YENİ: .git klasörü kontrolü — git pull sadece repo olan dizinlerde calisir
+        const gitDir = path.join(serverDir, '.git');
+        if (!fs.existsSync(gitDir)) {
+            const spec = SERVER_GIT_REMOTES[serverType];
+            if (!spec) {
+                // Bilinmeyen remote — manuel güncelleme talimatları
+                const currentVersion = fs.existsSync(path.join(PROJECT_DIR, 'VERSION')) 
+                    ? fs.readFileSync(path.join(PROJECT_DIR, 'VERSION'), 'utf8').trim() 
+                    : 'unknown';
+                
+                return { 
+                    success: false, 
+                    message: `${serverType} dizini bir Git repository değil. Manuel güncelleme gerekli.`,
+                    logs: [
+                        ...logs,
+                        `📦 Current version: ${currentVersion}`,
+                        `⬇️  Download latest version from official source`,
+                        `📋 Steps:`,
+                        `   1. Stop ${serverType} server`,
+                        `   2. Backup important data (databases, configs)`,
+                        `   3. Download new version`,
+                        `   4. Extract to project directory`,
+                        `   5. Restore your data to new version`
+                    ],
+                    currentVersion: currentVersion,
+                    needsManualUpdate: true
+                };
+            }
+            
+            // ✨ Installer'dan gelen .gitsiz klasör: git'i içine kur ve devam et
+            log(`✨ ${serverType}/ has no git metadata — bootstrapping from ${spec.url} (branch: ${spec.branch})...`);
+            const bs = await bootstrapGitDir({ dir: serverDir, remoteUrl: spec.url, branch: spec.branch, log });
+            if (!bs.success) {
+                restoreDatabase();
+                return { success: false, message: `Git bootstrap failed: ${bs.error}`, logs };
+            }
+            restoreDatabase();
+            return { success: true, message: `${serverType} initialized and updated to commit ${bs.hash}. Future updates will use normal git pull.`, logs, currentVersion: bs.hash, needsManualUpdate: false };
+        }
+        
+        log(`Running git pull in ${serverDir}...`);
         
         return new Promise((resolve) => {
             // 1) Stash — local değişiklikleri geçici kaydet
@@ -3192,28 +3249,6 @@ ipcMain.handle('server-update', async (_event, serverType) => {
                 resolve({ success: false, message: `Stash error: ${err.message}`, logs });
             });
             
-            // Database geri yükleme fonksiyonu
-            function restoreDatabase() {
-                if (dbBackupPath && fs.existsSync(dbBackupPath)) {
-                    try {
-                        // Backup'tan orijinale kopyala
-                        fs.copyFileSync(dbBackupPath, dbOriginalPath);
-                        log(`🛡️ Database restored: openwebui.db (${fs.statSync(dbBackupPath).size} bytes)`);
-                        
-                        // Temp backup'ı temizle
-                        const tempDir = path.dirname(dbBackupPath);
-                        fs.readdirSync(tempDir).forEach(file => {
-                            if (file.startsWith('openwebui.db.')) {
-                                const oldBackup = path.join(tempDir, file);
-                                fs.unlinkSync(oldBackup);
-                            }
-                        });
-                        log(`🧹 Old backups cleaned up.`);
-                    } catch (e) {
-                        log(`⚠️ Failed to restore database: ${e.message}`);
-                    }
-                }
-            }
         });
         
     } catch (err) {

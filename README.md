@@ -98,7 +98,7 @@ llama.cpp and searxng settings pre-configured.
 
 * Wan2GP (AI image/video generation, runs locally) link: https://github.com/deepbeepmeep/Wan2GP
 
-Optional integrated service. Press "Setup" in the Wan2GP card (System tab): the app clones the repository, builds a dedicated virtual environment (`venvs/wan2gp`) and installs the package set matching your GPU generation — without touching the rest of the app.
+Optional integrated service. Press "Setup" in the Wan2GP card (System tab): the app clones the repository, builds a dedicated virtual environment (`venvs/wan2gp`) and installs the package set matching your GPU generation, then syncs the remaining packages from the repository's own requirements.txt so pinned versions always match the cloned code — without touching the rest of the app. The Update button pulls new code and re-runs this dependency sync automatically.
 
 🚀 Key Features:
 
