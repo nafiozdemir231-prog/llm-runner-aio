@@ -1,6 +1,6 @@
 {
   "name": "llm-runner-aio",
-  "version": "1.0.0",
+  "version": "1.4.0",
   "description": "AI Assistant Platform — SearXNG, OpenWebUI, llama.cpp & Vane",
   "main": "electron/main.js",
   "scripts": {
