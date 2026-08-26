@@ -1,6 +1,5 @@
-current_step: done
-status: complete
-verdict: PASS
-last_action: tasks/project.md AGENTS.md formatina guncellenip commit edildi
-next_action: none
+current_step: 6
+status: in_progress
+last_action: kod+test tamam, README guncellendi
+next_action: commit ve push
 blocked: false
