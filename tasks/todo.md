@@ -6,7 +6,7 @@
 - [x] 3. `main.js` wan2gp-setup: preset pip sonrası deponun kendi requirements.txt'inden ikinci pip adımı
 - [x] 4. `main.js` wan2gp-update: pull sonrası `pip install -r Wan2GP/requirements.txt` senkronu
 - [x] 5. Doğrulama: node --check ×N, CRLF saflığı, bootstrap unit test PASS
-- [ ] 6. Dokümantasyon: change.md, README (Wan2GP bölümü), state/todo senkron, commit
+- [x] 6. Dokümantasyon: change.md, README (Wan2GP bölümü), state/todo senkron, commit
 
 ## Diagram
 ```
