@@ -90,6 +90,8 @@ All of the model lists above can be managed directly from the GUI — no manual 
 
 * Pi Coding (Pi is a minimal agent harness) link: https://github.com/earendil-works/pi
 
+The Pi Coding Update button pulls the latest code and then runs `npm install` automatically, so the bundled Pi SDK stays in sync with the extension it loads.
+
 Web search and Advisor (use your own API key) pre-installed.
 
 * Vane Search (For web search) link: https://github.com/ItzCrazyKns/Vane

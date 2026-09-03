@@ -1240,9 +1240,26 @@ if ($pathValue -and $pathValue -like "*$picodingPath*") {
                             return;
                         }
                         
-                        log(`✅ Pull successful! Restoring local changes...`);
+                        log(`✅ Pull successful! Syncing dependencies...`);
                         
-                        // 3) Stash pop
+                        // 3) Dependency sync — npm install (keeps picoding/node_modules aligned with package.json)
+                        const npmCmd = process.platform === 'win32' ? 'cmd' : '/bin/sh';
+                        const npmArgs = process.platform === 'win32'
+                            ? ['/c', 'npm', 'install']
+                            : ['-c', 'npm', 'install'];
+
+                        const npmChild = require('child_process').spawn(npmCmd, npmArgs, {
+                            cwd: picodingDir,
+                            shell: true,
+                            env: { ...process.env },
+                            stdio: ['pipe', 'pipe', 'pipe']
+                        });
+
+                        let npmStdout = '';
+                        let npmStderr = '';
+
+                        // 4) Stash pop — npm install tamamlaninca calisir
+                        const runStashPop = () => {
                         try {
                             const popCmd = process.platform === 'win32' ? 'cmd' : '/bin/sh';
                             const popArgs = process.platform === 'win32'
@@ -1273,6 +1290,34 @@ if ($pathValue -and $pathValue -like "*$picodingPath*") {
                             log(`⚠️ Stash pop exception: ${e.message}`);
                             resolve({ success: true, message: `PiCoding updated (stash pop skipped)!`, logs });
                         }
+                        };
+
+                        npmChild.stdout?.on('data', (data) => {
+                            const msg = data.toString();
+                            npmStdout += msg;
+                            msg.split(/\r?\n/).forEach((line) => { if (line.trim()) log(line.trim()); });
+                        });
+
+                        npmChild.stderr?.on('data', (data) => {
+                            const msg = data.toString();
+                            npmStderr += msg;
+                            msg.split(/\r?\n/).forEach((line) => { if (line.trim()) log(`[WARN] ${line.trim()}`); });
+                        });
+
+                        npmChild.on('close', (npmCode) => {
+                            if (npmCode !== 0) {
+                            log(`❌ npm install failed (code: ${npmCode})`);
+                            resolve({ success: false, message: `Dependency sync failed: ${(npmStderr || npmStdout).trim().slice(-500)}`, logs });
+                            return;
+                            }
+                            log(`✅ Dependencies synced.`);
+                            runStashPop();
+                        });
+
+                        npmChild.on('error', (err) => {
+                            log(`npm spawn error: ${err.message}`);
+                            resolve({ success: false, message: `npm install spawn error: ${err.message}`, logs });
+                        });
                     });
                     
                     gitChild.on('error', (err) => {

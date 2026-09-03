@@ -1,31 +1,14 @@
-# Task: OpenWebUI/SearXNG otomatik git bootstrap + Wan2GP bağımlılık senkronu (repoya göre)
+# Task: PiCoding SDK bump (0.79→0.84) + picoding-update'e npm install adımı
 
 ## Steps
-- [x] 1. `electron/git-bootstrap.js` saf modülü oluştur (async, execFile tabanlı) + scratch-repo unit testi
-- [x] 2. `main.js` server-update: .gitsiz klasörde openwebui/searxng için bootstrap; DB korumasını erken taşı; Vane manuel kalır
-- [x] 3. `main.js` wan2gp-setup: preset pip sonrası deponun kendi requirements.txt'inden ikinci pip adımı
-- [x] 4. `main.js` wan2gp-update: pull sonrası `pip install -r Wan2GP/requirements.txt` senkronu
-- [x] 5. Doğrulama: node --check ×N, CRLF saflığı, bootstrap unit test PASS
-- [x] 6. Dokümantasyon: change.md, README (Wan2GP bölümü), state/todo senkron, commit
-
-## Diagram
-```
-[GUI Update butonu] ──► server-update IPC
-                            │
-                     .git var mı?
-                      /         \
-                   EVET          HAYIR
-                    │             │
-              stash+pull     SERVER_GIT_REMOTES[type]?
-              (mevcut akış)  /            \
-                           EVET            HAYIR (vane)
-                            │               │
-                     git-bootstrap.js   manuel talimatlar
-                     init→fetch→checkout (değişmez)
-                     → success (hash)
-```
+- [x] 1. picoding/package.json → @earendil-works/pi-coding-agent ^0.84.4
+- [x] 2. electron/main.js: picoding-update akışına git pull sonrası npm install adımı ekle
+- [x] 3. Bu makinede picoding/ içinde npm install çalıştır, pi-ai sürümünü doğrula
+- [x] 4. Doğrulama: @earendil-works/pi-ai/compat adapter konumundan resolve olmalı + node --check + CRLF saflık
+- [ ] 5. Dokümanlar (change.md, README gerekirse) + commit
 
 ## Notes
-- Karar (kullanıcı: "sen karar ver, repoya göre"): bağımlılıklarda otorite = klonlanmış deponun kendi requirements.txt'i
-- Vane auto-bootstrap'a DAHİL DEĞİL (yerel değişiklikler var, checkout -f silerdi)
-- Veri dosyaları (openwebui.db, vector_db/, uploads/) upstream ağacında yok → checkout -f onlara dokunmaz; db ayrıca yedeklenir
+- Kök neden: yeni pi-mcp-adapter `@earendil-works/pi-ai/compat` import ediyor; ./compat export'u sadece pi-ai ≥0.81.0'da var; repo 0.79.1 pinliyordu (^0.79.1).
+- node_modules git'te DEĞİL — her PC kendi npm install'ını koşar; bu yüzden update akışına npm install eklendi.
+- package-lock.json tracked ise commit'e dahil et.
+- CRLF hassas: main.js patch'i snippet/script ile, benzersizlik assert'li.
