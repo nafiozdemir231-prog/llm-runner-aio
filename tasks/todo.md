@@ -5,7 +5,7 @@
 - [x] 2. electron/main.js: picoding-update akışına git pull sonrası npm install adımı ekle
 - [x] 3. Bu makinede picoding/ içinde npm install çalıştır, pi-ai sürümünü doğrula
 - [x] 4. Doğrulama: @earendil-works/pi-ai/compat adapter konumundan resolve olmalı + node --check + CRLF saflık
-- [ ] 5. Dokümanlar (change.md, README gerekirse) + commit
+- [x] 5. Dokümanlar (change.md, README gerekirse) + commit
 
 ## Notes
 - Kök neden: yeni pi-mcp-adapter `@earendil-works/pi-ai/compat` import ediyor; ./compat export'u sadece pi-ai ≥0.81.0'da var; repo 0.79.1 pinliyordu (^0.79.1).

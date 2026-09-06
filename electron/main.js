@@ -764,6 +764,13 @@ Write-Host 'Autostart disabled successfully'
         }
         const send = (message) => safeSend('wan2gp-setup-log', { message });
         try {
+            // 1) Local changes (runtime settings like models/_settings.json, EOL drift) can block pull -> stash
+            send('[UPDATE] Stashing local changes (if any)...');
+            const stashRes = await runWan2gpCapture(['git', '-C', WAN2GP_DIR, 'stash', 'push', '-m', 'aio-wan2gp-update-stash']);
+            if (stashRes.code !== 0) throw new Error('git stash failed: ' + (stashRes.out || '').trim());
+            const hadStash = /saved working (directory|tree)/i.test(stashRes.out);
+            send(hadStash ? '[UPDATE] Local changes stashed (will restore after update).' : '[UPDATE] No local changes to stash.');
+
             send('[UPDATE] Pulling latest Wan2GP code (git pull --ff-only)...');
             await runWan2gpStreaming(['git', '-C', WAN2GP_DIR, 'pull', '--ff-only'], send);
             // Pull sonrasi bagimlilik senkronu — repo'nun kendi requirements.txt (mmgp vb. kodla senkron)
@@ -772,6 +779,14 @@ Write-Host 'Autostart disabled successfully'
             if (fs.existsSync(wgpRepoReq) && fs.existsSync(wgpVenvPy)) {
                 send('[UPDATE] Syncing dependencies with repo requirements.txt...');
                 await runWan2gpStreaming([wgpVenvPy, '-m', 'pip', 'install', '-r', wgpRepoReq], send);
+            }
+            // 2) Stash edilen yerel degisiklikleri geri yuks (pop basarisiz olsa bile guncelleme basarili sayilir)
+            if (hadStash) {
+                send('[UPDATE] Restoring local changes (git stash pop)...');
+                const popRes = await runWan2gpCapture(['git', '-C', WAN2GP_DIR, 'stash', 'pop']);
+                if (popRes.code !== 0) {
+                    send('[UPDATE] WARNING: Could not auto-restore stashed changes. Recover manually: git stash list / git stash pop');
+                }
             }
             send('[UPDATE] Repository updated.');
             return { success: true };
@@ -1975,6 +1990,19 @@ async function runWan2gpStreaming(commandArgs, send) {
                 reject(new Error('Process exited with code ' + code + '. Last lines:\n' + detail));
             }
         });
+    });
+}
+
+// Komut ciktisini yakalar (sonuc incelenmesi gerekince, orn. stash olusturuldu mu tespiti)
+function runWan2gpCapture(commandArgs) {
+    return new Promise((resolve) => {
+        const child = spawn(commandArgs[0], commandArgs.slice(1), { cwd: PROJECT_DIR, windowsHide: true });
+        let out = '';
+        let errOut = '';
+        child.stdout.on('data', d => { out += d.toString(); });
+        child.stderr.on('data', d => { errOut += d.toString(); });
+        child.on('error', (err) => resolve({ code: 1, out: err.message }));
+        child.on('exit', (code) => resolve({ code, out: (out + errOut).trim() }));
     });
 }
 
