@@ -1,6 +1,6 @@
 current_step: done
 status: complete
 verdict: PASS
-last_action: wan2gp-update stash/pull/pop korumasi + runWan2gpCapture; temp-repo testi PASS
-next_action: commit + push bekleniyor
+last_action: CPU Threads fix+autofill tamam, testler PASS
+next_action: commit
 blocked: false

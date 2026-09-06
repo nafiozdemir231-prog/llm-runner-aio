@@ -1799,6 +1799,9 @@ async function detectHardware() {
     // RAM detection - Sistem toplam RAM'i
     const totalMemBytes = require('os').totalmem();
     result.ramGb = Math.round((totalMemBytes / (1024 * 1024 * 1024)) * 10) / 10;
+    
+    // Mantisal islemci sayisi (Task Manager "processors") — CPU Threads otomatik hesabi icin
+    result.cpuThreads = require('os').cpus().length;
 
     // CPU detection
     try {

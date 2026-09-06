@@ -190,11 +190,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const port = parseInt(portInput?.value || (srv.type === 'searxng' ? 8080 : srv.type === 'openwebui' ? 3000 : srv.type === 'vane' ? 3001 : srv.type === 'wan2gp' ? 7860 : 1234));
                 const host = hostInput?.value || '127.0.0.1';
                 
-                // llama.cpp için INI preset'i de gönder
-                const startOptions = { port, host };
-                if (srv.type === 'llamacpp' && state.config.selected_ini) {
-                    startOptions.iniPreset = state.config.selected_ini;
-                    console.log(`[AUTO] llama.cpp INI: ${startOptions.iniPreset}`);
+                // llama.cpp: ekran uzerindeki canli degerleri kullan (INI, CPU Threads, parallel, sleep-idle, max-model)
+                const startOptions = srv.type === 'llamacpp'
+                    ? buildLlamacppOptions({ port, host })
+                    : { port, host };
+                if (srv.type === 'llamacpp' && startOptions.iniPreset) {
+                    console.log(`[AUTO] llama.cpp INI: ${startOptions.iniPreset}, threads: ${startOptions.threads}`);
                 }
                 
                 const browserId = `btn-open-${srv.type}`;
@@ -389,6 +390,21 @@ async function restorePreviousSelection() {
         ];
         
         for (const field of hostFields) {
+            const el = document.getElementById(field.id);
+            if (el) {
+                el.value = state.config[field.key] ?? field.defaultVal;
+            }
+        }
+        
+        // Restore llama.cpp params (CPU Threads, Max User, Sleep Idle, Max Model)
+        const llamaParamFields = [
+            { key: 'llamacpp_threads', id: 'llamacpp-threads', defaultVal: 10 },
+            { key: 'llamacpp_parallel', id: 'llamacpp-parallel', defaultVal: 1 },
+            { key: 'llamacpp_sleep_idle', id: 'llamacpp-sleep-idle', defaultVal: 1000 },
+            { key: 'llamacpp_max_model', id: 'llamacpp-max-model', defaultVal: 1 }
+        ];
+        
+        for (const field of llamaParamFields) {
             const el = document.getElementById(field.id);
             if (el) {
                 el.value = state.config[field.key] ?? field.defaultVal;
@@ -1096,6 +1112,14 @@ async function detectHardware() {
             }
         }
         
+                // CPU Threads otomatik hesaplama: mantisal cekirdek sayisi - 2 (orn. 22 -> 20)
+        const threadsField = document.getElementById('llamacpp-threads');
+        if (threadsField && hw.cpuThreads) {
+            const suggestedThreads = Math.max(1, hw.cpuThreads - 2);
+            threadsField.value = suggestedThreads;
+            updatedConfig.llamacpp_threads = suggestedThreads;
+            appendToLog('system', `llama.cpp CPU Threads auto-set: ${suggestedThreads} (${hw.cpuThreads} logical cores - 2)`);
+        }
         await window.electronAPI.config.write(updatedConfig);
         state.config = updatedConfig;
         
@@ -1590,7 +1614,8 @@ async function startAllServers() {
         
         appendToLog(type, `Starting ${type} on ${host}:${port}...`);
         
-        const result = await window.electronAPI.server.start(type, { port, host });
+        const startOpts = type === 'llamacpp' ? buildLlamacppOptions({ port, host }) : { port, host };
+        const result = await window.electronAPI.server.start(type, startOpts);
         
         if (result.success) {
             state.servers[type].running = true;
@@ -1600,6 +1625,18 @@ async function startAllServers() {
             appendToLog(type, `${type} failed: ${result.error}`, true);
         }
     }
+}
+
+// llama.cpp baslatma parametrelerini canli ekrandan okur (manuel, oto-baslatma ve Start All ortak kaynagi)
+function buildLlamacppOptions(base) {
+    const opts = { ...base };
+    const iniSelect = document.getElementById('ini-select');
+    if (iniSelect && iniSelect.value) opts.iniPreset = iniSelect.value;
+    opts.threads = parseInt(document.getElementById('llamacpp-threads')?.value) || 10;
+    opts.parallel = parseInt(document.getElementById('llamacpp-parallel')?.value) || 1;
+    opts.sleepIdle = parseInt(document.getElementById('llamacpp-sleep-idle')?.value) || 1000;
+    opts.maxModel = parseInt(document.getElementById('llamacpp-max-model')?.value) || 1;
+    return opts;
 }
 
 async function stopAllServers() {
