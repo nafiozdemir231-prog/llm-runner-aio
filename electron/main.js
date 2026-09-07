@@ -763,6 +763,7 @@ Write-Host 'Autostart disabled successfully'
             return { success: false, error: 'Wan2GP repo not found. Run Setup first.' };
         }
         const send = (message) => safeSend('wan2gp-setup-log', { message });
+        wan2gpSetupRunning = true;
         try {
             // 1) Local changes (runtime settings like models/_settings.json, EOL drift) can block pull -> stash
             send('[UPDATE] Stashing local changes (if any)...');
@@ -794,6 +795,8 @@ Write-Host 'Autostart disabled successfully'
             console.error('[WAN2GP-UPDATE] Failed:', err.message);
             send('[UPDATE] FAILED: ' + err.message);
             return { success: false, error: err.message };
+        } finally {
+            wan2gpSetupRunning = false;
         }
     });
 
@@ -2417,6 +2420,16 @@ export default nextConfig;
             }
             if (!fs.existsSync(path.join(WAN2GP_DIR, 'wgp.py'))) {
                 return { success: false, error: 'Wan2GP source files not found. Run setup first.' };
+            }
+            // Setup/update flag kontrolü — işlem devam ediyorsa başlatma engellenir
+            if (wan2gpSetupRunning) {
+                return { success: false, error: 'Wan2GP kürüm/güncelleme işleminin tamamlanması bekleniyor. Lütfen bekleyip tekrar deneyin.' };
+            }
+            // Ön-bakım: sanal ortamın ana modüllerini (torch, mmgp) içerip içermeyenini dogrula
+            const checkResult = spawnSync(wgpVenvPy, ['-c', 'import torch; import mmgp'], { cwd: WAN2GP_DIR, timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] });
+            if (checkResult.status !== 0) {
+                const stderr = (checkResult.stderr || Buffer.from('')).toString().trim();
+                return { success: false, error: 'Wan2GP ortamı hazır değil — ana modüller (torch, mmgp) sanal ortama yüklenmemiş. Kurulum logunda hata var mı diye kontrol edin ve gerekirse Setup’u yeniden çalıştırın.\n' + stderr };
             }
             cmd = wgpVenvPy;
             args = [path.join(WAN2GP_DIR, 'wgp.py')];
