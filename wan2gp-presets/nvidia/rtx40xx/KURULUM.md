@@ -1,7 +1,7 @@
 # Wan2GP Kurulum Rehberi — NVIDIA RTX 40XX (Ada)
 
-> Kaynak: deepbeepmeep/Wan2GP (commit 8681e9f) — `docs/INSTALLATION.md`
-> Güncelleme: 2026-08-23 · Desteklenen kartlar: RTX 4090 / 4080 / 4070 Ti Super / 4070 / 4060 Ti / 4060 / 4050
+> Kaynak: deepbeepmeep/Wan2GP (commit 057f9eca) — `docs/INSTALLATION.md`
+> Güncelleme: 2026-09-06 · Desteklenen kartlar: RTX 4090 / 4080 / 4070 Ti Super / 4070 / 4060 Ti / 4060 / 4050
 
 ## Sistem Gereksinimleri
 
@@ -44,7 +44,7 @@ pip install -r requirements.txt
 | Sage Attention 2.2.0 (post4) | Video/görüntü üretiminde ~x2 hız |
 | Sparge Attention (spas_sage_attn) | FlashVSR sparse attention |
 | Flash Attention 2.8.3 | Kalite korur; LM işlerinde belirgin hız |
-| GGUF Kernels 1.0.11 | GGUF modeller için CUDA hızlandırma (Stream-K, FP16/BF16 matmul) |
+| GGUF Kernels 1.0.21 | GGUF modeller için CUDA hızlandırma (Stream-K, FP16/BF16 matmul; ≥1.0.14 ile INT8 KV cache) |
 | bitsandbytes 0.49.2 | 4-bit / NF4 checkpoint hızlandırma |
 
 ## Adım 4 — Doğrulama
@@ -67,12 +67,18 @@ set WGP_GGUF_LLAMACPP_CUDA_MATMUL_MODE=fast
 python wgp.py
 ```
 
+GGUF CUDA paketini tamamen devre dışı bırakmak için: `set WGP_GGUF_LLAMACPP_CUDA=0`
+
 Sol-Attn (Advanced Mode → Misc → Override Attention Mode) bu nesilde ~%10-20 kazanım verebilir (BF16 + Triton 3.6+ gerekir).
+
+## İsteğe bağlı: DLSS 5 (Neural Rendering / Frame Generation)
+
+Yeni opsiyonel bileşen — normal kurulumun bir parçası DEĞİLDİR. WanGP'yi kapatıp `scripts\install_dlss5.bat` çalıştırın (pinned SHA-256 kontrolü yapar). Kapalı kaynak üçüncü taraf bileşenler içerir (NVIDIA DLSS runtime, ReShade, RenoDX); kullanmadan önce `docs/DLSS5.md` içindeki lisans/güvenlik uyarılarını okuyun.
 
 ## VRAM ipuçları
 
 - Tarayıcının GPU kullanımını kapatmak 1–5 GB VRAM kazandırır (`scripts/start-chrome-no-gpu.bat`).
-- Deepy Prime varsayılan olarak 24 GB ister; *Qwen3.8 VL 27B GGUF Q2* + *max 32000 KV Cache* + *Speculative Decoding kapalı* + tarayıcı no-GPU moduyla 16 GB'a iner.
+- Yerel Deepy Prime *Qwen3.8 VL 27B* ister (context ≥32000 + Summarize compaction); Speculative Decoding `Auto` 24 GB+ VRAM'de etkinleşir. Daha az VRAM'de: Q2 kuantizasyon + Speculative Decoding kapalı. Uzak LLM motorları (Codex / Claude Code / OpenCode) yerel VRAM kaplamaz — `docs/REMOTE_LLMS.md`.
 
 ## Sorun giderme
 

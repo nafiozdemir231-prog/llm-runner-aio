@@ -1,7 +1,7 @@
 # Wan2GP Kurulum Rehberi — AMD RX 6XXX (RDNA 2)
 
-> Kaynak: deepbeepmeep/Wan2GP (commit 8681e9f) — `docs/AMD-INSTALLATION.md` (TheRock)
-> Güncelleme: 2026-08-23
+> Kaynak: deepbeepmeep/Wan2GP (commit 057f9eca) — `docs/AMD-INSTALLATION.md` (TheRock)
+> Güncelleme: 2026-09-06
 > Desteklenen aile (gfx103X-dgpu): RDNA 2 dGPU serisi (RX 6000 serisi vb.)
 
 ## ⚠️ Staging kanalı

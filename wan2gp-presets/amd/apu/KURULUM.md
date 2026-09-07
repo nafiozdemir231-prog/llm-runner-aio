@@ -1,7 +1,7 @@
 # Wan2GP Kurulum Rehberi — AMD APU (RDNA 3.5 dahili GPU)
 
-> Kaynak: deepbeepmeep/Wan2GP (commit 8681e9f) — `docs/AMD-INSTALLATION.md` (TheRock)
-> Güncelleme: 2026-08-23
+> Kaynak: deepbeepmeep/Wan2GP (commit 057f9eca) — `docs/AMD-INSTALLATION.md` (TheRock)
+> Güncelleme: 2026-09-06
 > Desteklenen APU'lar (dahili GPU):
 > - **Strix Halo APUs** (gfx1151)
 > - **Radeon 890M** — Ryzen AI 9 HX 370, Strix Point (gfx1150)

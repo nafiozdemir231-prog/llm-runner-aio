@@ -1,7 +1,7 @@
 # ============================================================
 # Wan2GP - RTX 50XX (Blackwell, sm120+) / Windows 10-11 / Python 3.11.14 / PyTorch 2.10.0 + cu130
-# Kaynak: deepbeepmeep/Wan2GP commit 8681e9f (docs/INSTALLATION.md)
-# Uretildi: 2026-08-23
+# Kaynak: deepbeepmeep/Wan2GP commit 057f9eca (docs/INSTALLATION.md)
+# Uretildi: 2026-09-06
 # ============================================================
 
 # --extra-index-url PyPI'yi devre disi BIRAKMAZ, sadece ek kaynak ekler
@@ -14,7 +14,7 @@ torch==2.10.0
 torchvision==0.25.0
 torchaudio==2.10.0
 --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/ort-cuda-13-nightly/pypi/simple/
-mmgp==3.7.12
+mmgp==3.7.14
 # Core AI stack
 diffusers==0.36.0
 transformers==4.54.0 #4.53.1
@@ -66,6 +66,8 @@ spacy
 
 # Vision & segmentation
 opencv-python>=4.12.0.88
+ultralytics
+scipy
 pycocotools
 segment-anything
 rembg[gpu]==2.0.65; platform_system != "Darwin"
@@ -119,6 +121,8 @@ xxhash
 munch
 wetext==0.1.2
 markdown
+apprise==1.12.0
+keyring==25.7.0
 # Optional / commented out
 # transformers==4.46.3  # for llamallava pre-patch
 # rembg==2.0.65         # non-GPU fallback
@@ -136,8 +140,10 @@ https://github.com/woct0rdho/SageAttention/releases/download/v2.2.0-windows.post
 https://github.com/woct0rdho/SpargeAttn/releases/download/v0.1.0-windows.post4/spas_sage_attn-0.1.0%2Bcu130torch2.9.0andhigher.post4-cp39-abi3-win_amd64.whl
 # Flash Attention - kalite korur, LM (prompt enhancer/TTS/Deepy) onemli hiz artisi (Python 3.11)
 https://github.com/deepbeepmeep/kernels/releases/download/Flash2/flash_attn-2.8.3-cp311-cp311-win_amd64.whl
-# GGUF Kernels - GGUF model hizlandirma, Stream-K + FP16/BF16 matmul [v1.0.11]
-https://github.com/deepbeepmeep/kernels/releases/download/GGUF_Kernels/llamacpp_gguf_cuda-1.0.11+torch210cu130py311-cp311-cp311-win_amd64.whl
+# GGUF Kernels - GGUF model hizlandirma, Stream-K + FP16/BF16 matmul [v1.0.21]
+# (1.0.21: RTX50xx SM120 async-copy Q8 prefill/decode kernel'leri dahil - vLLM backend uyumlu kartta OTOMATIK secer;
+#  calisma zamaninda Triton derlemesi gerektirmez. INT8 KV cache destegi >=1.0.14)
+https://github.com/deepbeepmeep/kernels/releases/download/gguf-v1.0.21/llamacpp_gguf_cuda-1.0.21%2Btorch210cu130py311-cp311-cp311-win_amd64.whl
 # NV FP4 Kernels - YALNIZ RTX 50xx / sm120+ (FP4 dequantization)
 https://github.com/deepbeepmeep/kernels/releases/download/Light2xv/lightx2v_kernel-0.0.2+torch2.10.0-cp311-abi3-win_amd64.whl
 

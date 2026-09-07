@@ -1,7 +1,7 @@
 # Wan2GP Kurulum Rehberi — NVIDIA RTX 20XX / GTX 16XX (Turing)
 
-> Kaynak: deepbeepmeep/Wan2GP (commit 8681e9f) — `docs/INSTALLATION.md`
-> Güncelleme: 2026-08-23 · Desteklenen kartlar: RTX 2080 Ti / 2080 / 2070 Super / 2070 / 2060 / GTX 1660 / 1650 / 1630
+> Kaynak: deepbeepmeep/Wan2GP (commit 057f9eca) — `docs/INSTALLATION.md`
+> Güncelleme: 2026-09-06 · Desteklenen kartlar: RTX 2080 Ti / 2080 / 2070 Super / 2070 / 2060 / GTX 1660 / 1650 / 1630
 
 ## Sistem Gereksinimleri
 
@@ -16,7 +16,7 @@
 Resmi dokümanda bu nesil "RTX 20xx – RTX 50xx" grubunda, yani yeni Python 3.11 / PyTorch 2.10 / CUDA 13 yığında yer alır.
 
 **NESİL FARKLARI (RTX 30XX'e göre):**
-- `docs/INSTALLATION.md` bu nesil için **Sage Attention tanımaz** (Sage 1 yalnız 30XX+, Sage 2 yalnız 40XX+) → pakette Sage YOK
+- Sage Attention: bu nesil için desteklenen sürüm **Sage 1.0.6** (Turing); Sage 2 yalnız 30XX+ → pakette Sage 1 var
 - triton-windows yine **<3.3** surumu
 - NV FP4 kernel'leri YOK (yalnız 50xx)
 
@@ -46,9 +46,10 @@ pip install -r requirements.txt
 | Kernel | Görevi |
 |---|---|
 | triton-windows <3.3 | PyTorch compilation (20XX/30XX için surumlu sürüm) |
+| Sage Attention 1.0.6 | Video/görüntü hızlandırma (bu nesilde desteklenen tek Sage) |
 | Sparge Attention (spas_sage_attn) | FlashVSR sparse attention |
 | Flash Attention 2.8.3 | Kalite korur; LM işlerinde belirgin hız |
-| GGUF Kernels 1.0.11 | GGUF modeller için CUDA hızlandırma (Stream-K, FP16/BF16 matmul) |
+| GGUF Kernels 1.0.21 | GGUF modeller için CUDA hızlandırma (Stream-K, FP16/BF16 matmul; ≥1.0.14 ile INT8 KV cache) |
 | bitsandbytes 0.49.2 | 4-bit / NF4 checkpoint hızlandırma |
 
 ## Adım 4 — Doğrulama
@@ -62,6 +63,20 @@ python -c "import torch; print(torch.__version__); print('CUDA:', torch.cuda.is_
 ```bash
 python wgp.py
 ```
+
+İsteğe bağlı performans değişkenleri (GGUF):
+
+```bat
+set WGP_GGUF_LLAMACPP_CUDA_MATMUL_MODE=fast
+:: düşük VRAM'de: low_vram
+python wgp.py
+```
+
+GGUF CUDA paketini tamamen devre dışı bırakmak için: `set WGP_GGUF_LLAMACPP_CUDA=0`
+
+## İsteğe bağlı: DLSS 5 (Neural Rendering / Frame Generation)
+
+Yeni opsiyonel bileşen — normal kurulumun bir parçası DEĞİLDİR. WanGP'yi kapatıp `scripts\install_dlss5.bat` çalıştırın (pinned SHA-256 kontrolü yapar). Kapalı kaynak üçüncü taraf bileşenler içerir (NVIDIA DLSS runtime, ReShade, RenoDX); kullanmadan önce `docs/DLSS5.md` içindeki lisans/güvenlik uyarılarını okuyun.
 
 ## VRAM ipuçları
 

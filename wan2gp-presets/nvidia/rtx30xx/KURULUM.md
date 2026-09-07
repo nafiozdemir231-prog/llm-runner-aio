@@ -1,7 +1,7 @@
 # Wan2GP Kurulum Rehberi — NVIDIA RTX 30XX (Ampere)
 
-> Kaynak: deepbeepmeep/Wan2GP (commit 8681e9f) — `docs/INSTALLATION.md`
-> Güncelleme: 2026-08-23 · Desteklenen kartlar: RTX 3090 / 3080 Ti / 3080 / 3070 / 3060
+> Kaynak: deepbeepmeep/Wan2GP (commit 057f9eca) — `docs/INSTALLATION.md`
+> Güncelleme: 2026-09-06 · Desteklenen kartlar: RTX 3090 / 3080 Ti / 3080 / 3070 / 3060
 
 ## Sistem Gereksinimleri
 
@@ -47,7 +47,7 @@ pip install -r requirements.txt
 | Sage Attention 1.0.6 | Video/görüntü hızlandırma (30XX'teki tek desteklenen Sage) |
 | Sparge Attention (spas_sage_attn) | FlashVSR sparse attention |
 | Flash Attention 2.8.3 | Kalite korur; LM işlerinde belirgin hız |
-| GGUF Kernels 1.0.11 | GGUF modeller için CUDA hızlandırma (Stream-K, FP16/BF16 matmul) |
+| GGUF Kernels 1.0.21 | GGUF modeller için CUDA hızlandırma (Stream-K, FP16/BF16 matmul; ≥1.0.14 ile INT8 KV cache) |
 | bitsandbytes 0.49.2 | 4-bit / NF4 checkpoint hızlandırma |
 
 ## Adım 4 — Doğrulama
@@ -61,6 +61,20 @@ python -c "import torch; print(torch.__version__); print('CUDA:', torch.cuda.is_
 ```bash
 python wgp.py
 ```
+
+İsteğe bağlı performans değişkenleri (GGUF):
+
+```bat
+set WGP_GGUF_LLAMACPP_CUDA_MATMUL_MODE=fast
+:: düşük VRAM'de: low_vram
+python wgp.py
+```
+
+GGUF CUDA paketini tamamen devre dışı bırakmak için: `set WGP_GGUF_LLAMACPP_CUDA=0`
+
+## İsteğe bağlı: DLSS 5 (Neural Rendering / Frame Generation)
+
+Yeni opsiyonel bileşen — normal kurulumun bir parçası DEĞİLDİR. WanGP'yi kapatıp `scripts\install_dlss5.bat` çalıştırın (pinned SHA-256 kontrolü yapar). Kapalı kaynak üçüncü taraf bileşenler içerir (NVIDIA DLSS runtime, ReShade, RenoDX); kullanmadan önce `docs/DLSS5.md` içindeki lisans/güvenlik uyarılarını okuyun.
 
 ## VRAM ipuçları
 

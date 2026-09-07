@@ -1,7 +1,7 @@
 # Wan2GP Kurulum Rehberi — AMD RX 7XXX (RDNA 3)
 
-> Kaynak: deepbeepmeep/Wan2GP (commit 8681e9f) — `docs/AMD-INSTALLATION.md` (TheRock)
-> Güncelleme: 2026-08-23
+> Kaynak: deepbeepmeep/Wan2GP (commit 057f9eca) — `docs/AMD-INSTALLATION.md` (TheRock)
+> Güncelleme: 2026-09-06
 > Desteklenen kartlar (gfx110X-all): RX 7900 XTX (gfx1100), RX 7800 XT (gfx1101), RX 7700 XT (gfx1101), RX 7700S / Framework Laptop 16 (gfx1102), Radeon 780M iGPU (gfx1103)
 
 ## Sistem Gereksinimleri

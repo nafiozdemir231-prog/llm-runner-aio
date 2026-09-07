@@ -1,7 +1,7 @@
 # ============================================================
 # Wan2GP - GTX 10XX (Pascal) / Windows 10-11 / Python 3.10.9 / PyTorch 2.7.1 + cu128
-# Kaynak: deepbeepmeep/Wan2GP commit 8681e9f (docs/INSTALLATION.md)
-# Uretildi: 2026-08-23
+# Kaynak: deepbeepmeep/Wan2GP commit 057f9eca (docs/INSTALLATION.md)
+# Uretildi: 2026-09-06
 # ONEMLI: Bu nesil AYRI bir yazilim yigininda calisir (eski Python/PyTorch/CUDA).
 # ============================================================
 
@@ -15,7 +15,7 @@ torch==2.7.1
 torchvision==0.22.1
 torchaudio==2.7.1
 --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/ort-cuda-13-nightly/pypi/simple/
-mmgp==3.7.12
+mmgp==3.7.14
 # Core AI stack
 diffusers==0.36.0
 transformers==4.54.0 #4.53.1
@@ -67,6 +67,8 @@ spacy
 
 # Vision & segmentation
 opencv-python>=4.12.0.88
+ultralytics
+scipy
 pycocotools
 segment-anything
 rembg[gpu]==2.0.65; platform_system != "Darwin"
@@ -120,6 +122,8 @@ xxhash
 munch
 wetext==0.1.2
 markdown
+apprise==1.12.0
+keyring==25.7.0
 # Optional / commented out
 # transformers==4.46.3  # for llamallava pre-patch
 # rembg==2.0.65         # non-GPU fallback
@@ -138,8 +142,8 @@ https://github.com/woct0rdho/SpargeAttn/releases/download/v0.1.0-windows.post3/s
 # Flash Attention - kalite korur, LM'lerde hiz artisi (Python 3.10 / PyTorch 2.7.1)
 https://github.com/Redtash1/Flash_Attention_2_Windows/releases/download/v2.7.0-v2.7.4/flash_attn-2.7.4.post1+cu128torch2.7.0cxx11abiFALSE-cp310-cp310-win_amd64.whl
 
-# GGUF Kernels - GGUF model hizlandirma [v1.0.11] (Python 3.10 / PyTorch 2.7.1 / Cuda 12.8)
-https://github.com/deepbeepmeep/kernels/releases/download/GGUF_Kernels/llamacpp_gguf_cuda-1.0.11+torch271cu128py310-cp310-cp310-win_amd64.whl
+# GGUF Kernels - GGUF model hizlandirma [v1.0.21] (Python 3.10 / PyTorch 2.7.1 / Cuda 12.8)
+https://github.com/deepbeepmeep/kernels/releases/download/gguf-v1.0.21/llamacpp_gguf_cuda-1.0.21%2Btorch271cu128py310-cp310-cp310-win_amd64.whl
 
 # Nunchaku INT4 (Python 3.10 / PyTorch 2.7 / Cuda 12.8)
 https://github.com/deepbeepmeep/kernels/releases/download/v1.2.0_Nunchaku/nunchaku-1.2.0+torch2.7-cp310-cp310-win_amd64.whl

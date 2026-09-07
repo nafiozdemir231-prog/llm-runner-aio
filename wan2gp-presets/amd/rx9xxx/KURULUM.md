@@ -1,7 +1,7 @@
 # Wan2GP Kurulum Rehberi — AMD RX 9XXX (RDNA 4)
 
-> Kaynak: deepbeepmeep/Wan2GP (commit 8681e9f) — `docs/AMD-INSTALLATION.md` (TheRock)
-> Güncelleme: 2026-08-23
+> Kaynak: deepbeepmeep/Wan2GP (commit 057f9eca) — `docs/AMD-INSTALLATION.md` (TheRock)
+> Güncelleme: 2026-09-06
 > Desteklenen kartlar (gfx120X-all): RX 9070 XT (gfx1201), RX 9070 (gfx1201), RX 9060 XT (gfx1200), RX 9060 (gfx1200)
 
 ## Sistem Gereksinimleri
