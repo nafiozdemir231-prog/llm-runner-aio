@@ -3308,59 +3308,67 @@ ipcMain.handle('server-update', async (_event, serverType) => {
                     log(`[ERROR] ${msg.trim()}`);
                 });
                 
-                gitChild.on('close', (pullCode) => {
-                    if (pullCode !== 0) {
-                        // Pull başarısız — database'i geri koy ve stash'i geri al
-                        log(`❌ Pull failed (code: ${pullCode}), restoring database...`);
-                        restoreDatabase();
-                        resolve({ success: false, message: `Update failed: ${pullStderr || 'Unknown error'}`, logs });
-                        return;
-                    }
-                    
-                    log(`✅ Pull successful! Restoring database...`);
-                    
-                    // Database'i geri koy
-                    restoreDatabase();
-                    
-                    // ✨ OpenWebUI özel: frontend yeniden build et (git pull kaynak kodu getirir, derlenmiş frontend'i yenilemez)
-                    if (serverType === 'openwebui') {
-                        log('[UPDATE] Rebuilding OpenWebUI frontend (npm run build)...');
+                gitChild.on('close', async (pullCode) => {
+                    try {
+                        if (pullCode !== 0) {
+                            // Pull başarısız — database'i geri koy ve stash'i geri al
+                            log(`❌ Pull failed (code: ${pullCode}), restoring database...`);
+                            restoreDatabase();
+                            resolve({ success: false, message: `Update failed: ${pullStderr || 'Unknown error'}`, logs });
+                            return;
+                        }
                         
-                        await new Promise((resolveBuild) => {
-                            const buildCmd = require('child_process').spawn(process.platform === 'win32' ? 'cmd' : '/bin/sh',
-                                process.platform === 'win32'
-                                    ? ['/c', 'npm', 'run', 'build']
-                                    : ['-c', 'npm', 'run', 'build'],
-                                {
-                                    cwd: serverDir,
-                                    shell: true,
-                                    env: { ...process.env },
-                                    stdio: ['pipe', 'pipe', 'pipe']
-                                }
-                            );
+                        log(`✅ Pull successful! Restoring database...`);
+                        
+                        // Database'i geri koy
+                        restoreDatabase();
+                        
+                        // ✨ OpenWebUI özel: frontend yeniden build et (git pull kaynak kodu getirir, derlenmiş frontend'i yenilemez)
+                        if (serverType === 'openwebui') {
+                            log('[UPDATE] Rebuilding OpenWebUI frontend (npm run build)...');
                             
-                            let buildOutput = '';
-                            buildChild.stdout?.on('data', (data) => {
-                                const msg = data.toString().trim();
-                                if (msg) { buildOutput += msg + '\n'; log(msg); }
+                            await new Promise((resolveBuild) => {
+                                const buildChild = require('child_process').spawn(
+                                    process.platform === 'win32' ? 'cmd' : '/bin/sh',
+                                    process.platform === 'win32'
+                                        ? ['/c', 'npm', 'run', 'build']
+                                        : ['-c', 'npm', 'run', 'build'],
+                                    {
+                                        cwd: serverDir,
+                                        shell: true,
+                                        env: { ...process.env },
+                                        stdio: ['pipe', 'pipe', 'pipe']
+                                    }
+                                );
+                                
+                                buildChild.stdout?.on('data', (data) => {
+                                    const msg = data.toString().trim();
+                                    if (msg) log(msg);
+                                });
+                                buildChild.stderr?.on('data', (data) => {
+                                    const msg = data.toString().trim();
+                                    if (msg) log(`[BUILD] ${msg}`);
+                                });
+                                buildChild.on('error', (err) => {
+                                    log(`[BUILD] Spawn hatası: ${err.message}`);
+                                    resolveBuild();
+                                });
+                                buildChild.on('close', (buildCode) => {
+                                    if (buildCode === 0) {
+                                        log('[UPDATE] ✅ Frontend rebuilt successfully.');
+                                    } else {
+                                        log(`[UPDATE] ⚠️ Frontend rebuild failed (code: ${buildCode}). UI eski kalabilir.`);
+                                    }
+                                    resolveBuild();
+                                });
                             });
-                            buildChild.stderr?.on('data', (data) => {
-                                const msg = data.toString().trim();
-                                if (msg) { buildOutput += msg + '\n'; log(`[BUILD ERROR] ${msg}`); }
-                            });
-                            
-                            buildChild.on('close', (buildCode) => {
-                                if (buildCode === 0) {
-                                    log('[UPDATE] ✅ Frontend rebuilt successfully.');
-                                } else {
-                                    log(`[UPDATE] ⚠️ Frontend rebuild failed (code: ${buildCode}). UI eski kalabilir.`);
-                                }
-                                resolveBuild();
-                            });
-                        });
+                        }
+                        
+                        resolve({ success: true, message: `${serverType} updated successfully!`, logs });
+                    } catch (err) {
+                        console.error('[UPDATE] Beklenmeyen hata:', err);
+                        resolve({ success: false, message: `Update error: ${err.message}`, logs });
                     }
-                    
-                    resolve({ success: true, message: `${serverType} updated successfully!`, logs });
                 });
                 
                 gitChild.on('error', (err) => {
