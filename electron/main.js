@@ -3323,45 +3323,44 @@ ipcMain.handle('server-update', async (_event, serverType) => {
                         // Database'i geri koy
                         restoreDatabase();
                         
-                        // ✨ OpenWebUI özel: frontend yeniden build et (git pull kaynak kodu getirir, derlenmiş frontend'i yenilemez)
+                        // ✨ OpenWebUI özel: bağımlılık senkronu + frontend yeniden build
+                        // (git pull kaynak kodu getirir; yeni paketler ve derlenmiş frontend ayrıca gerekir)
                         if (serverType === 'openwebui') {
-                            log('[UPDATE] Rebuilding OpenWebUI frontend (npm run build)...');
+                            // Repo'nun .npmrc dosyasında engine-strict=true var; Node 24+ makinelerde
+                            // npm işlemlerini engeller → ortam değişkeniyle geçersiz kıl.
+                            // Büyük SvelteKit build'leri varsayılan heap ile OOM çöker → 8GB heap ayarla.
+                            const buildEnv = {
+                                ...process.env,
+                                npm_config_engine_strict: 'false',
+                                NODE_OPTIONS: ((process.env.NODE_OPTIONS || '').trim() ? process.env.NODE_OPTIONS + ' ' : '') + '--max-old-space-size=8192'
+                            };
                             
-                            await new Promise((resolveBuild) => {
-                                const buildChild = require('child_process').spawn(
+                            const runBuildStep = (label, args) => new Promise((resolveStep) => {
+                                log(label);
+                                const stepChild = require('child_process').spawn(
                                     process.platform === 'win32' ? 'cmd' : '/bin/sh',
-                                    process.platform === 'win32'
-                                        ? ['/c', 'npm', 'run', 'build']
-                                        : ['-c', 'npm', 'run', 'build'],
-                                    {
-                                        cwd: serverDir,
-                                        shell: true,
-                                        env: { ...process.env },
-                                        stdio: ['pipe', 'pipe', 'pipe']
-                                    }
+                                    process.platform === 'win32' ? ['/c'].concat(args) : ['-c'].concat(args),
+                                    { cwd: serverDir, shell: true, env: buildEnv, stdio: ['pipe', 'pipe', 'pipe'] }
                                 );
-                                
-                                buildChild.stdout?.on('data', (data) => {
-                                    const msg = data.toString().trim();
-                                    if (msg) log(msg);
-                                });
-                                buildChild.stderr?.on('data', (data) => {
-                                    const msg = data.toString().trim();
-                                    if (msg) log(`[BUILD] ${msg}`);
-                                });
-                                buildChild.on('error', (err) => {
-                                    log(`[BUILD] Spawn hatası: ${err.message}`);
-                                    resolveBuild();
-                                });
-                                buildChild.on('close', (buildCode) => {
-                                    if (buildCode === 0) {
-                                        log('[UPDATE] ✅ Frontend rebuilt successfully.');
-                                    } else {
-                                        log(`[UPDATE] ⚠️ Frontend rebuild failed (code: ${buildCode}). UI eski kalabilir.`);
-                                    }
-                                    resolveBuild();
+                                let settled = false;
+                                const finish = (ok) => { if (!settled) { settled = true; resolveStep(ok); } };
+                                stepChild.stdout?.on('data', (d) => { const m = d.toString().trim(); if (m) log(m); });
+                                stepChild.stderr?.on('data', (d) => { const m = d.toString().trim(); if (m) log(`[BUILD] ${m}`); });
+                                stepChild.on('error', (err) => { log(`[BUILD] Launch failed: ${err.message}`); finish(false); });
+                                stepChild.on('close', (code) => {
+                                    if (code === 0) log(`[UPDATE] ✅ ${label} tamamlandı.`);
+                                    else log(`[UPDATE] ⚠️ ${label} başarısız (code: ${code}).`);
+                                    finish(code === 0);
                                 });
                             });
+                            
+                            const installOk = await runBuildStep('[UPDATE] Bağımlılıklar senkronize ediliyor (npm install --no-engine-strict)...', ['npm', 'install', '--no-engine-strict']);
+                            const buildOk = installOk
+                                ? await runBuildStep('[UPDATE] Frontend derleniyor (npm run build)...', ['npm', 'run', 'build'])
+                                : false;
+                            if (!buildOk) {
+                                log('[UPDATE] ⚠️ Frontend derlenemedi — tarayıcıda eski arayüz görünebilir. Update\u2019i tekrar deneyin.');
+                            }
                         }
                         
                         resolve({ success: true, message: `${serverType} updated successfully!`, logs });
