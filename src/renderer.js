@@ -2674,17 +2674,12 @@ async function downloadAllModels(models, selectedIni) {
     
     // Tüm indirme görevlerini topla (dosya varsa atla)
     const downloadTasks = [];
+    const seenDestPaths = new Set();
     let taskIndex = 0;
     let skippedCount = 0;
     
     for (const model of models) {
         if (!model.name || !modelUrlsMap[model.name]) continue;
-        
-        // Sadece -vision ile bitenleri indir
-        if (!model.name.endsWith('-vision')) {
-            console.log(`[Download] Skipping non-vision section: ${model.name}`);
-            continue;
-        }
         
         // Skip coder sections
         if (model.name.startsWith('coder-') || model.name.startsWith('codgemma-')) {
@@ -2709,6 +2704,14 @@ async function downloadAllModels(models, selectedIni) {
                 continue;
             }
             
+            // Aynı dosyaya paralel ikili yazımı engelle (paylaşılan gguf)
+            if (seenDestPaths.has(destPath)) {
+                console.log(`[Download] ⏭️ Duplicate dest (skip): ${destPath}`);
+                skippedCount++;
+                continue;
+            }
+            seenDestPaths.add(destPath);
+            
             taskIndex++;
             downloadTasks.push({
                 id: taskIndex,
@@ -2731,6 +2734,14 @@ async function downloadAllModels(models, selectedIni) {
                 skippedCount++;
                 continue;
             }
+            
+            // Aynı dosyaya paralel ikili yazımı engelle (paylaşılan gguf)
+            if (seenDestPaths.has(destPath)) {
+                console.log(`[Download] ⏭️ Duplicate dest (skip): ${destPath}`);
+                skippedCount++;
+                continue;
+            }
+            seenDestPaths.add(destPath);
             
             taskIndex++;
             downloadTasks.push({
