@@ -37,8 +37,9 @@
       "mmproj": "https://huggingface.co/google/gemma-4-26B-A4B-it-qat-q4_0-gguf/resolve/main/gemma-4-26B-it-mmproj.gguf"
     },
     "qwen3.8-27b-vision": {
-      "model": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-UD-IQ3_S.gguf",
-      "mmproj": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/mmproj-F16.gguf"
+      "model": "https://huggingface.co/vincespeed/Qwen3.8-27B-No-MTP-GGUF-Dflash2/resolve/main/Qwen3.8-27B-IQ3_S-noMTP-.gguf",
+      "mmproj": "https://huggingface.co/vincespeed/Qwen3.8-27B-No-MTP-GGUF-Dflash2/resolve/main/mmproj-F16.gguf",
+      "modelDraft": "https://huggingface.co/vincespeed/Qwen3.8-27B-No-MTP-GGUF-Dflash2/resolve/main/Qwen3.8-27B-DFlash2-Q2K_L.gguf"
     }
   },
   "vram24ram32models.ini": {
@@ -72,6 +73,12 @@
     },
     "Ling-3.0-tiny": {
       "model": "https://huggingface.co/vincespeed/Ling-3.0-tiny-APEX-GGUF/resolve/main/Ling-3.0-tiny-i-compact.gguf"
+    },
+    "MiniCPM5-2B": {
+      "model": "https://huggingface.co/bartowski/MiniCPM5-2B-GGUF/resolve/main/MiniCPM5-2B-Q4_K_M.gguf"
+    },
+    "Spark-X2.5-4B": {
+      "model": "https://huggingface.co/XHToken/Spark-X2.5-4B-GGUF/resolve/main/Spark-X2.5-4B-Q4_K_M.gguf"
     }
   },
   "vram4ram32models.ini": {
@@ -99,6 +106,12 @@
     },
     "Ling-3.0-tiny": {
       "model": "https://huggingface.co/vincespeed/Ling-3.0-tiny-APEX-GGUF/resolve/main/Ling-3.0-tiny-i-compact.gguf"
+    },
+    "MiniCPM5-2B": {
+      "model": "https://huggingface.co/bartowski/MiniCPM5-2B-GGUF/resolve/main/MiniCPM5-2B-Q4_K_M.gguf"
+    },
+    "Spark-X2.5-4B": {
+      "model": "https://huggingface.co/XHToken/Spark-X2.5-4B-GGUF/resolve/main/Spark-X2.5-4B-Q4_K_M.gguf"
     }
   },
   "vram6ram32models.ini": {

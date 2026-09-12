@@ -2752,6 +2752,37 @@ async function downloadAllModels(models, selectedIni) {
                 destPath: destPath
             });
         }
+        
+        // Draft (speculative decoding) model görevi
+        if (urls.modelDraft && urls.modelDraft.startsWith('http')) {
+            const fileName = urls.modelDraft.split('/').pop();
+            const destPath = `${modelFolder}/${fileName}`;
+            
+            // Dosya var mı kontrol et
+            const fileExists = await window.electronAPI.model.fileExists(destPath);
+            if (fileExists) {
+                console.log(`[Download] ✅ Already exists (skip): ${fileName}`);
+                skippedCount++;
+                continue;
+            }
+            
+            // Aynı dosyaya paralel ikili yazımı engelle (paylaşılan gguf)
+            if (seenDestPaths.has(destPath)) {
+                console.log(`[Download] ⏭️ Duplicate dest (skip): ${destPath}`);
+                skippedCount++;
+                continue;
+            }
+            seenDestPaths.add(destPath);
+            
+            taskIndex++;
+            downloadTasks.push({
+                id: taskIndex,
+                name: model.name,
+                type: 'model-draft',
+                url: urls.modelDraft,
+                destPath: destPath
+            });
+        }
     }
     
     // Store tasks for progress tracking
@@ -2773,7 +2804,7 @@ async function downloadAllModels(models, selectedIni) {
     // Tüm görevleri PARALEL çalıştır
     const results = await runWithConcurrency(downloadTasks, MAX_CONCURRENT_DOWNLOADS, async (task) => {
         const folderName = task.name.replace('-vision', '').replace('-Vision', '');
-        const logLabel = task.type === 'model' ? 'Model' : 'MMProj';
+        const logLabel = task.type === 'model' ? 'Model' : task.type === 'model-draft' ? 'Draft' : 'MMProj';
         
         appendToLog('system', `▶ [${logLabel}] Starting: ${task.name}`);
         console.log(`[Download] ${logLabel}: ${task.url} → ${task.destPath}`);

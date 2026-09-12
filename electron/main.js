@@ -1470,7 +1470,7 @@ if ($pathValue -and $pathValue -like "*$picodingPath*") {
     // Model - Get URLs from model_urls.json
     ipcMain.handle('model-get-urls-from-json', async (event, iniName, sectionName) => {
         const urlsJsonPath = path.join(PROJECT_DIR, 'model_urls.json');
-        const result = { model: '', mmproj: '' };
+        const result = { model: '', mmproj: '', modelDraft: '' };
 
         if (!fs.existsSync(urlsJsonPath)) {
             console.error('[URLsJSON] model_urls.json not found at:', urlsJsonPath);
@@ -1493,6 +1493,7 @@ if ($pathValue -and $pathValue -like "*$picodingPath*") {
                 if (typeof entry === 'object' && entry !== null) {
                     result.model = entry.model || '';
                     result.mmproj = entry.mmproj || '';
+                    result.modelDraft = entry.modelDraft || '';
                 } else if (typeof entry === 'string') {
                     result.model = entry;
                 }
