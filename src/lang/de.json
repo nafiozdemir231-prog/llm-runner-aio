@@ -13,6 +13,7 @@
   "label_section_name": "Modellname (Sektion)",
   "label_download_url": "Modell-URL (.gguf)",
   "label_mmproj_url": "MMProj-URL (optional)",
+  "label_draft_url": "Draft-Modell-URL (spekulativ, optional)",
   "label_local_path": "Lokaler Pfad (auto)",
   "btn_save": "Speichern",
   "btn_cancel": "Abbrechen",

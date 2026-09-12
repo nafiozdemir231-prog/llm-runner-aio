@@ -13,6 +13,7 @@
   "label_section_name": "モデル名（セクション）",
   "label_download_url": "モデルURL（.gguf）",
   "label_mmproj_url": "MMProj URL（任意）",
+  "label_draft_url": "ドラフトモデル URL（投機的、任意）",
   "label_local_path": "ローカルパス（自動）",
   "btn_save": "保存",
   "btn_cancel": "キャンセル",

@@ -88,7 +88,7 @@ function listSections(iniPath) {
  * Yerel yol kurali — indirme akisiyla birebir ayni (main.js downloadModel):
  *   folder = isimden '-vision' parcalanmis halinin kalani; file = URL'in son parcasi.
  */
-function deriveLocalPaths(sectionName, modelUrl, mmprojUrl) {
+function deriveLocalPaths(sectionName, modelUrl, mmprojUrl, draftUrl) {
     const folderName = sectionName.replace('-vision', '').replace('-Vision', '');
     const fileName = (modelUrl || '').split('/').pop() || '';
     const out = { localModel: 'models/' + folderName + '/' + fileName };
@@ -97,6 +97,12 @@ function deriveLocalPaths(sectionName, modelUrl, mmprojUrl) {
         out.localMmproj = 'models/' + folderName + '/' + mmFile;
     } else {
         out.localMmproj = null;
+    }
+    if (draftUrl) {
+        const dFile = draftUrl.split('/').pop() || '';
+        out.localDraft = 'models/' + folderName + '/' + dFile;
+    } else {
+        out.localDraft = null;
     }
     return out;
 }
@@ -131,7 +137,7 @@ function writeJsonPreserving(urlsJsonPath, data, eol) {
 /**
  * Model bolumunu ekler veya gunceller (INI + model_urls.json).
  *
- * opts: { iniPath, urlsJsonPath, iniName, sectionName, modelUrl, mmprojUrl? }
+ * opts: { iniPath, urlsJsonPath, iniName, sectionName, modelUrl, mmprojUrl?, modelDraftUrl? }
  * Donus: { success, mode: 'added'|'updated', localModel, localMmproj, jsonKey }
  */
 function saveSection(opts) {
@@ -141,6 +147,7 @@ function saveSection(opts) {
     const sectionName = opts.sectionName;
     const modelUrl = opts.modelUrl;
     const mmprojUrl = opts.mmprojUrl || '';
+    const modelDraftUrl = opts.modelDraftUrl || '';
 
     assertSafeIniName(iniName);
     assertSafeSectionName(sectionName);
@@ -154,6 +161,11 @@ function saveSection(opts) {
         err.code = 'MMPROJ_URL_INVALID';
         throw err;
     }
+    if (modelDraftUrl && (typeof modelDraftUrl !== 'string' || !HTTP_URL_RE.test(modelDraftUrl))) {
+        const err = new Error('modelDraftUrl must be an http(s) URL when provided');
+        err.code = 'DRAFT_URL_INVALID';
+        throw err;
+    }
     if (!fs.existsSync(iniPath)) {
         const err = new Error('INI file not found: ' + iniName);
         err.code = 'INI_NOT_FOUND';
@@ -164,12 +176,14 @@ function saveSection(opts) {
     const eol = detectEol(content);
     const original = content.split(/\r?\n/);
     const range = findSectionRange(original, sectionName);
-    const derived = deriveLocalPaths(sectionName, modelUrl, mmprojUrl || null);
+    const derived = deriveLocalPaths(sectionName, modelUrl, mmprojUrl || null, modelDraftUrl || null);
     const localModel = derived.localModel;
     const localMmproj = derived.localMmproj;
+    const localDraft = derived.localDraft;
 
     const setKeys = [['model', localModel]];
     if (localMmproj) setKeys.push(['mmproj', localMmproj]);
+    if (localDraft) setKeys.push(['model-draft', localDraft]);
 
     let lines;
     let mode;
@@ -197,6 +211,12 @@ function saveSection(opts) {
             const mmIdx = seg.findIndex(l => /^mmproj\s*=/i.test(l.trim()));
             if (mmIdx >= 0) seg.splice(mmIdx, 1);
         }
+        if (!localDraft) {
+            // Draft temizlendi -> eski model-draft satirlarini da kaldir (kopya dahil)
+            const dIdxs = [];
+            seg.forEach((l, i) => { if (/^model-draft\s*=/i.test(l.trim())) dIdxs.push(i); });
+            for (let i = dIdxs.length - 1; i >= 0; i--) seg.splice(dIdxs[i], 1);
+        }
         lines = head.concat(seg, tail);
     } else {
         // ---- YENI BOLUM: dosyanin sonuna ekle ----
@@ -206,6 +226,7 @@ function saveSection(opts) {
         lines.push('[' + sectionName + ']');
         lines.push('model = ' + localModel);
         if (localMmproj) lines.push('mmproj = ' + localMmproj);
+        if (localDraft) lines.push('model-draft = ' + localDraft);
         lines.push('');
     }
 
@@ -219,10 +240,11 @@ function saveSection(opts) {
     }
     const entry = { model: modelUrl };
     if (mmprojUrl) entry.mmproj = mmprojUrl;
+    if (modelDraftUrl) entry.modelDraft = modelDraftUrl;
     parsed.data[jsonKey][sectionName] = entry;
     writeJsonPreserving(urlsJsonPath, parsed.data, parsed.eol);
 
-    return { success: true, mode, localModel, localMmproj, jsonKey };
+    return { success: true, mode, localModel, localMmproj, localDraft, jsonKey };
 }
 
 /**

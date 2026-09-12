@@ -1541,7 +1541,8 @@ if ($pathValue -and $pathValue -like "*$picodingPath*") {
                 iniName: p.iniName,
                 sectionName: p.sectionName,
                 modelUrl: p.modelUrl,
-                mmprojUrl: p.mmprojUrl
+                mmprojUrl: p.mmprojUrl,
+                modelDraftUrl: p.modelDraftUrl
             });
             return Object.assign({ success: true }, res);
         } catch (err) {

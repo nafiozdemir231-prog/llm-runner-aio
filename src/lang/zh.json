@@ -13,6 +13,7 @@
   "label_section_name": "模型名称（节）",
   "label_download_url": "模型 URL（.gguf）",
   "label_mmproj_url": "MMProj URL（可选）",
+  "label_draft_url": "草稿模型 URL（投机解码，可选）",
   "label_local_path": "本地路径（自动）",
   "btn_save": "保存",
   "btn_cancel": "取消",

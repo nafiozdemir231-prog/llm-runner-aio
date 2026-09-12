@@ -2360,16 +2360,19 @@ function openModelEditor(sectionName, prefill) {
     const nameInput = document.getElementById('me-name');
     const urlInput = document.getElementById('me-url');
     const mmInput = document.getElementById('me-mmproj');
+    const draftInput = document.getElementById('me-draft');
     if (sectionName && prefill) {
         nameInput.value = sectionName;
         nameInput.readOnly = true;
         urlInput.value = prefill.model || '';
         mmInput.value = prefill.mmproj || '';
+        draftInput.value = prefill.draft || '';
     } else {
         nameInput.readOnly = false;
         nameInput.value = '';
         urlInput.value = '';
         mmInput.value = '';
+        draftInput.value = '';
     }
     updateLocalPathPreview();
     modal.classList.remove('hidden');
@@ -2385,10 +2388,12 @@ function updateLocalPathPreview() {
     const nameEl = document.getElementById('me-name');
     const urlEl = document.getElementById('me-url');
     const mmEl = document.getElementById('me-mmproj');
+    const draftEl = document.getElementById('me-draft');
     if (!el || !nameEl || !urlEl) return;
     const name = (nameEl.value || '').trim();
     const url = (urlEl.value || '').trim();
     const mm = mmEl ? (mmEl.value || '').trim() : '';
+    const draft = draftEl ? (draftEl.value || '').trim() : '';
     if (!name || !url) {
         el.textContent = '—';
         return;
@@ -2399,6 +2404,10 @@ function updateLocalPathPreview() {
     if (mm) {
         const mmFile = mm.split('/').pop() || '';
         txt += '\nmmproj: models/' + folder + '/' + mmFile;
+    }
+    if (draft) {
+        const dFile = draft.split('/').pop() || '';
+        txt += '\ndraft: models/' + folder + '/' + dFile;
     }
     el.textContent = txt;
 }
@@ -2413,6 +2422,7 @@ async function saveModelEditor() {
     const name = (document.getElementById('me-name').value || '').trim();
     const url = (document.getElementById('me-url').value || '').trim();
     const mm = (document.getElementById('me-mmproj').value || '').trim();
+    const draft = (document.getElementById('me-draft').value || '').trim();
     if (!/^[A-Za-z0-9._-]+$/.test(name)) {
         showNotification('Error', 'Invalid model name. Use letters, numbers, dot, dash, underscore.');
         return;
@@ -2425,12 +2435,17 @@ async function saveModelEditor() {
         showNotification('Error', 'MMProj URL must start with http:// or https://');
         return;
     }
+    if (draft && !/^https?:\/\//.test(draft)) {
+        showNotification('Error', 'Draft URL must start with http:// or https://');
+        return;
+    }
     try {
         const res = await window.electronAPI.model.saveSection({
             iniName: iniName,
             sectionName: name,
             modelUrl: url,
-            mmprojUrl: mm || ''
+            mmprojUrl: mm || '',
+            modelDraftUrl: draft || ''
         });
         if (!res || !res.success) throw new Error(res && res.error ? res.error : 'save failed');
         closeModelEditor();
@@ -2456,6 +2471,7 @@ async function checkUrlsForRow(index) {
         if (u && typeof u === 'object') {
             if (u.model) urls.push(u.model);
             if (u.mmproj) urls.push(u.mmproj);
+            if (u.modelDraft) urls.push(u.modelDraft);
         }
         if (urls.length === 0) {
             if (statusEl) {
@@ -2516,10 +2532,10 @@ async function handleRowAction(action, index) {
             showNotification('Error', 'Delete failed: ' + err.message);
         }
     } else if (action === 'edit') {
-        let prefill = { model: '', mmproj: ''};
+        let prefill = { model: '', mmproj: '', draft: ''};
         try {
             const u = await window.electronAPI.model.getUrlsFromJSON(ctx.iniName, model.name);
-            if (u && typeof u === 'object') prefill = { model: u.model || '', mmproj: u.mmproj || ''};
+            if (u && typeof u === 'object') prefill = { model: u.model || '', mmproj: u.mmproj || '', draft: u.modelDraft || ''};
         } catch (_) {}
         openModelEditor(model.name, prefill);
     } else if (action === 'check') {
@@ -2539,7 +2555,7 @@ function setupModelEditorModal() {
     if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
     if (overlay) overlay.addEventListener('click', closeModal);
     if (saveBtn) saveBtn.addEventListener('click', saveModelEditor);
-    ['me-name', 'me-url', 'me-mmproj'].forEach(id => {
+    ['me-name', 'me-url', 'me-mmproj', 'me-draft'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('input', updateLocalPathPreview);
     });
@@ -2642,10 +2658,14 @@ function renderSystemModelList(models, iniName) {
     listEl.innerHTML = models.map((model, index) => {
         const k = model.keys || {};
         const ready = k.model || k.model_file || model.model_file || model.model_url;
+        const draftChip = k['model-draft']
+            ? `<span class="muted" id="draftstatus-${index}">📦 draft: …</span>`
+            : '';
         return `
         <li data-index="${index}" data-name="${escHtml(model.name)}">
             <span>[${escHtml(model.name)}]</span>
             <span class="muted">${ready ? '✓ Ready' : '✗ No model key'}</span>
+            ${draftChip}
             <span class="url-status" id="urlstatus-${index}"></span>
             <span class="model-row-actions">
                 <button type="button" class="mini-btn act-check" title="Check URL">🔍</button>
@@ -2654,6 +2674,28 @@ function renderSystemModelList(models, iniName) {
             </span>
         </li>`;
     }).join('');
+    
+    // Draft (speculative) dosya durumu — asenkron doldur (yol, indirme akisiyle birebir ayni)
+    (async () => {
+        let modelsDir = '';
+        try { modelsDir = await window.electronAPI.paths.getModelsDir(); } catch (_) {}
+        for (let i = 0; i < models.length; i++) {
+            const k = models[i].keys || {};
+            if (!k['model-draft']) continue;
+            const el = document.getElementById('draftstatus-' + i);
+            if (!el) continue;
+            const fileName = String(k['model-draft']).split(/[\\/]/).pop();
+            const folderName = models[i].name.replace('-vision', '').replace('-Vision', '');
+            const p = `${modelsDir}/${folderName}/${fileName}`;
+            try {
+                const ok = await window.electronAPI.model.fileExists(p);
+                el.textContent = ok ? '📦 draft: ✓ yerelde var' : '📦 draft: ✗ bekliyor';
+                el.classList.add(ok ? 'ok' : 'bad');
+            } catch (_) {
+                el.textContent = '📦 draft: ?';
+            }
+        }
+    })();
 }
 
 async function downloadAllModels(models, selectedIni) {

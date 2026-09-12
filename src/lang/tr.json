@@ -13,6 +13,7 @@
   "label_section_name": "Model Adı (bölüm)",
   "label_download_url": "Model URL'i (.gguf)",
   "label_mmproj_url": "MMProj URL'i (isteğe bağlı)",
+  "label_draft_url": "Draft Model URL'ı (spekülatif, isteğe bağlı)",
   "label_local_path": "Yerel Yol (oto)",
   "btn_save": "Kaydet",
   "btn_cancel": "Vazgeç",
