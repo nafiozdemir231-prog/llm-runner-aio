@@ -58,16 +58,17 @@ Searxng and `llama.cpp` server settings are pre-configured. You can also load fu
 
 These are the versions I have configured (most models below ship with chat, vision and coding profiles):
 
-VRAM	RAM	Models
-4 / 6 GB	32 GB	qwen3.6-35B-A3B · gemma-4-26B · gemma-4-E4B
-8 GB	32 GB	qwen3.6-35B-A3B · gemma-4-26B · gemma-4-E4B · qwen3.8-27B
-10 GB	32 GB	qwen3.6-35B-A3B · gemma-4-26B · qwen3.8-27B
-12 GB	32 GB	qwen3.6-35B-A3B · gemma-4-26B · qwen3.8-27B
-16 GB	32 GB	qwen3.6-35B-A3B · gemma-4-26B · qwen3.8-27B (DFlash2 draft)
-24 GB	32 GB	qwen3.8-27B · gemma-4-26B
-32 GB	32 GB	qwen3.8-27B · gemma-4-31B
-4 GB	16 GB	gemma-4-E4B · qwen3.5-4B · Ling-3.0-tiny · MiniCPM5-2B · Spark-X2.5-4B
-6 GB	16 GB	gemma-4-E4B · qwen3.5-9B · Ling-3.0-tiny · MiniCPM5-2B · Spark-X2.5-4B
+| VRAM    | RAM  | Models |
+| ------- | ---- | ------ |
+| 4 / 6 GB | 32 GB | qwen3.6-35B-A3B · gemma-4-26B · gemma-4-E4B |
+| 8 GB     | 32 GB | qwen3.6-35B-A3B · gemma-4-26B · gemma-4-E4B · qwen3.8-27B |
+| 10 GB    | 32 GB | qwen3.6-35B-A3B · gemma-4-26B · qwen3.8-27B |
+| 12 GB    | 32 GB | qwen3.6-35B-A3B · gemma-4-26B · qwen3.8-27B |
+| 16 GB    | 32 GB | qwen3.6-35B-A3B · gemma-4-26B · qwen3.8-27B (DFlash2 draft) |
+| 24 GB    | 32 GB | qwen3.8-27B · gemma-4-26B |
+| 32 GB    | 32 GB | qwen3.8-27B · gemma-4-31B |
+| 4 GB     | 16 GB | gemma-4-E4B · qwen3.5-4B · Ling-3.0-tiny · MiniCPM5-2B · Spark-X2.5-4B |
+| 6 GB     | 16 GB | gemma-4-E4B · qwen3.5-9B · Ling-3.0-tiny · MiniCPM5-2B · Spark-X2.5-4B |
 
 All of the model lists above can be managed directly from the GUI — no manual INI editing needed (see “GUI Model Manager” in Key Features).
 
