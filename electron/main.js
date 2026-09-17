@@ -2474,6 +2474,10 @@ export default nextConfig;
         // PID kontrolü — shell:true kullanildiğinde undefined olabilir
         try { console.log(`[SPAWN] Child PID: ${child.pid}`); } catch {}
 
+        // Erken olum ve hata tanisi izleme
+        let childExited = false;
+        let stderrTail = '';
+
         // stdout/stderr stream'lerini dinle (EPIPE hatasini yont)
         child.stdout?.on('data', (data) => {
             try {
@@ -2486,6 +2490,8 @@ export default nextConfig;
         child.stderr?.on('data', (data) => {
             try {
                 const message = data.toString();
+                stderrTail += message;
+                if (stderrTail.length > 8000) stderrTail = stderrTail.slice(-8000);
                     safeSend('server-error', { type: serverType, message });
                 console.error(`[${serverType.toUpperCase()} ERROR] ${message.trim()}`);
             } catch {}
@@ -2500,13 +2506,24 @@ export default nextConfig;
         child.on('exit', (code, signal) => {
             try {
                 console.log(`[${serverType}] Exited with code ${code}, signal ${signal}`);
+                childExited = true;
                 runningServers.delete(serverType);
                 setServerState(serverType, false);
             } catch {}
         });
 
-        // Health check'a kadar bekle
-        await waitForServerReady(port, serverType === 'wan2gp' ? 300000 : 30000);
+        // Health check'a kadar bekle — surec erken olerse hemen basarisiz don
+        const readyTimeoutMs = serverType === 'wan2gp' ? 300000 : 60000;
+        const ready = await waitUntilReadyOrExit(port, readyTimeoutMs, () => childExited);
+        if (!ready) {
+            const diag = stderrTail.trim().slice(-2000);
+            try { child.kill(); } catch (e) {}
+            setServerState(serverType, false);
+            const errText = `${serverType} hazir olmadi (${readyTimeoutMs / 1000} sn icinde port ${port} dinlemeye gecmedi).`
+                + (diag ? `\nSon hata ciktilari:\n${diag}` : '');
+            console.error(`[${serverType}] Start failed: ${errText}`);
+            return { success: false, error: errText };
+        }
 
         // Single Source of Truth ile state güncelle
         setServerState(serverType, true, port);
@@ -2820,6 +2837,30 @@ function waitForServerReady(port, timeoutMs = 30000) {
     });
 }
 
+/**
+ * Port acilir veya cocuk surec oler mi diye yarisiyor.
+ * Surec erken oledigonde (import hatasi, port cakismasi vb.) beklemeyi keser.
+ */
+function waitUntilReadyOrExit(port, timeoutMs, isDead) {
+    return new Promise((resolve) => {
+        let settled = false;
+        const finish = (ok) => {
+            if (settled) return;
+            settled = true;
+            clearInterval(iv);
+            clearTimeout(timer);
+            resolve(ok);
+        };
+        const iv = setInterval(() => {
+            if (isDead()) { finish(false); return; }
+            checkPortInUse(port).then(inUse => { if (inUse) finish(true); });
+        }, 1000);
+        const timer = setTimeout(async () => {
+            finish(await checkPortInUse(port));
+        }, timeoutMs);
+    });
+}
+
 // Indirme sabitleri (HAT-08/HAT-24)
 const DOWNLOAD_OVERALL_TIMEOUT_MS = 30 * 60 * 1000; // Dosya basina genel son tarih (30 dk)
 const IDLE_TIMEOUT_MS = 60 * 1000;                  // 60 sn veri gelmezse kes
@@ -2853,6 +2894,11 @@ function pipeToDisk(response, destFolder, partialPath, taskId, baseBytes, totalB
             }
         }, 5000);
 
+        // Veri akisini diske borula (backpressure otomatik yonetilir).
+        // Not: sadece sayac tutmak dosya yazdirmanin yerine gegmez (7a7498f'de kaybolmustu).
+        response.body.pipe(fileStream);
+
+        // Metrik dinleyici (veri akisini bozmaz, pipe ile birlikte calisir)
         response.body.on('data', (chunk) => {
             lastActivity = Date.now();
             downloaded += chunk.length;
@@ -2877,8 +2923,11 @@ function pipeToDisk(response, destFolder, partialPath, taskId, baseBytes, totalB
         fileStream.on('error', (err) => settle(reject, err));
         response.body.on('error', (err) => settle(reject, err));
         response.body.on('close', () => {
-            // Akis beklenmedik kesildi (network drop/abort) ve finish gelmediyse
-            if (!settled) {
+            if (settled) return;
+            // Normal bitiste 'close' bazen disk flush'u ('finish')den once gelebilir.
+            // Tum veri geldiyse rename yapan 'finish' eventini beklet; aksi halde kesinti say.
+            const complete = totalBytes > 0 && downloaded >= totalBytes;
+            if (!complete) {
                 try { fileStream.destroy(); } catch (e) {}
                 settle(reject, new Error('Download stream closed unexpectedly'));
             }
@@ -2906,6 +2955,34 @@ async function downloadAttempt(fetchImpl, url, destFolder, partialPath, taskId, 
         clearTimeout(overallTimer);
         fs.rmSync(partialPath, { force: true });
         ({ resp, controller, overallTimer } = await doFetch({}));
+    }
+
+    // 416: .part dosyasi uzak dosyayla ayni buyuklukte veya daha buyuk — onceki deneme
+    // yazimi tamamlamis ama rename'e ulasamamis olabilir. Tamamsa yalnizca tasi,
+    // degismisse sifirdan baslat.
+    if (resp.status === 416) {
+        let remoteTotal = parseInt(resp.headers.get('content-length') || '0', 10);
+        if (!(remoteTotal > 0)) {
+            // Bazi sunucular 416'da yalnizca 'Content-Range: bytes */<toplam>' gonderir
+            const cr = /^bytes \*\/(\d+)$/.exec(resp.headers.get('content-range') || '');
+            if (cr) remoteTotal = parseInt(cr[1], 10);
+        }
+        let finalized = false;
+        if (Number.isFinite(remoteTotal) && remoteTotal > 0 && existing >= remoteTotal) {
+            try {
+                if (fs.existsSync(destFolder)) fs.unlinkSync(destFolder);
+                fs.renameSync(partialPath, destFolder);
+                finalized = true;
+            } catch (mvErr) {
+                try { fs.rmSync(partialPath, { force: true }); } catch (e) {}
+            }
+        } else {
+            try { fs.rmSync(partialPath, { force: true }); } catch (e) {}
+        }
+        try { resp.body.resume(); } catch (e) {}
+        clearTimeout(overallTimer);
+        if (finalized) return { success: true, path: destFolder };
+        return downloadAttempt(fetchImpl, url, destFolder, partialPath, taskId, deadline);
     }
 
     if (!resp.ok && resp.status !== 206) {
