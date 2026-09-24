@@ -2154,21 +2154,33 @@ function setupPicodingControls() {
         });
     }
     
-    // Add to PATH button
+    // Add to PATH button (kullanici + sistem PATH, cift kapsam)
     const addPathBtn = document.getElementById('btn-add-to-path');
     if (addPathBtn) {
         addPathBtn.addEventListener('click', async () => {
+            const lang = state.languages || {};
+            const confirmMsg = (lang['msg_confirm_add_path'] ||
+                'Add {} to Windows PATH?\n\nThis will allow you to type \'pi\' in any terminal.')
+                .replace('{}', 'picoding');
             const confirmed = await window.electronAPI.notification.confirm(
-                'Add to PATH',
-                'Add picoding folder to Windows PATH? This allows you to type "pi" in any terminal.'
+                lang['add_path_btn'] || 'Add to PATH',
+                confirmMsg
             );
             
             if (confirmed) {
                 const result = await window.electronAPI.picoding.addToPath();
                 if (result.success) {
-                    showNotification('Success', 'picoding added to PATH successfully!');
+                    if (result.warning) {
+                        const warnMsg = (lang['msg_add_path_partial'] || 'Added partially: {}').replace('{}', result.warning);
+                        showNotification('Warning', warnMsg, 'warning');
+                    } else {
+                        showNotification('Success', lang['msg_add_path_success'] || 'picoding added to PATH successfully! Open a new terminal to use "pi".');
+                    }
                 } else {
-                    showNotification('Error', `Failed to add to PATH: ${result.error}`);
+                    let failMsg = lang['msg_add_path_failed'] ||
+                        'Failed to add to PATH:\n{}\n\nYou can manually add:\n{}\n\nThen restart your terminal.';
+                    failMsg = failMsg.replace('{}', result.error || 'unknown error').replace('{}', result.picodingPath || '');
+                    showNotification('Error', failMsg);
                 }
             }
         });

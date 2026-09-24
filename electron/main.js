@@ -870,9 +870,13 @@ Write-Host 'Autostart disabled successfully'
         return { success: false, path: null, needManualSelect: true };
     });
 
-    // Picoding - Add to PATH (PyQt6 _add_to_path ile birebir aynı)
-    // PyQt6: winreg.HKCU\Environment okur, picoding_path in current_path kontrolü yapar
-    // Electron: PowerShell temp dosya yöntemi ile registry oku/güncelle (escaping sorunu yok)
+    // Picoding - Add to PATH (KULLANICI + SISTEM, cift kapsam)
+    // Hem kullanci PATH (HKCU) hem de sistem PATH (HKLM) guncellenir; boylece
+    // hangi ortamdan cagrilsa da 'pi' cozumlenir.
+    // Sistem PATH yazi islemi yonetici yetkisi gerektirir: once normal calistirilir,
+    // izin reddedilirse UAC (RunAs) ile yuksektili tekrar denetlenir.
+    // ONEMLI: Hicbir .ps1 diska yazilmaz (AV heuristicleri dosyayi izole etmesin);
+    // scriptler -EncodedCommand (base64) olarak bellekten iletir, sonuc kucuk bir temp txt'tedir.
     ipcMain.handle('picoding-add-to-path', async () => {
         const picodingPath = path.resolve(path.join(PROJECT_DIR, 'picoding'));
 
@@ -889,42 +893,116 @@ Write-Host 'Autostart disabled successfully'
             const os = require('os');
             const fsLocal = require('fs');
 
-            // PowerShell scriptini temp dosyaya yaz (escaping sorunu yok)
-            const psScript = `
-$picodingPath = '${picodingPath.replace(/'/g, "''")}';
-$regKey = 'HKCU:\\Environment';
-$pathValue = (Get-ItemProperty -Path $regKey).Path;
-if ($pathValue -and $pathValue -like "*$picodingPath*") {
-    Write-Output 'EXISTS';
-} else {
-    # Zaten ekli değilse ekle
-    $newValue = $picodingPath + ';' + $pathValue;
-    Set-ItemProperty -Path $regKey -Name 'Path' -Value $newValue;
-    Write-Output 'OK';
-}
-`;
+            const resultFile = path.join(os.tmpdir(), 'picoding_path_result.txt');
+            const q = (p) => "'" + String(p).replace(/'/g, "''") + "'";
+            // PowerShell -EncodedCommand formati: UTF-16LE metnin base64 hali
+            const enc = (s) => Buffer.from(s, 'utf16le').toString('base64');
 
-            const tempFile = path.join(os.tmpdir(), 'picoding_add_path.ps1');
-            fsLocal.writeFileSync(tempFile, psScript, 'utf8');
+            // Verilen kapsami guncelleyen PS scripti (disk'e DUSMEZ, encoded iletir)
+            const scopeScript = (scope) => [
+                "$ErrorActionPreference = 'Stop'",
+                'try {',
+                '    $target = ' + q(picodingPath) + ';',
+                '    $res = ' + q(resultFile) + ';',
+                "    $cur = [Environment]::GetEnvironmentVariable('Path', '" + scope + "')",
+                "    if ([string]::IsNullOrEmpty($cur)) { $cur = '' }",
+                '    if ($cur.IndexOf($target, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {',
+                "        Set-Content -LiteralPath $res -Value 'EXISTS' -Encoding ASCII",
+                '    } else {',
+                "        [Environment]::SetEnvironmentVariable('Path', $target + ';' + $cur, '" + scope + "') | Out-Null",
+                "        Set-Content -LiteralPath $res -Value 'OK' -Encoding ASCII",
+                '    }',
+                '} catch {',
+                "    Set-Content -LiteralPath $res -Value ('ERROR: ' + $_.Exception.Message) -Encoding ASCII",
+                '}',
+            ].join('\r\n');
+
+            const cleanResult = () => { try { fsLocal.unlinkSync(resultFile); } catch {} };
+            const readResult = () => {
+                try { return fsLocal.readFileSync(resultFile, 'utf8').trim(); } catch { return ''; }
+            };
+
+            // Encoded komutla dogrudan (yuksektili olmadan) calistirir — dosya uretmez
+            const runEncodedDirect = (scriptText) => {
+                cleanResult();
+                execSync(`powershell -NoProfile -EncodedCommand ${enc(scriptText)}`, {
+                    encoding: 'utf8', timeout: 15000
+                });
+                return readResult();
+            };
+
+            // Makine kapsamini UAC ile yuksektili calistirir (bootstrap da encoded)
+            const runElevated = () => {
+                cleanResult();
+                const innerEnc = enc(scopeScript('Machine'));
+                const bootText = [
+                    "$inner = '" + innerEnc + "'",
+                    "Start-Process -FilePath 'powershell.exe' -Verb RunAs -Wait -WindowStyle Minimized -ArgumentList @('-NoProfile','-EncodedCommand',$inner)",
+                ].join('\r\n');
+                execSync(`powershell -NoProfile -EncodedCommand ${enc(bootText)}`, {
+                    encoding: 'utf8', timeout: 180000
+                });
+                return readResult();
+            };
 
             try {
-                const result = execSync(
-                    `powershell -NoProfile -ExecutionPolicy Bypass -File "${tempFile}"`,
-                    { encoding: 'utf8', timeout: 5000 }
-                ).trim();
-
-                if (result === 'EXISTS') {
-                    return { success: true, message: 'Already in PATH' };
+                // 1) KULLANICI PATH (yetki gerektirmez)
+                let userOutcome = '';
+                try {
+                    userOutcome = runEncodedDirect(scopeScript('User'));
+                } catch (err) {
+                    userOutcome = 'ERROR: ' + String((err && err.message) || err);
                 }
 
-                return { success: true, message: 'Added to PATH successfully' };
+                // 2) SISTEM PATH (yonetici yetkisi: once dogrudan, olmazsa UAC)
+                let machineOutcome = '';
+                try {
+                    machineOutcome = runEncodedDirect(scopeScript('Machine'));
+                    if (!machineOutcome || machineOutcome.startsWith('ERROR')) {
+                        machineOutcome = runElevated();
+                    }
+                } catch (err) {
+                    const msg = String((err && err.message) || '');
+                    if (/cancel/i.test(msg)) {
+                        machineOutcome = 'ERROR: Elevation cancelled by user';
+                    } else {
+                        machineOutcome = 'ERROR: ' + msg;
+                    }
+                }
+
+                // Bos sonuclari normallestir (zaman asimi / iptal / yanitsiz)
+                if (!userOutcome) userOutcome = 'ERROR: no response';
+                if (!machineOutcome) machineOutcome = 'ERROR: no response (UAC prompt may have been cancelled or timed out)';
+
+                const ok = (v) => v === 'OK' || v === 'EXISTS';
+                const strip = (v) => String(v).replace(/^ERROR: /, '');
+                const userDone = ok(userOutcome);
+                const machineDone = ok(machineOutcome);
+
+                if (userDone && machineDone) {
+                    return { success: true, message: 'Added to PATH successfully' };
+                }
+                if (userDone || machineDone) {
+                    // Bir taraf basarili, digerinde sorun var → uyarıyla don
+                    const failedScope = userDone ? 'system' : 'user';
+                    const failedOutcome = userDone ? machineOutcome : userOutcome;
+                    return {
+                        success: true,
+                        warning: `${failedScope}: ${strip(failedOutcome)}`
+                    };
+                }
+                return {
+                    success: false,
+                    error: `user: ${strip(userOutcome)}; system: ${strip(machineOutcome)}`,
+                    picodingPath
+                };
             } finally {
-                // Temp dosyayı temizle
-                try { fsLocal.unlinkSync(tempFile); } catch {}
+                // Sonuc dosyasini temizle (artik script dosyasi uretilmiyor)
+                try { fsLocal.unlinkSync(resultFile); } catch {}
             }
         } catch (err) {
             console.error('[PATH] Failed to update:', err.message);
-            return { success: false, error: err.message };
+            return { success: false, error: String((err && err.message) || err), picodingPath };
         }
     });
 
