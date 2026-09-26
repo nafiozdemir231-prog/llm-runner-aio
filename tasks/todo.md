@@ -1,24 +1,23 @@
-# Task: wan2gp-presets güncelleme (8681e9f → 057f9eca)
-
-## Tespit edilen farklar (Wan2GP/docs güncel kaynak)
-- Base requirements: `mmgp 3.7.12→3.7.14`, yeni: `ultralytics`, `scipy`, `apprise==1.12.0`, `keyring==25.7.0`
-- GGUF kernel: **1.0.11 → 1.0.21** (yeni release tag `gguf-v1.0.21`, yeni wheel adları)
-  - 1.0.21: RTX50xx (SM120) async-copy Q8 prefill/decode kernel'leri (vLLM otomatik seçer)
-  - Yeni env: `WGP_GGUF_LLAMACPP_CUDA=0` (paket devre dışı bırakır)
-- Sage: doküman artık **RTX 20XX (Turing) için Sage 1.0.6** tanımlıyor (eski preset "Sage yok" diyordu)
-- Yeni opsiyonel özellik: **DLSS5** — `scripts\install_dlss5.bat` (checksum doğrulamalı, kapalı kaynak 3rd-party, CAUTION)
-- Deepy: Prime yerel = Qwen3.8 VL 27B + ctx≥32k + Summarize; SpecDec Auto ≥24GB(27B)/≥12GB(9B); uzak motorlar (Codex/Claude/OpenCode) → REMOTE_LLMS.md
+# Task: picoding pi 0.85.1 → 0.87.1 (yerel yama korunarak)
 
 ## Steps
-- [x] 1. Analiz: preset vs güncel docs karşılaştırması
-- [x] 2. nvidia requirements.txt ×5 (base + GGUF 1.0.21 + rtx20xx'e Sage 1.0.6)
-- [x] 3. nvidia KURULUM.md ×5 (başlık, tablo, DLSS5, env, Deepy notu)
-- [x] 4. amd requirements.txt ×4 (sadece base)
-- [x] 5. amd KURULUM.md ×4 (sadece başlık commit/tarih)
-- [x] 6. intel/arc requirements.txt (base)
-- [x] 7. Doğrulama (grep) + tasks/change.md kaydı
+- [x] 1. Yerel yamayı tespit et: kurulu 0.85.1 vs ham npm 0.85.1 diff
+- [x] 2. picoding/package.json'da sürümü 0.87.1'e yükselt, kur
+- [x] 3. Yamayı 0.87.1'e yeniden uygula (gerekirse ofset düzelt)
+- [x] 4. Doğrula: pi --version, pi list (pi-vcc sağlam), yama marker'ları mevcut
+- [x] 5. Görev kayıtlarını güncelle (change.md, state.md) + commit
 
 ## Notes
-- Intel KURULUM.md'de tarih/komut satırı YOK → sadece requirements.txt
-- AMD index URL'leri güncel dokümanla birebir uyumlu (doğrulandı)
-- AMD KURULUM.md gövdeleri güncel AMD-INSTALLATION.md ile uyumlu (rx7xxx tam okundu)
+- YAMA (dist/core/compaction/compaction.js, tek dosya):
+  1) DEFAULT_COMPACTION_SETTINGS: reserveTokens 16384→32768, keepRecentTokens 20000→28672
+  2) stopReason="length" mesajı bilgilendirici hale getirildi (completionTokens dahil)
+  3) generateSummaryWithUsage: min(0.8*reserve, model.maxTokens) → max(...) — lokal model tavanının altına düşmez
+  4) generateTurnPrefixSummary: aynı, çarpan 0.5→0.6
+- Yeniden kullanılabilir script: picoding/patches/apply-compaction-patch.js (idempotent, 4/4 byte-eşit doğrulandı)
+- 0.87.1'de ham satırlar aynen duruyordu → yama ofsetsiz oturdu
+- dist/cli.js 0.87.1'de de mevcut → pi.cmd/pi.bat wrapper'ları bozulmadı
+- Doğrulama: node --check OK, pi --version 0.87.1, pi list (pi-vcc 0.8.0 + mcp-adapter sağlam),
+  canlı test: pi -p "Sadece OK yaz" --model Ling-3.0-tiny → "OK"
+
+## Diagram
+[kurulu 0.85.1] ──diff──> [yama: 4 nokta] ──script──> [0.87.1 temiz] ──apply──> [SONUÇ ✓]

@@ -1,8 +1,8 @@
-current_step: openwebui-guncelleme
+current_step: done
 status: complete
-verdict: PASS (kaynak v0.11.4 + venv duzeltme + tam import testi)
-last_action: Open WebUI (uygulama ici, openwebui/) kontrol edildi: kaynak zaten v0.11.4; venv'e eksik bagimliliklar eklendi; IMPORT_OK FastAPI
-next_action: yok (Open WebUI gerekli olunca launcher'dan baslatilir)
+verdict: PASS (surum 0.87.1 + yama 4/4 + canli test OK)
+last_action: picoding pi 0.87.1'e guncellendi, yerel compaction yamasi apply-compaction-patch.js ile yeniden uygulandi, Ling-3.0-tiny canli testi gecdi
+next_action: yok
 blocked: false
 
 ### 2. tur olcum kanitlari (5080 laptop, 2026-09-16 12:52-13:02)
