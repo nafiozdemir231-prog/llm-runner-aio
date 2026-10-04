@@ -1407,7 +1407,44 @@ Write-Host 'Autostart disabled successfully'
                             return;
                             }
                             log(`✅ Dependencies synced.`);
-                            runStashPop();
+
+                            // 3.5) Yerel compaction yamasi — taze npm install node_modules'u sifirladigi icin yeniden uygulanir
+                            const patchScript = path.join(picodingDir, 'patches', 'apply-compaction-patch.js');
+                            if (!fs.existsSync(patchScript)) {
+                                log(`⚠️ Compaction patch script not found (skipped).`);
+                                runStashPop();
+                                return;
+                            }
+                            const patchChild = require('child_process').spawn(
+                                process.platform === 'win32' ? 'node' : '/bin/sh',
+                                process.platform === 'win32'
+                                    ? ['patches/apply-compaction-patch.js']
+                                    : ['-c', 'node patches/apply-compaction-patch.js'],
+                                {
+                                    cwd: picodingDir,
+                                    shell: true,
+                                    env: { ...process.env },
+                                    stdio: ['pipe', 'pipe', 'pipe']
+                                }
+                            );
+                            patchChild.stdout?.on('data', (data) => {
+                                data.toString().split(/\r?\n/).forEach((line) => { if (line.trim()) log(`[PATCH] ${line.trim()}`); });
+                            });
+                            patchChild.stderr?.on('data', (data) => {
+                                data.toString().split(/\r?\n/).forEach((line) => { if (line.trim()) log(`[PATCH][WARN] ${line.trim()}`); });
+                            });
+                            patchChild.on('close', (patchCode) => {
+                                if (patchCode === 0) {
+                                    log(`✅ Compaction patch applied.`);
+                                } else {
+                                    log(`⚠️ Compaction patch failed (code: ${patchCode}) — pi defaults ile calisacak.`);
+                                }
+                                runStashPop();
+                            });
+                            patchChild.on('error', (err) => {
+                                log(`⚠️ Patch spawn error: ${err.message}`);
+                                runStashPop();
+                            });
                         });
 
                         npmChild.on('error', (err) => {
