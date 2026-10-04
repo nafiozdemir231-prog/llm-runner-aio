@@ -1,38 +1,45 @@
 # Wan2GP Kurulum Rehberi — AMD RX 7XXX (RDNA 3)
 
-> Kaynak: deepbeepmeep/Wan2GP (commit 057f9eca) — `docs/AMD-INSTALLATION.md` (TheRock)
-> Güncelleme: 2026-09-06
-> Desteklenen kartlar (gfx110X-all): RX 7900 XTX (gfx1100), RX 7800 XT (gfx1101), RX 7700 XT (gfx1101), RX 7700S / Framework Laptop 16 (gfx1102), Radeon 780M iGPU (gfx1103)
+> Kaynak: deepbeepmeep/Wan2GP (commit b8b18f81) — `docs/AMD-INSTALLATION.md` (TheRock)
+> Güncelleme: 2026-10-04
+> Desteklenen kartlar (gfx hedefiyle): RX 7900 XTX / 7900 XT / 7900 GRE (**gfx1100**) · RX 7800 XT / 7700 XT (**gfx1101**) · RX 7600 XT / 7600 (**gfx1102**)
+
+## ⚠️ Eski ROCm ortamı varsa DEĞİŞTİRİN
+
+Önceki preset'lerdeki `rocm.nightlies.amd.com/v2/gfx...` index'leri ve `rocm65` ortamları **artık kullanılmıyor**.
+Yeni kurulum **stable** TheRock index'i ile yapılmalı: eski ortamı bırakıp yeni ortam oluşturun (`install.bat` ile otomatik, veya aşağıdaki adımlarla elle).
 
 ## Sistem Gereksinimleri
 
 | Öğe | Gerekli sürüm | Nereden |
 |---|---|---|
 | İşletim sistemi | Windows 10/11 (64-bit) | — |
-| Python | **3.11** (TheRock: 3.11/3.12/3.13 destekler) | https://www.python.org/downloads/windows/ |
+| Python | **3.12** (ROCm index'i NumPy wheel'ini yalnız 3.12+ için yayımlar) | https://www.python.org/downloads/windows/ |
 | Git | en güncel | https://git-scm.com/install/windows |
-| AMD sürücüsü | En güncel Adrenalin | https://www.amd.com/en/support |
+| AMD sürücüsü | En güncel Adrenalin | https://www.amd.com/en/support/download/drivers.html |
 
-PyTorch, AMD özelinde **TheRock** projesinin resmi ROCm-Windows wheel'leriyle kurulur (ROCm = AMD'nin CUDA karşılığı).
+Kartınızın gfx hedefini doğrulamak için: `clinfo | findstr gfx` (clinfo, AMD sürücüsüyle gelir).
 
 ## Adım 1 — Clone + venv
 
 ```bat
 git clone https://github.com/deepbeepmeep/Wan2GP.git
 cd Wan2GP
-python -m venv wan2gp-env
+py -3.12 -m venv wan2gp-env
 wan2gp-env\Scripts\activate
 ```
 
-Birden fazla Python sürümünüz varsa: `py -3.11 -m venv wan2gp-env`
+## Adım 2 — ROCm/PyTorch (TheRock stable)
 
-## Adım 2 — ROCm/PyTorch (TheRock) — RDNA 3 index
-
-**Index URL'ini kart ailenize göre doğru seçmek kritik:**
+Kartinizin hedefiyle (gfx1100 örneği):
 
 ```bat
-pip install --pre torch torchaudio torchvision rocm[devel] --index-url https://rocm.nightlies.amd.com/v2/gfx110X-all/
+pip install "torch[device-gfx1100]==2.13.0+rocm10.0.0" "torchvision[device-gfx1100]==0.28.0+rocm10.0.0" torchaudio==2.11.0.2+rocm10.0.0 --index-url https://stable.repo.amd.com/rocm/whl-next/
 ```
+
+- gfx1101 (RX 7800/7700 XT) ve gfx1102 (RX 7600 XT/7600) için ilgili etiketi kullanın.
+- `--index-url` AYNEN böyle kalmalı; `--extra-index-url` kullanırsanız pip CPU-only torch'u seçer.
+- ROCm runtime bağımlılık olarak otomatik gelir. Birden fazla AMD GPU varsa hedefleri listeleyin: `torch[device-gfx1101,device-gfx1102]`.
 
 ## Adım 3 — Bağımlılıklar
 
@@ -45,64 +52,57 @@ pip install -r requirements.txt
 ## Adım 4 — Doğrulama
 
 ```bat
-python -c "import torch; print('PyTorch:', torch.__version__); print('ROCm available:', torch.cuda.is_available()); print('Device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'No GPU')"
+python -c "import torch; print('PyTorch:', torch.__version__); print('GPU available:', torch.cuda.is_available()); print('Device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'No GPU')"
 ```
 
 Beklenen çıktı örneği:
 ```
-PyTorch: 2.11.0+rocm7.12.0
-ROCm available: True
+PyTorch: 2.13.0+rocm10.0.0
+GPU available: True
 Device: AMD Radeon RX 7900 XTX
 ```
 
-## İsteğe bağlı: Attention modları (hızlandırma)
+Sürüm `+rocm...` ile bitmiyorsa CPU-only build kurulmuştur → Adım 2'yi tekrarlayın.
 
-Wan2GP, [triton-windows](https://github.com/woct0rdho/triton-windows/) üzerinden birden çok attention sunabilir. Önce:
+## Attention modları
 
-```bat
-pip uninstall triton
-pip install triton-windows
-rocm-sdk init
-"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" >nul 2>&1
-```
-
-- **SDPA Flash** — PyTorch'ta varsayılan, ek kurulum gerektirmez (RDNA2+ AOTriton ile)
-- **SageAttention V1** — `.post26` veya yenisi gerekir:
+- **SDPA (varsayılan):** RDNA3 AOTriton flash attention kernel'leri kullanır; deneysel işaretli olanları `wgp.py` otomatik etkinleştirir (`TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1`).
+- **SageAttention 1** (Triton gerektirir):
   ```bat
-  pip install "sageattention <2"
+  pip install -U "triton-windows>=3.7,<3.8"
+  pip install sageattention==1.0.6
   ```
-  (Triton derleme sorunu düzeltmeli wheel: https://github.com/Comfy-Org/wheels/actions/runs/21343435018 )
-- **FlashAttention-2** (yalnız Triton backend, kaynak derlemesi):
+  triton-windows 3.7, PyTorch 2.13 ile eşleşir ve ROCm SDK'yı aktif ortamdan bulur — Visual Studio / `rocm-sdk init` / ek ortam değişkeni GEREKMEZ (eski rehberdeki vcvars adımları artık geçersiz).
+- **FlashAttention-2** (aiter Triton kernel'leri, kaynak derlemesi; derleme sırasında Visual Studio gerekmez):
   ```bat
   git clone https://github.com/Dao-AILab/flash-attention.git
   cd flash-attention
-  pip install ninja
-  pip install packaging
-  set FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE && python setup.py install
+  set FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE
+  pip install --no-build-isolation .
   ```
+  Kurulumda bir kez "Triton implementation'a düşüyor" uyarı çıkması normaldir.
 
-## Çalıştırma — her oturumda gerekli ortam değişkenleri
+## INT8 Math Kernels (Comfy Kitchen) — yeni
 
-Her yeni CMD oturumunda (venv aktifken) şu değişkenleri ayarlayıp `wgp.py` çalıştırın — kalıcı çözüm için hepsini tek `.bat` dosyasına alın:
+**INT8 Math Kernels** menüsü (varsayılan **Auto**): RDNA3/3.5/4 cihazlarda Kitchen'ın **HIP** extension'ı denenir, olmazsa Triton → PyTorch'a düşer.
+
+## Çalıştırma
 
 ```bat
-set ROCM_HOME=%ROCM_ROOT%
-set PATH=%ROCM_ROOT%\lib\llvm\bin;%ROCM_BIN%;%PATH%
-set CC=clang-cl
-set CXX=clang-cl
-set DISTUTILS_USE_SDK=1
-set FLASH_ATTENTION_TRITON_AMD_ENABLE=TRUE
-set TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
-set MIOPEN_FIND_MODE=FAST
+cd \path-to\Wan2GP
+wan2gp-env\Scripts\activate
 python wgp.py
 ```
 
-`MIOPEN_FIND_MODE=FAST` önemli: MIOpen bazı mimarilerde OOM / ekran sürücüsü çökmesine yol açabiliyor (resmi tavsiye).
+İlk kullanımda VAE encode/decode yavaşsa MIOpen kernel benchmark yapıyordur:
+
+```bat
+set MIOPEN_FIND_MODE=FAST
+```
 
 ## Sorun giderme
 
-- **GPU algılanmıyor** → kart TheRock matrisinde mi kontrol edin, Adrenalin sürücüsü güncel mi, index URL doğru mu
-- **"Could not find a version..."** → index URL hatası; `/v2/` yerine `/v2/staging/` deneyin, `--pre` bayrağı var mı
-- **Performans** → VRAM'i izleyin, batch/çözünürlük düşürün, donanımsa hızlandırmalı uygulamaları (tarayıcı vb.) kapatın
-- Bilinen sorunlar: https://github.com/ROCm/TheRock/issues/808 (Windows paketleri henüz yeni, istikrarsız olabilir)
-- Matris: https://github.com/ROCm/TheRock/blob/main/SUPPORTED_GPUS.md
+- `torch.cuda.is_available()` False → kart destek listesinde mi, `device-gfx...` hedefi `clinfo | findstr gfx` çıktısıyla birebir aynı mı; Adrenalin sürücüsünü güncelleyin.
+- "No solution found / Could not find a version" → venv Python 3.12 mi (`python --version`), hedef adı doğru yazılmış mı (`device-gfx1100`, `device-gfx110X` değil).
+- "No matching distribution found" → mimari Windows için yayımlanmamış veya venv aktif değil.
+- ROCm wheel bilinen sorunları: https://github.com/ROCm/TheRock/issues/808 · WanGP genel: `docs/TROUBLESHOOTING.md`

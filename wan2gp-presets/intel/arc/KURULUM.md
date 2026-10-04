@@ -4,7 +4,7 @@
 >
 > deepbeepmeep/Wan2GP resmen **SADECE NVIDIA (CUDA)** ve **AMD (ROCm/TheRock)**
 > GPU'larını destekler. Repo dokümanlarında (README, docs/*.md) Intel için
-> **hiçbir resmî talimat YOKTUR**.
+> **hiçbir resmî talimat YOKTUR** (commit b8b18f81'de de yoktur).
 >
 > Bu paket, toplulukta yaygın kullanılan **DirectML** (`torch-directml`) yöntemiyle
 > hazırlanmıştır. Beklentileri buna göre ayarlayın:
@@ -69,14 +69,15 @@ DirectML'de cihaz adının Intel Arc olarak gelmesi beklenir.
 python wgp.py
 ```
 
+Not: **INT8 Math Kernels** menüsü bu kurulumda **Disabled (PyTorch)** gibi davranır — Comfy Kitchen CUDA/HIP ve Triton backend'leri DirectML ortamında bulunmaz; WanGP standart PyTorch/Quanto yolunu kullanır.
+
 ## VRAM / performans ipuçları
 
-- Düşük çözünürlük ve kısa sürelü üretimlerle başlayın; DirectML bellek yönetimi CUDA kadar verimli değildir.
+- Düşük çözünürlük ve kısa süreli üretimlerle başlayın; DirectML bellek yönetimi CUDA kadar verimli değildir.
 - Tarayıcının GPU kullanımını kapatmak 1–5 GB VRAM kazandırır (`scripts/start-chrome-no-gpu.bat`).
-- Kuantize (GGUF) model seçenekleri bu platformda sınırlı hızlanma sağlar — CUDA GGUF kernel'leri burada çalışmaz.
 
 ## Sorun giderme
 
-- **Modül içe aktarılamıyor / kernel hatası** → büyük ihtimalle CUDA varsayan bir bileşendir; ilgili özelliği arayüzden kapatmayı deneyin.
-- **Çok yavaş** → DirectML'in doğası gereklidir; çözünürlük/süre düşürün.
-- Resmî destek olmadığından repo sahipleri bu yapılandırma için yardım garantisi vermez.
+- Doğrulama adımı GPU göstermiyorsa: Intel sürücüsünü güncelleyin, venv'in aktif olduğundan emin olun.
+- `torch-directml` güncellemeleri yavaştır; pip'in kurduğu sürümde açık bir uyumsuzluk görürseniz issues'dan raporlayın.
+- Genel WanGP sorunları: https://github.com/deepbeepmeep/Wan2GP/blob/main/docs/TROUBLESHOOTING.md (Intel'e özel resmî destek yoktur)

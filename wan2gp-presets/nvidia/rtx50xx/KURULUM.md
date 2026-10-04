@@ -1,7 +1,7 @@
 # Wan2GP Kurulum Rehberi — NVIDIA RTX 50XX (Blackwell)
 
-> Kaynak: deepbeepmeep/Wan2GP (commit 057f9eca) — `docs/INSTALLATION.md`
-> Güncelleme: 2026-09-06 · Desteklenen kartlar: RTX 5090 / 5080 / 5070 Ti / 5070
+> Kaynak: deepbeepmeep/Wan2GP (commit b8b18f81) — `docs/INSTALLATION.md`
+> Güncelleme: 2026-10-04 · Desteklenen kartlar: RTX 5090 / 5080 / 5070 Ti / 5070
 
 ## Sistem Gereksinimleri
 
@@ -11,7 +11,7 @@
 | Python | **3.11.14** | https://www.python.org/downloads/windows/ |
 | Conda | Miniconda (veya Anaconda) | https://www.anaconda.com/download/success?reg=skipped |
 | CUDA Toolkit | **13.1** | https://developer.nvidia.com/cuda-13-1-0-download-archive |
-| NVIDIA sürücüsü | En güncel Game Ready / Studio | https://www.nvidia.com/drivers |
+| NVIDIA sürücüsü | En güncel Game Ready / Studio (**R580+**, bkz. INT8 notu) | https://www.nvidia.com/drivers |
 
 RTX 50XX aynı zamanda **NV FP4** kernel desteği sunar (sm120+) — bu pakete dahildir.
 
@@ -40,13 +40,13 @@ pip install -r requirements.txt
 
 | Kernel | Görevi |
 |---|---|
-| triton-windows | PyTorch compilation + Sage Attention için zorunlu |
+| triton-windows ≥3.6,<3.7 | PyTorch compilation + Sage Attention için zorunlu (PyTorch 2.10 eşleniği) |
 | Sage Attention 2.2.0 (post4) | Video/görüntü üretiminde ~x2 hız |
-| Sparge Attention (spas_sage_attn) | FlashVSR sparse attention |
+| Sparge Attention (spas_sage_attn, post4) | FlashVSR sparse attention |
 | Flash Attention 2.8.3 | Kalite korur; LM işlerinde (prompt enhancer, TTS, Deepy) belirgin hız |
-| GGUF Kernels 1.0.21 | GGUF modeller için CUDA hızlandırma (Stream-K, FP16/BF16 matmul; **SM120 async-copy Q8 kernel'leri** — vLLM backend uyumlu kartta otomatik seçer) |
+| GGUF Kernels 1.0.25 | Speculative decoding (MTP/DFlash2/DSpark) INT8 tensor-core doğrulama; **SM120 async-copy Q8** kernel'leri vLLM backend'de otomatik seçilir. Not: resmî doküman bu wheel'i `pip install --no-deps <url>` ile ayrı kurmayı önerir |
 | lightx2v_kernel 0.0.2 | **NV FP4** dequantization (yalnız 50xx/sm120+) |
-| nunchaku 1.2.1 | INT4/FP4 quantize desteği |
+| nunchaku 1.2.1 | INT4/FP4 quantize desteği (FP4 donanımı yalnız 50xx) |
 | bitsandbytes 0.49.2 | 4-bit / NF4 checkpoint hızlandırma |
 
 ## Adım 4 — Doğrulama
@@ -69,9 +69,17 @@ set WGP_GGUF_LLAMACPP_CUDA_MATMUL_MODE=fast
 python wgp.py
 ```
 
-GGUF CUDA paketini tamamen devre dışı bırakmak için: `set WGP_GGUF_LLAMACPP_CUDA=0`
+GGUF CUDA paketini tamamen devre dışı bırakmak için: `set WGP_GGUF_LLAMACPP_CUDA=0`.
+Eski GGUF kernel'ine dönmek (karşılaştırma için): `set LLAMACPP_GGUF_SHORT_BATCH=native`.
 
-Sol-Attn (Advanced Mode → Misc → Override Attention Mode) bu nesilde ~%30'a varan kazanım verebilir (BF16 + Triton 3.6+ gerekir).
+## INT8 Math Kernels (Comfy Kitchen) — yeni
+
+Yapılandırma menüsündeki **INT8 Math Kernels** seçimi INT8 lineer katmanların backend'ini belirler:
+**Auto** (varsayılan; Comfy Kitchen CUDA → Triton → PyTorch sırasıyla dener), Triton, Comfy Kitchen, Disabled.
+
+- Comfy Kitchen `requirements.txt` ile gelir; hazır CUDA kernel'leri **NVIDIA R580+ sürücü** ister.
+- RTX 50-serisi SM120 kartlarda **CUDA Kernels Optimized Ops Precision** (varsayılan: Allow Faster Approximate Kernels) H3 VAE için ek fusion kazanımları sağlar; diğer mimariler mevcut yolu korur.
+- Değişiklikler üretimler arasında uygulanır; mevcut CUDA graph'lar sonraki istekte yeniden kurulur.
 
 ## İsteğe bağlı: DLSS 5 (Neural Rendering / Frame Generation)
 
