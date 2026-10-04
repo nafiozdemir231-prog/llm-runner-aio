@@ -6,7 +6,7 @@
   ],
   "packages": [
     "npm:pi-mcp-adapter",
-    "npm:@sting8k/pi-vcc@0.8.0"
+    "npm:@sting8k/pi-vcc@0.8.1"
   ],
   "lastChangelogVersion": "0.79.1"
 }
