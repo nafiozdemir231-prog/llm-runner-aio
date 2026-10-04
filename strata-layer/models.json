@@ -1,0 +1,17 @@
+{
+  "_aciklama": "Strata coklu model kapisi ayarlari. Bu dosya UPSTREAM degil, bizim; git pull bunu bozmaz.",
+  "host": "0.0.0.0",
+  "port": 1235,
+  "backend_port_base": 1236,
+  "python": ".venv/Scripts/python.exe",
+  "engine": "strata",
+  "idle_unload_s": 600,
+  "ready_timeout_s": 1200,
+  "min_free_vram_mib": 0,
+  "fit_max_tokens": false,
+  "api_key": "",
+  "models": [
+    { "name": "Qwen3.8-Flash-Next", "config": "strata-general.json" },
+    { "name": "coder-Qwen3.8-Flash-Next", "config": "strata-coder.json" }
+  ]
+}
