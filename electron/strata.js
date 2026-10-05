@@ -112,7 +112,8 @@ function register(deps) {
             if (i >= 0) maxContext = Number(general.args[i + 1]);
         }
         return {
-            eligible: hw.ramGb >= 48 && (hw.vramGb || 0) >= 12,
+            // STRATA_DEV=1: test makinesinde karti RAM esigi altinda da gorunur kilar (varsayilan davranis degismez).
+            eligible: (hw.ramGb >= 48 && (hw.vramGb || 0) >= 12) || process.env.STRATA_DEV === '1',
             ramGb: hw.ramGb, vramGb: hw.vramGb || 0, gpuName: hw.gpuName || '',
             repoCloned: fs.existsSync(path.join(DIR, 'setup.py')),
             installed: fs.existsSync(VENV_PY),
