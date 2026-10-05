@@ -324,6 +324,12 @@ class Handler(BaseHTTPRequestHandler):
                                     "models": sorted(self.gw.models), "arks": [a.state() for a in self.gw.arks]})
         if path in ("/props", "/slots", "/v1/status"):
             return self._proxy_get(path)
+        if path == "/":
+            return self._json(200, {"app": "Strata multi-model gateway (our layer)",
+                                    "openai": "/v1/chat/completions", "anthropic": "/v1/messages",
+                                    "models": "/v1/models", "health": "/health",
+                                    "gateway_models": sorted(self.gw.models),
+                                    "arks": [a.state() for a in self.gw.arks]})
         return self._json(404, {"error": {"message": "not found"}})
 
     def models_iter(self):

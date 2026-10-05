@@ -27,7 +27,8 @@ const state = {
         openwebui: { running: false, port: 3000, host: '127.0.0.1' },
         llamacpp: { running: false, port: 1234, host: '127.0.0.1' },
         vane: { running: false, port: 3001, host: '127.0.0.1' },
-        wan2gp: { running: false, port: 7860, host: '127.0.0.1', installed: false }
+        wan2gp: { running: false, port: 7860, host: '127.0.0.1', installed: false },
+        strata: { running: false, port: 1235, host: '127.0.0.1', installed: false, eligible: false }
     },
     models: [],
     selectedModel: null
@@ -871,6 +872,18 @@ function setupEventListeners() {
     window.electronAPI.wan2gp.onSetupLog((data) => {
         appendToLog('wan2gp', data.message);
     });
+
+    // Strata: durum + kurulum/kalibrasyon/guncelleme/config butonlari + log akisi
+    refreshStrataStatus();
+    const stInstallBtn = document.getElementById('btn-strata-install');
+    if (stInstallBtn) stInstallBtn.addEventListener('click', () => runStrataSetup());
+    const stCalBtn = document.getElementById('btn-strata-calibrate');
+    if (stCalBtn) stCalBtn.addEventListener('click', () => runStrataCalibrate());
+    const stUpdBtn = document.getElementById('btn-strata-update');
+    if (stUpdBtn) stUpdBtn.addEventListener('click', () => runStrataUpdate());
+    const stCfgSave = document.getElementById('btn-strata-config-save');
+    if (stCfgSave) stCfgSave.addEventListener('click', () => saveStrataConfig());
+    window.electronAPI.strata.onSetupLog((data) => appendToLog('strata', data.message));
     
     // Model management
     setupModelControls();
@@ -1251,6 +1264,153 @@ async function runWan2gpUpdate() {
     await refreshWan2gpStatus();
 }
 
+// ============================================
+// Strata (Qwen3.8-Flash-Next coklu-model gateway)
+// ============================================
+let strataBusyInFlight = false;
+
+/**
+ * Strata durumunu sorgular: uygunluk (RAM>=48 & VRAM>=12), kurulum, config alanlari.
+ */
+async function refreshStrataStatus() {
+    try {
+        const st = await window.electronAPI.strata.status();
+        state.servers.strata.installed = !!st.installed;
+        state.servers.strata.eligible = !!st.eligible;
+
+        const installSec = document.getElementById('strata-install-section');
+        if (installSec) installSec.classList.toggle('hidden', !st.eligible || st.configured);
+        const serverFs = document.getElementById('strata-server-fieldset');
+        if (serverFs) serverFs.classList.toggle('hidden', !(st.eligible && st.repoCloned));
+
+        const sel = document.getElementById('strata-model-select');
+        if (sel && !sel.options.length && Array.isArray(st.choices)) {
+            sel.innerHTML = '';
+            for (const c of st.choices) {
+                const opt = document.createElement('option');
+                opt.value = c.size;
+                opt.textContent = c.label + ' — ~' + c.downloadGb + ' GB' + (c.fits ? '' : ' (RAM yetersiz)');
+                if (!c.fits) opt.disabled = true;
+                sel.appendChild(opt);
+            }
+            const firstFit = st.choices.find(c => c.fits);
+            if (firstFit) sel.value = firstFit.size;
+        }
+
+        const installBtn = document.getElementById('btn-strata-install');
+        if (installBtn) installBtn.disabled = !!st.setupRunning || !st.eligible;
+        const stateSpan = document.getElementById('strata-install-state');
+        if (stateSpan) stateSpan.textContent = st.configured ? '\u2713 Model kurulu' : (st.installed ? '\u23f3 Ortam hazir, model bekliyor' : 'Kurulum yapilmadi');
+
+        const startBtn = document.getElementById('btn-start-strata');
+        if (startBtn) startBtn.disabled = !st.configured || st.running;
+        const stopBtn = document.getElementById('btn-stop-strata');
+        if (stopBtn) stopBtn.disabled = !st.running;
+        const calBtn = document.getElementById('btn-strata-calibrate');
+        if (calBtn) calBtn.disabled = !st.configured || st.setupRunning;
+        const updBtn = document.getElementById('btn-strata-update');
+        if (updBtn) updBtn.disabled = !st.repoCloned || st.running || st.setupRunning;
+
+        updateServerStatus('strata', !!st.running);
+        const cfgR = await window.electronAPI.strata.configRead().catch(() => null);
+        if (cfgR && cfgR.success) {
+            const hostSel = document.getElementById('strata-host');
+            if (hostSel) hostSel.value = String(cfgR.config.host) === '127.0.0.1' ? 'pc' : 'lan';
+            const portEl = document.getElementById('strata-port');
+            if (portEl) portEl.value = cfgR.config.port;
+            const idleEl = document.getElementById('strata-idle');
+            if (idleEl) idleEl.value = cfgR.config.idleUnloadS;
+            const ctxSel = document.getElementById('strata-context');
+            if (ctxSel && cfgR.config.maxContext) ctxSel.value = String(cfgR.config.maxContext);
+            const keyInfo = document.getElementById('strata-apikey-info');
+            if (keyInfo) keyInfo.textContent = cfgR.config.apiKey ? 'API key: ' + cfgR.config.apiKey : '';
+        }
+    } catch (err) {
+        console.error('[STRATA] Status query failed:', err.message);
+    }
+}
+
+/**
+ * Strata model kurulumu/indirmesi (System Detection kartindan).
+ */
+async function runStrataSetup() {
+    if (strataBusyInFlight) return;
+    const sel = document.getElementById('strata-model-select');
+    const size = sel ? sel.value : null;
+    if (!size) { showNotification('Warning', 'Model boyutu secilmedi.', 'warning'); return; }
+    const confirmed = await window.electronAPI.notification.confirm(
+        'Strata Kurulumu',
+        '"' + size + '" modeli indirilsin mi?\n\n~58-84 GB indirme yapilir (models\\ klasoru), kurulum 1 saati asabilir ve internet hizina baglidir. Ilerleme Sunucular > Strata > Logs altindan izlenir; kesilirse ayni buton devam eder.'
+    );
+    if (!confirmed) return;
+    strataBusyInFlight = true;
+    appendToLog('strata', '[SETUP] Basliyor (' + size + ')...');
+    const result = await window.electronAPI.strata.setup({ size }).catch(e => ({ success: false, error: e.message }));
+    strataBusyInFlight = false;
+    if (result.success) {
+        appendToLog('strata', '[SETUP] Tamamlandi.');
+        showNotification('Success', 'Strata kurulumu tamamlandi. Sunucular sekmesinden baslatin.');
+    } else {
+        appendToLog('strata', '[SETUP] FAILED: ' + result.error, true);
+        showNotification('Error', 'Strata kurulumu basarisiz: ' + result.error, 'error');
+    }
+    await refreshStrataStatus();
+}
+
+async function runStrataCalibrate() {
+    if (strataBusyInFlight) return;
+    strataBusyInFlight = true;
+    appendToLog('strata', '[CALIBRATE] Basliyor (~5-10 dk)...');
+    const result = await window.electronAPI.strata.calibrate().catch(e => ({ success: false, error: e.message }));
+    strataBusyInFlight = false;
+    if (result.success) {
+        appendToLog('strata', '[CALIBRATE] Tamamlandi.');
+        showNotification('Success', 'Strata kalibrasyonu tamamlandi.');
+    } else {
+        appendToLog('strata', '[CALIBRATE] FAILED: ' + result.error, true);
+        showNotification('Error', 'Kalibrasyon basarisiz: ' + result.error, 'error');
+    }
+    await refreshStrataStatus();
+}
+
+async function runStrataUpdate() {
+    if (strataBusyInFlight) return;
+    strataBusyInFlight = true;
+    appendToLog('strata', '[UPDATE] Basliyor...');
+    const result = await window.electronAPI.strata.update().catch(e => ({ success: false, error: e.message }));
+    strataBusyInFlight = false;
+    if (result.success) {
+        appendToLog('strata', '[UPDATE] Tamamlandi.');
+        showNotification('Success', 'Strata guncellendi.');
+    } else {
+        appendToLog('strata', '[UPDATE] FAILED: ' + result.error, true);
+        showNotification('Error', 'Strata guncelleme basarisiz: ' + result.error, 'error');
+    }
+    await refreshStrataStatus();
+}
+
+/**
+ * Kapı config paneli: context / PC-YerelAg / port / idle unload. Yedekli (kural 7).
+ */
+async function saveStrataConfig() {
+    const options = {
+        context: parseInt(document.getElementById('strata-context')?.value) || null,
+        hostMode: document.getElementById('strata-host')?.value || 'pc',
+        port: parseInt(document.getElementById('strata-port')?.value) || null,
+        idleUnloadS: document.getElementById('strata-idle')?.value
+    };
+    const result = await window.electronAPI.strata.configWrite(options).catch(e => ({ success: false, error: e.message }));
+    if (result.success) {
+        appendToLog('strata', '[CONFIG] Kaydedildi: ' + (result.changed || []).join(', ') + ' | Yedek: ' + result.backupDir);
+        String(result.checkargs || '').split(/\r?\n/).forEach(l => l.trim() && appendToLog('strata', 'checkargs| ' + l));
+        showNotification('Success', 'Strata config guncellendi.');
+    } else {
+        appendToLog('strata', '[CONFIG] FAILED: ' + result.error, true);
+        showNotification('Error', 'Config kaydedilemedi: ' + result.error, 'error');
+    }
+    await refreshStrataStatus();
+}
+
 function setupServerControls() {
     // Prevent duplicate IPC listener registration on re-entry
     if (eventListenersSetup) return;
@@ -1273,7 +1433,8 @@ function setupServerControls() {
             logId: 'llamacpp-log' 
         },
         { type: 'vane', startId: 'btn-start-vane', stopId: 'btn-stop-vane', updateId: null, browserId: 'btn-open-vane', portId: 'vane-port', hostId: 'vane-host', statusId: 'vane-status', logId: 'vane-log' },
-        { type: 'wan2gp', startId: 'btn-start-wan2gp', stopId: 'btn-stop-wan2gp', updateId: null, browserId: 'btn-open-wan2gp', portId: 'wan2gp-port', hostId: 'wan2gp-host', statusId: 'wan2gp-status', logId: 'wan2gp-log' }
+        { type: 'wan2gp', startId: 'btn-start-wan2gp', stopId: 'btn-stop-wan2gp', updateId: null, browserId: 'btn-open-wan2gp', portId: 'wan2gp-port', hostId: 'wan2gp-host', statusId: 'wan2gp-status', logId: 'wan2gp-log' },
+        { type: 'strata', startId: 'btn-start-strata', stopId: 'btn-stop-strata', updateId: null, browserId: 'btn-open-strata', portId: 'strata-port', hostId: null, statusId: 'strata-status', logId: 'strata-log' }
     ];
     
     // IPC Event Listeners (Server logs)

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; frame-src https://www.aihublocal.com;">
-    <title>LLM Runner AIO v1.7</title>
+    <title>LLM Runner AIO v1.9</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
     <div id="toolbar" class="drag-region">
         <div class="toolbar-left">
             <img src="../assets/icon.ico" alt="Icon" class="toolbar-icon">
-            <h1 id="app-title">LLM Runner AIO v1.7</h1>
+            <h1 id="app-title">LLM Runner AIO v1.9</h1>
         </div>
         
         <div class="toolbar-center">
@@ -152,6 +152,22 @@
                             
                             <!-- Her model için ayrı ilerleme çubuğu -->
                             <div id="per-model-progress-container" class="per-model-progress">
+                            </div>
+                        </fieldset>
+
+                        <!-- Strata Model Kurulumu (yalnız 48 GB+ RAM'de görünür) -->
+                        <fieldset id="strata-install-section" class="hidden">
+                            <legend>🧠 Strata — Qwen3.8-Flash-Next (125B MoE, yerel)</legend>
+                            <div class="help-text">Bu bilgisayar Strata için uygun (RAM ≥ 48 GB, VRAM ≥ 12 GB). Model ~58–84 GB indirir → models\ klasörü. Kurulumdan sonra Sunucular sekmesinden başlatın.</div>
+                            <div class="form-row">
+                                <label for="strata-model-select">Model boyutu:</label>
+                                <select id="strata-model-select"></select>
+                            </div>
+                            <div class="server-controls">
+                                <div class="btn-group">
+                                    <button id="btn-strata-install" class="primary-btn">⬇ Model İndir & Kur</button>
+                                    <span id="strata-install-state"></span>
+                                </div>
                             </div>
                         </fieldset>
                         
@@ -442,6 +458,66 @@
                             <div class="log-panel">
                                 <button class="log-toggle" onclick="toggleLogPanel('wan2gp-log', this)">📋 Logs ▾</button>
                                 <textarea id="wan2gp-log" class="log-area hidden" readonly placeholder="Wan2GP logs..."></textarea>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <div class="server-section">
+                        <fieldset id="strata-server-fieldset" class="hidden">
+                            <legend>🧠 Strata — Qwen3.8-Flash-Next (çoklu model kapısı)</legend>
+
+                            <div class="server-info">
+                                <span class="info-desc">Tek portta OpenAI/Anthropic API: iki model adı ("Qwen3.8-Flash-Next" + "coder-Qwen3.8-Flash-Next") tek motoru paylaşır, fark yalnız sampling. Boşta 600 sn sonra model kapatılır.</span>
+                            </div>
+
+                            <div class="server-controls">
+                                <div class="btn-group">
+                                    <button id="btn-start-strata" class="start-btn" disabled>▶ Start</button>
+                                    <button id="btn-stop-strata" class="stop-btn" disabled>⏹ Stop</button>
+                                    <button id="btn-open-strata" class="browser-btn" disabled>🌐 Open in Browser</button>
+                                    <button id="btn-strata-calibrate" class="secondary-btn" disabled>🎯 Calibrate</button>
+                                    <button id="btn-strata-update" class="secondary-btn" disabled>🔄 Update</button>
+                                </div>
+                            </div>
+
+                            <div class="server-status">
+                                Status: <span class="status-text-label">Stopped</span> <span id="strata-status" class="status-indicator stopped">Stopped</span>
+                            </div>
+
+                            <button id="btn-hide-strata-config" class="secondary-btn small-btn" onclick="toggleConfigPanel('strata-config', this)">🔧 Hide Config</button>
+
+                            <div id="strata-config" class="server-config hidden">
+                                <div class="form-row">
+                                    <label>Context:</label>
+                                    <select id="strata-context">
+                                        <option value="32768">32K</option>
+                                        <option value="65536">64K</option>
+                                        <option value="131072">128K</option>
+                                        <option value="262144">256K (eğitim sınırı)</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label>Bind to:</label>
+                                    <select id="strata-host">
+                                        <option value="pc">This PC Only</option>
+                                        <option value="lan">Local Network (+API key)</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label>Port:</label>
+                                    <input type="number" id="strata-port" value="1235" min="1024" max="65000">
+                                </div>
+                                <div class="form-row">
+                                    <label>Idle unload (sn):</label>
+                                    <input type="number" id="strata-idle" value="600" min="10">
+                                </div>
+                                <div class="help-text" id="strata-apikey-info"></div>
+                                <button id="btn-strata-config-save" class="primary-btn small-btn">💾 Save Config</button>
+                            </div>
+
+                            <div class="log-panel">
+                                <button class="log-toggle" onclick="toggleLogPanel('strata-log', this)">📋 Logs ▾</button>
+                                <textarea id="strata-log" class="log-area hidden" readonly placeholder="Strata logs..."></textarea>
                             </div>
                         </fieldset>
                     </div>

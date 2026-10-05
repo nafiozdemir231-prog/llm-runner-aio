@@ -14,7 +14,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Güvenli API Maruziyeti (contextBridge.exposeInMainWorld)
 // ============================================
 // HAT-09: Renderer'in dinleyebildigi event kanallari (beyaz liste)
-const ALLOWED_EVENT_CHANNELS = ['server-log', 'server-error', 'server-stopped', 'server-running', 'wan2gp-setup-log'];
+const ALLOWED_EVENT_CHANNELS = ['server-log', 'server-error', 'server-stopped', 'server-running', 'wan2gp-setup-log', 'strata-setup-log'];
 
 contextBridge.exposeInMainWorld('electronAPI', {
 
@@ -136,6 +136,36 @@ contextBridge.exposeInMainWorld('electronAPI', {
          */
         onSetupLog: (callback) => {
             ipcRenderer.on('wan2gp-setup-log', (event, data) => callback(data));
+        }
+    },
+
+    // ============================================
+    // Strata (Qwen3.8-Flash-Next çoklu-model gateway, port 1235)
+    // ============================================
+    strata: {
+        /** Durum: uygunluk (RAM>=48/VRAM>=12), kurulu mu, çalışıyor mu, port/host, model seçenekleri */
+        status: () => ipcRenderer.invoke('strata-status'),
+
+        /** Model kurulumu/indirmesi (START-HERE.bat --yes --model <size>, modeller models\ klasörüne) */
+        setup: (options) => ipcRenderer.invoke('strata-setup', options),
+
+        /** Donanım kalibrasyonu (START-HERE.bat --calibrate, ~5-10 dk) */
+        calibrate: () => ipcRenderer.invoke('strata-calibrate'),
+
+        /** Kapı config okuma/yazma (context, PC/YerelAg, port; yedekli) */
+        configRead: () => ipcRenderer.invoke('strata-config-read'),
+        configWrite: (options) => ipcRenderer.invoke('strata-config-write', options),
+
+        /** Gateway başlat/durdur (ark sunucular kapıyla birlikte ölür) */
+        start: () => ipcRenderer.invoke('strata-start'),
+        stop: () => ipcRenderer.invoke('strata-stop'),
+
+        /** Upstream güncelleme (git pull + setup.py --update) */
+        update: () => ipcRenderer.invoke('strata-update'),
+
+        /** Kurulum/kapı loglarını dinle */
+        onSetupLog: (callback) => {
+            ipcRenderer.on('strata-setup-log', (event, data) => callback(data));
         }
     },
 

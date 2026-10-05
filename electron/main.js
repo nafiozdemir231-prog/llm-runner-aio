@@ -19,6 +19,7 @@ const { bootstrapGitDir } = require('./git-bootstrap');
 const treeKill = require('tree-kill');
 const presetStore = require('./preset-store');
 const wan2gpDetect = require('./wan2gp-detect');
+const strata = require('./strata');
 
 // ============================================
 // Path Resolution (Cross-Platform Portability)
@@ -136,7 +137,8 @@ const serverStates = {
     openwebui: { running: false, port: 3000 },
     llamacpp: { running: false, port: 1234 },
     vane: { running: false, port: 3001 },
-    wan2gp: { running: false, port: 7860 }
+    wan2gp: { running: false, port: 7860 },
+    strata: { running: false, port: 1235 }
 };
 
 // ============================================
@@ -371,7 +373,8 @@ function buildTrayMenu() {
         openwebui: 'Open WebUI',
         llamacpp: 'llama.cpp',
         vane: 'Vane',
-        wan2gp: 'Wan2GP'
+        wan2gp: 'Wan2GP',
+        strata: 'Strata'
     };
     
     for (const [type, name] of Object.entries(serverNames)) {
@@ -2130,6 +2133,9 @@ function runWan2gpCapture(commandArgs) {
 }
 
 async function startServer(serverType, options = {}) {
+    // Strata: kendi gateway mantigi strata.js modülünde yönetilir.
+    if (serverType === 'strata') return await strata.startGateway();
+
     const port = options.port || 8080;
     const host = options.host || '0.0.0.0';
     const lang = options.language || 'en';
@@ -2651,6 +2657,8 @@ export default nextConfig;
 }
 
 async function stopServer(serverType) {
+    if (serverType === 'strata') return strata.stopGateway();
+
     // Server bilgilerini Map'ten al (child + port)
     const serverInfo = runningServers.get(serverType);
     const child = serverInfo?.child;
@@ -3608,3 +3616,17 @@ function formatBytes(bytes) {
 console.log('[ELECTRON] LLM Runner AIO starting...');
 console.log('[ELECTRON] App root:', APP_ROOT);
 console.log('[ELECTRON] Project dir:', PROJECT_DIR);
+
+// ============================================
+// Strata (Qwen3.8-Flash-Next coklu-model gateway, port 1235) — IPC kaydi
+// Katman: strata-layer/ (izlenen) -> Strata/local/; upstream koduna yama yazilmaz.
+// ============================================
+strata.register({
+    ipcMain,
+    safeSend,
+    detectHardware,
+    runStreaming: runWan2gpStreaming,
+    runCapture: runWan2gpCapture,
+    setServerState,
+    PROJECT_DIR
+});
