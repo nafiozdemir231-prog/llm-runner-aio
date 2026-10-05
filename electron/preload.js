@@ -163,6 +163,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
         /** Upstream güncelleme (git pull + setup.py --update) */
         update: () => ipcRenderer.invoke('strata-update'),
 
+        /** Strata bağlantısını Open WebUI OpenAI bağlantı listesine ekle (DB kalıcı) */
+        connectOpenWebui: () => ipcRenderer.invoke('strata-connect-openwebui'),
+
         /** Kurulum/kapı loglarını dinle */
         onSetupLog: (callback) => {
             ipcRenderer.on('strata-setup-log', (event, data) => callback(data));

@@ -293,6 +293,41 @@ function register(deps) {
             setupRunning = false;
         }
     });
+
+    // Strata gateway'ini Open WebUI'nin OpenAI bağlantı listesine ekler (DB tabanlı: güncellemeler bunu silmez).
+    ipcMain.handle('strata-connect-openwebui', async () => {
+        const db = path.join(ctx.PROJECT_DIR, 'openwebui', 'openwebui.db');
+        if (!fs.existsSync(db)) return { success: false, error: 'openwebui.db yok — once Open WebUIyi baslatin.' };
+        const py = path.join(ctx.PROJECT_DIR, 'venv', 'Scripts', 'python.exe');
+        if (!fs.existsSync(py)) return { success: false, error: 'Open WebUI venv bulunamadi (venv\\Scripts\\python.exe).' };
+        const s = readJson(ctx.MODELS_JSON) || {};
+        const url = `http://127.0.0.1:${Number(s.port || 1235)}/v1`;
+        const apiKey = String(s.api_key || '');
+        const script = [
+            'import sqlite3,sys,json,time',
+            'db,url,key=sys.argv[1],sys.argv[2],sys.argv[3]',
+            'con=sqlite3.connect(db);cur=con.cursor()',
+            'def get(k):',
+            '    cur.execute("SELECT value FROM config WHERE key=?",(k,));r=cur.fetchone()',
+            '    if not r: return None',
+            '    return json.loads(r[0]) if isinstance(r[0],str) else r[0]',
+            'def put(k,v):',
+            '    cur.execute("INSERT INTO config(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at",(k,json.dumps(v),int(time.time())))',
+            'urls=get("openai.api_base_urls") or []',
+            'keys=get("openai.api_keys") or []',
+            'if url in urls:',
+            '    print(json.dumps({"status":"exists","urls":urls}));sys.exit(0)',
+            'urls.append(url);keys.append(key)',
+            'put("openai.api_base_urls",urls);put("openai.api_keys",keys)',
+            'con.commit()',
+            'print(json.dumps({"status":"added","urls":urls}))'
+        ].join('\n');
+        const r = await runCapture([py, '-c', script, db, url, apiKey]);
+        let parsed = null;
+        try { parsed = JSON.parse(String(r.out || '').split(/\r?\n/).filter(Boolean).pop()); } catch {}
+        if (r.code !== 0 || !parsed) return { success: false, error: 'DB islemi basarisiz: ' + String(r.out || '').slice(-300) };
+        return { success: true, status: parsed.status, urls: parsed.urls, url };
+    });
 }
 
 // Jenerik server-start/stop girisleri (Start All / Sunucular karti buradan gecer).

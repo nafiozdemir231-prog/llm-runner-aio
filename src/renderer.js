@@ -883,6 +883,8 @@ function setupEventListeners() {
     if (stUpdBtn) stUpdBtn.addEventListener('click', () => runStrataUpdate());
     const stCfgSave = document.getElementById('btn-strata-config-save');
     if (stCfgSave) stCfgSave.addEventListener('click', () => saveStrataConfig());
+    const stConnOwui = document.getElementById('btn-strata-connect-owui');
+    if (stConnOwui) stConnOwui.addEventListener('click', () => connectStrataToOwui());
     window.electronAPI.strata.onSetupLog((data) => appendToLog('strata', data.message));
     
     // Model management
@@ -1392,6 +1394,21 @@ async function runStrataUpdate() {
 /**
  * Kapı config paneli: context / PC-YerelAg / port / idle unload. Yedekli (kural 7).
  */
+/**
+ * Strata gateway'i Open WebUI baglanti listesine ekler (config tablosu - guncellemeler silmez).
+ */
+async function connectStrataToOwui() {
+    const result = await window.electronAPI.strata.connectOpenWebui().catch(e => ({ success: false, error: e.message }));
+    if (result.success) {
+        const msg = result.status === 'exists' ? 'Zaten ekliydi: ' + result.url : 'Eklendi: ' + result.url;
+        appendToLog('strata', '[OWUI] Baglanti ' + msg);
+        showNotification('Success', 'Open WebUI baglantisi: ' + msg);
+    } else {
+        appendToLog('strata', '[OWUI] FAILED: ' + result.error, true);
+        showNotification('Error', 'Open WebUI baglanamadi: ' + result.error, 'error');
+    }
+}
+
 async function saveStrataConfig() {
     const options = {
         context: parseInt(document.getElementById('strata-context')?.value) || null,
