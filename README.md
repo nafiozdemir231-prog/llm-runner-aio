@@ -16,6 +16,7 @@ base_model:
 - Qwen/Qwen3.6-35B-A3B
 - inclusionAI/Ling-3.0-tiny
 - google/gemma-4-E4B-it
+- ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF
 tags:
 - gguf
 - moe
@@ -26,6 +27,7 @@ tags:
 - gemma
 - wan2gp
 - openwebui
+- strata
 ---
 
 # LLM Runner AIO v1.9
