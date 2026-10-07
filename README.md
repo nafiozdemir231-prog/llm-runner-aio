@@ -28,7 +28,7 @@ tags:
 - openwebui
 ---
 
-# LLM Runner AIO v1.7
+# LLM Runner AIO v1.9
 
 🌐 Links
 
@@ -43,6 +43,8 @@ Main Website: https://aihublocal.com
 * Node.js and Python 3.11 must be installed.
 
 * Optional Wan2GP video service: needs a few extra GB of disk space and the CUDA/driver version matching your GPU generation (exact requirements are shown in the setup confirmation window).
+
+* Optional Strata service (local 100B-class MoE chat): requires at least 48 GB RAM and 12 GB VRAM; the model download is ~58–84 GB into the local `models\` folder. The card only appears on machines that meet these thresholds.
 
 * `LLM-Runner-AIO.exe` handles the automatic setup.
 
@@ -86,6 +88,10 @@ llama.cpp and searxng settings pre-configured.
 
 Optional integrated service. Press "Setup" in the Wan2GP card (System tab): the app clones the repository, builds a dedicated virtual environment (`venvs/wan2gp`) and installs the package set matching your GPU generation — without touching the rest of the app. The built-in Deepy assistant can optionally offload its LLM reasoning to another PC on your local network (Remote LLM mode).
 
+* Strata (multi-model local gateway, runs locally) link: https://github.com/Niko1221/Strata
+
+Optional high-end service for 48 GB+ machines. One port (default **1235**, OpenAI + Anthropic API) exposes two model names — `Qwen3.8-Flash-Next` and `coder-Qwen3.8-Flash-Next` — that share a single engine; only the sampling profile differs, so the ~60–84 GB MoE model is never loaded twice. Setup downloads the quant you pick (IQ1_M / Q2_0 / IQ2_XS / IQ3_XXS / IQ3_S), calibration measures your exact CPU/GPU/RAM balance, and an idle timer unloads the model after 10 minutes without requests. Choose "This PC Only" or "Local Network" binding (an API key is generated automatically for LAN mode — Open WebUI gets it automatically too), optionally enable image reading (vision on GPU or CPU), and keep the gateway up to date with one Update button that preserves all your settings.
+
 🚀 Key Features:
 
 * No Manual Installation Required: It is a single ~2.3 GB .exe file. Simply double-click and wait for the installation to complete. It automatically installs Python, Node, and all necessary dependencies within a local virtual environment (venv).
@@ -95,6 +101,8 @@ Optional integrated service. Press "Setup" in the Wan2GP card (System tab): the 
 * GUI Model Manager: Add, edit, or remove models straight from the System tab. The app rewrites the active preset INI safely (comments and order preserved), keeps the corresponding download URLs in sync in `model_urls.json` (main, MMProj and draft URLs), and offers one-click URL health checks for a single model or for every model at once.
 
 * Built-in Video Generation (Wan2GP): The app detects your GPU generation, picks the right package (NVIDIA GTX 10xx – RTX 50xx, AMD RX 6xxx / 7xxx / 9xxx / APU, Intel Arc), and lets you install, start, stop and monitor the Wan2GP server from the same screen. Port and network binding are configurable (default port: 7860).
+
+* Multi-Model Local Gateway (Strata): On 48 GB+ machines, a single API port serves both a general and a coding persona of the same Qwen3.8-Flash-Next MoE model with one shared engine (signature-based ark sharing, swap rules, idle unload). One-click buttons handle download & install, hardware calibration, Open WebUI connection and safe updates; auto-start can bring the gateway up with Windows.
 
 * Optimized for Coding Agents: Includes parameters fine-tuned specifically for Qwen and Gemma models to maximize token speed and eliminate formatting or context loop issues in coding tools.
 
