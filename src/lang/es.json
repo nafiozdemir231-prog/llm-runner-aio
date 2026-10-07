@@ -238,5 +238,7 @@
   "label_idle_unload": "Descarga en reposo (s):",
   "btn_calibrate": "🎯 Calibrar",
   "btn_connect_owui": "🔗 Añadir a Open WebUI",
-  "btn_save_config": "💾 Guardar configuración"
+  "btn_save_config": "💾 Guardar configuración",
+  "label_api_key": "Clave de API:",
+  "strata_calibrate_hint": "Ejecute Calibrar tras el primer inicio y cada vez que cambie Contexto o visión."
 }

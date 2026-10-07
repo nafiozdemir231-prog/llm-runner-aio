@@ -238,5 +238,7 @@
   "label_idle_unload": "Idle unload (s):",
   "btn_calibrate": "🎯 Calibrate",
   "btn_connect_owui": "🔗 Add to Open WebUI",
-  "btn_save_config": "💾 Save Config"
+  "btn_save_config": "💾 Save Config",
+  "label_api_key": "API key:",
+  "strata_calibrate_hint": "Run Calibrate after the first start and whenever you change Context or vision settings."
 }

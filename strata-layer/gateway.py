@@ -20,7 +20,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]          # the Strata folder
@@ -268,7 +268,11 @@ class Handler(BaseHTTPRequestHandler):
         auth = self.headers.get("Authorization", "")
         tok = auth[7:] if auth.lower().startswith("bearer ") else auth
         xkey = self.headers.get("x-api-key", "") or self.headers.get("x-apikey", "")   # Anthropic clients
-        return tok.strip() == key or xkey.strip() == key
+        qtok = ""                                                                      # browser convenience: /?api_key=...
+        for part in (urlparse(self.path).query or "").split("&"):
+            if part.startswith("api_key="):
+                qtok = unquote(part[8:])
+        return tok.strip() == key or xkey.strip() == key or qtok == key
 
     def _json(self, code, obj):
         body = json.dumps(obj).encode()

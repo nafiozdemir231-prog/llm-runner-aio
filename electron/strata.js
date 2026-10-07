@@ -131,6 +131,7 @@ function register(deps) {
             port: s ? Number(s.port) : 1235,
             host: s ? String(s.host) : '0.0.0.0',
             hasApiKey: !!(s && String(s.api_key || '').trim()),
+            apiKey: s ? String(s.api_key || '') : '',
             idleUnloadS: s ? s.idle_unload_s : 600,
             maxContext,
             vision,
@@ -202,7 +203,11 @@ function register(deps) {
         const send = (m) => safeSend('strata-setup-log', { message: m });
         try {
             send('[CALIBRATE] Donanim olcumu basladi (~5-10 dk). --no-start: model gateway uzerinden calisacak.');
-            await runStreaming(['cmd', '/c', path.join(DIR, 'START-HERE.bat'), '--calibrate', '--no-start', '--yes'], send);
+            const t0 = Date.now();
+            const beat = setInterval(() => send('[CALIBRATE] Olcum suruyor... ' + Math.round((Date.now() - t0) / 60000) + ' dk - bittiginde loga Tamamlandi yazacak, lutfen bekleyin.'), 45000);
+            try {
+                await runStreaming(['cmd', '/c', path.join(DIR, 'START-HERE.bat'), '--calibrate', '--no-start', '--yes'], send);
+            } finally { clearInterval(beat); }
             const backupDir = backupStampDir();
             if (syncCoderArgs(backupDir)) send('[CALIBRATE] coder args <- general ile birebir esitlendi (sampling korundu). Yedek: ' + backupDir);
             await checkargsReport(send);
@@ -247,6 +252,14 @@ function register(deps) {
                 if (!String(s.api_key || '').trim()) s.api_key = crypto.randomBytes(24).toString('hex');
                 changed.push('host=0.0.0.0 (yerel ag) + api_key (' + s.api_key.slice(0, 8) + '...)');
             }
+            // API key alani: yazilan deger aynen kullanilir; bos birakilirsa PC modunda temizlenir,
+            // LAN modunda yeni key uretilir (Kural 9 bos keyle agaciga cikmaya izin vermez).
+            if (options.apiKey !== undefined) {
+                const k = String(options.apiKey).trim();
+                if (k) { s.api_key = k; changed.push('api_key guncellendi'); }
+                else if (String(s.host) === '127.0.0.1') { s.api_key = ''; changed.push('api_key temizlendi (PC modu)'); }
+                else { s.api_key = crypto.randomBytes(24).toString('hex'); changed.push('api_key yeniden uretildi (LAN): ' + s.api_key.slice(0, 8) + '...'); }
+            }
             if (options.idleUnloadS !== undefined && options.idleUnloadS !== '') {
                 const v = Number(options.idleUnloadS);
                 if (!Number.isFinite(v) || v <= 0) throw new Error('idle_unload_s > 0 olmali.');
@@ -286,10 +299,19 @@ function register(deps) {
         setupRunning = true;
         const send = (m) => safeSend('strata-setup-log', { message: m });
         try {
+            // Ayarlar korunur: pull/update öncesi models.json + kapı config'leri yedeklenir, eksilirse geri konur.
+            const backupDir = backupStampDir();
+            const keep = [MODELS_JSON, path.join(DIR, 'strata-general.json'), path.join(DIR, 'strata-coder.json')];
+            for (const f of keep) if (fs.existsSync(f)) fs.copyFileSync(f, path.join(backupDir, path.basename(f)));
+            send('[UPDATE] Ayarlar yedeklendi: ' + backupDir);
             send('[UPDATE] Upstream kod cekiliyor (git pull --ff-only)...');
             await runStreaming(['git', '-C', DIR, 'pull', '--ff-only'], send);
             ensureLayer();
-            send('[UPDATE] Katman dosyalari dogrulandi.');
+            for (const f of keep) {
+                const b = path.join(backupDir, path.basename(f));
+                if (!fs.existsSync(f) && fs.existsSync(b)) { fs.copyFileSync(b, f); send('[UPDATE] Geri yuklendi: ' + path.basename(f)); }
+            }
+            send('[UPDATE] Katman dosyalari ve ayarlar dogrulandi.');
             if (fs.existsSync(VENV_PY)) {
                 send('[UPDATE] Engine yenileniyor (setup.py --update)...');
                 await runStreaming([VENV_PY, 'setup.py', '--update'], send);

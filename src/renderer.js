@@ -1359,6 +1359,15 @@ async function refreshStrataStatus() {
             if (ctxSel && cfgR.config.maxContext) ctxSel.value = String(cfgR.config.maxContext);
             const keyInfo = document.getElementById('strata-apikey-info');
             if (keyInfo) keyInfo.textContent = cfgR.config.apiKey ? 'API key: ' + cfgR.config.apiKey : '';
+            state.servers.strata.apiKey = String(cfgR.config.apiKey || '');
+            const keyInput = document.getElementById('strata-apikey-input');
+            if (keyInput && document.activeElement !== keyInput) keyInput.value = cfgR.config.apiKey || '';
+
+            // Open in Browser: key zorunluysa URL'ye eklenir (?api_key= gateway'de desteklenir)
+            if (st.running) {
+                const base = 'http://127.0.0.1:' + (cfgR.config.port || st.port || 1235);
+                updateBrowserButton('btn-open-strata', true, cfgR.config.apiKey ? base + '/?api_key=' + cfgR.config.apiKey : base);
+            }
         }
     } catch (err) {
         console.error('[STRATA] Status query failed:', err.message);
@@ -1379,9 +1388,13 @@ async function runStrataSetup() {
     );
     if (!confirmed) return;
     strataBusyInFlight = true;
+    const instBtn = document.getElementById('btn-strata-install');
+    const instOld = instBtn ? instBtn.textContent : '';
+    if (instBtn) { instBtn.disabled = true; instBtn.textContent = '\u23f3 Installing...'; }
     appendToLog('strata', '[SETUP] Basliyor (' + size + ')...');
     const result = await window.electronAPI.strata.setup({ size, vision: document.getElementById('strata-vision')?.value || 'no' }).catch(e => ({ success: false, error: e.message }));
     strataBusyInFlight = false;
+    if (instBtn) instBtn.textContent = instOld;
     if (result.success) {
         appendToLog('strata', '[SETUP] Tamamlandi.');
         showNotification('Success', 'Strata kurulumu tamamlandi. Sunucular sekmesinden baslatin.');
@@ -1395,9 +1408,13 @@ async function runStrataSetup() {
 async function runStrataCalibrate() {
     if (strataBusyInFlight) return;
     strataBusyInFlight = true;
+    const calBtn = document.getElementById('btn-strata-calibrate');
+    const calOld = calBtn ? calBtn.textContent : '';
+    if (calBtn) { calBtn.disabled = true; calBtn.textContent = '\u23f3 Calibrating...'; }
     appendToLog('strata', '[CALIBRATE] Basliyor (~5-10 dk)...');
     const result = await window.electronAPI.strata.calibrate().catch(e => ({ success: false, error: e.message }));
     strataBusyInFlight = false;
+    if (calBtn) calBtn.textContent = calOld;
     if (result.success) {
         appendToLog('strata', '[CALIBRATE] Tamamlandi.');
         showNotification('Success', 'Strata kalibrasyonu tamamlandi.');
@@ -1411,9 +1428,13 @@ async function runStrataCalibrate() {
 async function runStrataUpdate() {
     if (strataBusyInFlight) return;
     strataBusyInFlight = true;
+    const updBtn = document.getElementById('btn-strata-update');
+    const updOld = updBtn ? updBtn.textContent : '';
+    if (updBtn) { updBtn.disabled = true; updBtn.textContent = '\u23f3 Updating...'; }
     appendToLog('strata', '[UPDATE] Basliyor...');
     const result = await window.electronAPI.strata.update().catch(e => ({ success: false, error: e.message }));
     strataBusyInFlight = false;
+    if (updBtn) updBtn.textContent = updOld;
     if (result.success) {
         appendToLog('strata', '[UPDATE] Tamamlandi.');
         showNotification('Success', 'Strata guncellendi.');
@@ -1449,6 +1470,11 @@ async function saveStrataConfig() {
         port: parseInt(document.getElementById('strata-port')?.value) || null,
         idleUnloadS: document.getElementById('strata-idle')?.value
     };
+    // API key alani degistirildiyse gonderilir (bos = PC modunda temizle / LAN'da yeniden uret).
+    const apiKeyInput = document.getElementById('strata-apikey-input');
+    if (apiKeyInput && String(apiKeyInput.value || '').trim() !== String(state.servers.strata.apiKey || '').trim()) {
+        options.apiKey = String(apiKeyInput.value || '');
+    }
     // Vision degisikligi: motor args yeniden uretilmeli (setup tekrar calisir; inen dosyalar atlanir).
     const cfgVisionSel = document.getElementById('strata-config-vision');
     const newVision = cfgVisionSel?.value || 'no';
@@ -1468,7 +1494,7 @@ async function saveStrataConfig() {
     if (result.success) {
         appendToLog('strata', '[CONFIG] Kaydedildi: ' + (result.changed || []).join(', ') + ' | Yedek: ' + result.backupDir);
         String(result.checkargs || '').split(/\r?\n/).forEach(l => l.trim() && appendToLog('strata', 'checkargs| ' + l));
-        showNotification('Success', 'Strata config guncellendi.');
+        showNotification('Success', 'Strata config guncellendi. Context/vision degistiysen 🎯 Calibrate calistir, sonra Start.');
     } else {
         appendToLog('strata', '[CONFIG] FAILED: ' + result.error, true);
         showNotification('Error', 'Config kaydedilemedi: ' + result.error, 'error');

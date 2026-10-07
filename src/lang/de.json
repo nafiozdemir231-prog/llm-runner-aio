@@ -238,5 +238,7 @@
   "label_idle_unload": "Entladen nach Leerlauf (s):",
   "btn_calibrate": "🎯 Kalibrieren",
   "btn_connect_owui": "🔗 Zu Open WebUI hinzufügen",
-  "btn_save_config": "💾 Konfiguration speichern"
+  "btn_save_config": "💾 Konfiguration speichern",
+  "label_api_key": "API-Schlüssel:",
+  "strata_calibrate_hint": "Nach dem ersten Start und nach jeder Änderung von Kontext oder Vision 🎯 Kalibrieren ausführen."
 }
