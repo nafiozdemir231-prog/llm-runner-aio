@@ -304,8 +304,16 @@ function register(deps) {
             const keep = [MODELS_JSON, path.join(DIR, 'strata-general.json'), path.join(DIR, 'strata-coder.json')];
             for (const f of keep) if (fs.existsSync(f)) fs.copyFileSync(f, path.join(backupDir, path.basename(f)));
             send('[UPDATE] Ayarlar yedeklendi: ' + backupDir);
-            send('[UPDATE] Upstream kod cekiliyor (git pull --ff-only)...');
-            await runStreaming(['git', '-C', DIR, 'pull', '--ff-only'], send);
+            send('[UPDATE] Upstream kod cekiliyor (git fetch)...');
+            await runStreaming(['git', '-C', DIR, 'fetch', 'origin'], send);
+            const anc = await runCapture(['git', '-C', DIR, 'merge-base', '--is-ancestor', 'HEAD', 'origin/main']);
+            if (anc.code === 0) {
+                await runStreaming(['git', '-C', DIR, 'pull', '--ff-only'], send);
+            } else {
+                // Upstream rebased: yerel HEAD yeni main'in atasi degil -> hard reset (untracked katman dosyalari korunur).
+                send('[UPDATE] Not: upstream yeniden duzenlendi (rebase) — git reset --hard origin/main uygulanacak; ayarlariniz yedekte.');
+                await runStreaming(['git', '-C', DIR, 'reset', '--hard', 'origin/main'], send);
+            }
             ensureLayer();
             for (const f of keep) {
                 const b = path.join(backupDir, path.basename(f));

@@ -3,12 +3,37 @@ rem GUNCELLE.bat - update Strata: git pull (upstream code) + engine refresh via 
 rem Do NOT use the upstream UPDATE.bat here (name clash); this is OUR updater. Pure ASCII + CRLF.
 setlocal
 cd /d "%~dp0"
-echo [GUNCELLE] Updating upstream code (git pull --ff-only)...
-git pull --ff-only
+echo [GUNCELLE] Backing up configs (models.json + gate configs)...
+set BK=.tmp\backups\bat-latest
+mkdir "%BK%" 2>nul
+if exist local\models.json copy /y local\models.json "%BK%\" >nul && echo [GUNCELLE] backed up models.json
+if exist strata-general.json copy /y strata-general.json "%BK%\" >nul
+if exist strata-coder.json copy /y strata-coder.json "%BK%\" >nul
+echo [GUNCELLE] Updating upstream code (git fetch)...
+git fetch origin
 if errorlevel 1 (
-  echo [GUNCELLE] git pull failed - resolve conflicts manually, then run this again.
+  echo [GUNCELLE] git fetch failed - check network, then run this again.
   pause
   exit /b 1
+)
+rem If upstream was rebased a plain fast-forward is impossible: reset onto origin/main instead
+rem (our layer and configs are untracked files and survive a hard reset).
+git merge-base --is-ancestor HEAD origin/main >nul 2>&1
+if errorlevel 1 (
+  echo [GUNCELLE] NOTE: upstream history was rebased - applying git reset --hard origin/main.
+  git reset --hard origin/main
+  if errorlevel 1 (
+    echo [GUNCELLE] git reset failed - resolve manually, then run this again.
+    pause
+    exit /b 1
+  )
+) else (
+  git pull --ff-only
+  if errorlevel 1 (
+    echo [GUNCELLE] git pull failed - resolve conflicts manually, then run this again.
+    pause
+    exit /b 1
+  )
 )
 rem Our layer must survive the pull: restore it from tracked copies if something went missing.
 if not exist "local" mkdir local
