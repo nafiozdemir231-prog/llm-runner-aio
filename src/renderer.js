@@ -815,6 +815,9 @@ function switchTab(tabName) {
     if (targetPanel) {
         targetPanel.classList.add('active');
     }
+
+    // Strata karti/secenekleri her sekmeye giriste tazelenir (vision, model boyutu, durum)
+    if ((tabName === 'servers' || tabName === 'system') && window.electronAPI?.strata) refreshStrataStatus().catch(() => {});
     
     // Activate selected tab button
     const targetBtn = document.querySelector(`[data-tab="${tabName}"]`);
@@ -1298,8 +1301,12 @@ async function refreshStrataStatus() {
         state.servers.strata.installed = !!st.installed;
         state.servers.strata.eligible = !!st.eligible;
 
+        state.servers.strata.vision = st.vision || null;
+        state.servers.strata.modelSize = st.modelSize || null;
+
+        // Install bolumu kurulumdan sonra da gorunur kalir (model boyutu / vision degistirilebilir).
         const installSec = document.getElementById('strata-install-section');
-        if (installSec) installSec.classList.toggle('hidden', !st.eligible || st.configured);
+        if (installSec) installSec.classList.toggle('hidden', !st.eligible);
         const serverFs = document.getElementById('strata-server-fieldset');
         if (serverFs) serverFs.classList.toggle('hidden', !(st.eligible && st.repoCloned));
 
@@ -1316,14 +1323,17 @@ async function refreshStrataStatus() {
             const firstFit = st.choices.find(c => c.fits);
             if (firstFit) sel.value = firstFit.size;
         }
+        if (sel && st.modelSize && [...sel.options].some(o => o.value === st.modelSize)) sel.value = st.modelSize;
+
+        // Vision dropdownlarini kurulu degerle senkronla (System Detection + Servers config paneli)
+        const mappedVision = ['gpu', 'cpu'].includes(st.vision) ? st.vision : 'no';
+        for (const vid of ['strata-vision', 'strata-config-vision']) {
+            const vsel = document.getElementById(vid);
+            if (vsel && [...vsel.options].some(o => o.value === mappedVision)) vsel.value = mappedVision;
+        }
 
         const installBtn = document.getElementById('btn-strata-install');
         if (installBtn) installBtn.disabled = !!st.setupRunning || !st.eligible;
-        const visionSel = document.getElementById('strata-vision');
-        if (visionSel && st.vision) {
-            const mapped = ['gpu', 'cpu'].includes(st.vision) ? st.vision : 'no';
-            if ([...visionSel.options].some(o => o.value === mapped)) visionSel.value = mapped;
-        }
         const stateSpan = document.getElementById('strata-install-state');
         if (stateSpan) stateSpan.textContent = st.configured ? '\u2713 Model installed' : (st.installed ? '\u23f3 Environment ready, model pending' : 'Not installed');
 
@@ -1439,6 +1449,21 @@ async function saveStrataConfig() {
         port: parseInt(document.getElementById('strata-port')?.value) || null,
         idleUnloadS: document.getElementById('strata-idle')?.value
     };
+    // Vision degisikligi: motor args yeniden uretilmeli (setup tekrar calisir; inen dosyalar atlanir).
+    const cfgVisionSel = document.getElementById('strata-config-vision');
+    const newVision = cfgVisionSel?.value || 'no';
+    const curVision = state.servers.strata.vision || 'no';
+    if (newVision !== curVision) {
+        if (!state.servers.strata.modelSize) {
+            appendToLog('strata', '[CONFIG] Vision degisikligi uygulanamadi: model boyutu tespit edilemedi.', true);
+        } else {
+            if (state.servers.strata.running) await window.electronAPI.server.stop('strata').catch(() => {});
+            appendToLog('strata', '[CONFIG] Vision ' + curVision + ' -> ' + newVision + ': setup yeniden calisir (indirme atlanir), sonra Start...');
+            const rs = await window.electronAPI.strata.setup({ size: state.servers.strata.modelSize, vision: newVision }).catch(e => ({ success: false, error: e.message }));
+            if (!rs.success) appendToLog('strata', '[CONFIG] Vision setup FAILED: ' + rs.error, true);
+        }
+    }
+
     const result = await window.electronAPI.strata.configWrite(options).catch(e => ({ success: false, error: e.message }));
     if (result.success) {
         appendToLog('strata', '[CONFIG] Kaydedildi: ' + (result.changed || []).join(', ') + ' | Yedek: ' + result.backupDir);

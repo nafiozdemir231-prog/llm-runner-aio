@@ -502,7 +502,15 @@
                                         <option value="32768">32K</option>
                                         <option value="65536">64K</option>
                                         <option value="131072">128K</option>
-                                        <option value="262144">256K (eğitim sınırı)</option>
+                                        <option value="262144">256K (training limit)</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label data-i18n="label_vision">Image reading (vision):</label>
+                                    <select id="strata-config-vision">
+                                        <option value="no" data-i18n="opt_vision_off">Off — text only (recommended)</option>
+                                        <option value="gpu" data-i18n="opt_vision_gpu">On — encoder on GPU (fast, uses VRAM)</option>
+                                        <option value="cpu" data-i18n="opt_vision_cpu">On — encoder on CPU (no VRAM, slower)</option>
                                     </select>
                                 </div>
                                 <div class="form-row">

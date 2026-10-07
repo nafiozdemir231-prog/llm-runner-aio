@@ -108,11 +108,15 @@ function register(deps) {
         const general = readJson(path.join(DIR, 'strata-general.json'));
         let maxContext = null;
         let vision = null;
+        let modelSize = null;
         if (general && Array.isArray(general.args)) {
             const i = general.args.indexOf('--max-context');
             if (i >= 0) maxContext = Number(general.args[i + 1]);
             const v = general.args.indexOf('--vision');
             if (v >= 0) vision = String(general.args[v + 1]).toLowerCase();
+            // Uretilen args'te boyut '--pack <.../packs/iq3_xxs>' olarak geciyor -> basename = CHOICES.size (kucuk harf).
+            const pk = general.args.indexOf('--pack');
+            if (pk >= 0) modelSize = String(general.args[pk + 1]).replace(/[\\/]+$/, '').split(/[\\/]/).pop().toUpperCase();
         }
         return {
             // STRATA_DEV=1: test makinesinde karti RAM esigi altinda da gorunur kilar (varsayilan davranis degismez).
@@ -130,6 +134,7 @@ function register(deps) {
             idleUnloadS: s ? s.idle_unload_s : 600,
             maxContext,
             vision,
+            modelSize,
             choices: CHOICES.map((c) => ({ ...c, fits: hw.ramGb >= c.minRamGb }))
         };
     });
