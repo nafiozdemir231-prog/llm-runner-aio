@@ -1,5 +1,5 @@
 {
-  "app_title": "LLM Runner AIO v1.7",
+  "app_title": "LLM Runner AIO v1.9",
   "tab_system": "ハードウェア検出",
   "tab_servers": "サーバー",
   "tab_picoding": "Pi Coding",
@@ -71,7 +71,7 @@
   "label_downloading": "ダウンロード中...",
   "label_download_progress": "ダウンロードの進捗",
   "label_model_name": "モデル",
-  "label_model_size": "サイズ",
+  "label_model_size": "モデルサイズ：",
   "label_model_url": "URL",
   "label_download_btn": "ダウンロード",
   "label_start_auto": "起動設定",
@@ -223,5 +223,20 @@
   "update_success": "正常にアップデートされました！",
   "update_error": "アップデートに失敗しました：{error}",
   "update_restarting": "サーバーを再起動しています...",
-  "btn_update_picoding": "PiCoding アップデート"
+  "btn_update_picoding": "PiCoding アップデート",
+  "section_strata": "Strata - マルチモデルゲートウェイ",
+  "legend_strata": "🧠 Strata — Qwen3.8-Flash-Next（マルチモデルゲートウェイ）",
+  "desc_strata": "1ポートでOpenAI/Anthropic API：2つのモデル名が1つのエンジンを共有、違いはサンプリングのみ。アイドル時はモデルを unload。",
+  "strata_install_legend": "🧠 Strata — Qwen3.8-Flash-Next（125B MoE、ローカル）",
+  "strata_install_help": "このPCはStrataに適しています（RAM ≥ 48 GB、VRAM ≥ 12 GB）。モデルは約58–84 GBをmodels\\にダウンロード。セットアップ後はServersタブで起動。",
+  "btn_strata_install": "⬇ モデルをダウンロードしてインストール",
+  "label_vision": "画像読み取り（vision）：",
+  "opt_vision_off": "オフ — テキストのみ（推奨）",
+  "opt_vision_gpu": "オン — エンコーダはGPU（高速、VRAMを消費）",
+  "opt_vision_cpu": "オン — エンコーダはCPU（VRAMを使わない、遅め）",
+  "label_context": "コンテキスト：",
+  "label_idle_unload": "アイドル時の unload（秒）：",
+  "btn_calibrate": "🎯 キャリブレーション",
+  "btn_connect_owui": "🔗 Open WebUI に追加",
+  "btn_save_config": "💾 設定を保存"
 }

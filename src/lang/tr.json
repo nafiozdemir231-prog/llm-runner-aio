@@ -1,5 +1,5 @@
 {
-  "app_title": "LLM Runner AIO v1.7",
+  "app_title": "LLM Runner AIO v1.9",
   "tab_system": "Donanım Algıla",
   "tab_servers": "Sunucular",
   "tab_picoding": "Pi Coding",
@@ -71,7 +71,7 @@
   "label_downloading": "İndiriliyor...",
   "label_download_progress": "İndirme İlerlemesi",
   "label_model_name": "Model",
-  "label_model_size": "Boyut",
+  "label_model_size": "Model boyutu:",
   "label_model_url": "URL",
   "label_download_btn": "İndir",
   "label_start_auto": "Başlangıç Yapılandırması",
@@ -223,5 +223,20 @@
   "update_success": "Başarıyla güncellendi!",
   "update_error": "Güncelleme başarısız: {error}",
   "update_restarting": "Sunucu yeniden başlatılıyor...",
-  "btn_update_picoding": "PiCoding Güncelle"
+  "btn_update_picoding": "PiCoding Güncelle",
+  "section_strata": "Strata - Çoklu Model Kapısı",
+  "legend_strata": "🧠 Strata — Qwen3.8-Flash-Next (çoklu model kapısı)",
+  "desc_strata": "Tek portta OpenAI/Anthropic API: iki model adı tek motoru paylaşır, fark yalnız sampling. Boşta kalınca model kapatılır.",
+  "strata_install_legend": "🧠 Strata — Qwen3.8-Flash-Next (125B MoE, yerel)",
+  "strata_install_help": "Bu bilgisayar Strata için uygun (RAM ≥ 48 GB, VRAM ≥ 12 GB). Model ~58–84 GB indirir → models\\ klasörü. Kurulumdan sonra Sunucular sekmesinden başlatın.",
+  "btn_strata_install": "⬇ Model İndir & Kur",
+  "label_vision": "Görüntü okuma (vision):",
+  "opt_vision_off": "Kapalı — sadece metin (önerilen)",
+  "opt_vision_gpu": "Açık — encoder GPU'da (hızlı, VRAM'den pay alır)",
+  "opt_vision_cpu": "Açık — encoder CPU'da (VRAM harcamaz, daha yavaş)",
+  "label_context": "Context:",
+  "label_idle_unload": "Boşta kapatma (sn):",
+  "btn_calibrate": "🎯 Kalibre Et",
+  "btn_connect_owui": "🔗 Open WebUI'ye Ekle",
+  "btn_save_config": "💾 Ayarı Kaydet"
 }

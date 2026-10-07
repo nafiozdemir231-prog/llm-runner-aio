@@ -157,15 +157,23 @@
 
                         <!-- Strata Model Kurulumu (yalnız 48 GB+ RAM'de görünür) -->
                         <fieldset id="strata-install-section" class="hidden">
-                            <legend>🧠 Strata — Qwen3.8-Flash-Next (125B MoE, yerel)</legend>
-                            <div class="help-text">Bu bilgisayar Strata için uygun (RAM ≥ 48 GB, VRAM ≥ 12 GB). Model ~58–84 GB indirir → models\ klasörü. Kurulumdan sonra Sunucular sekmesinden başlatın.</div>
+                            <legend data-i18n="strata_install_legend">🧠 Strata — Qwen3.8-Flash-Next (125B MoE, local)</legend>
+                            <div class="help-text" data-i18n="strata_install_help">This PC qualifies for Strata (RAM ≥ 48 GB, VRAM ≥ 12 GB). The model downloads ~58–84 GB into models\. After setup, start it from the Servers tab.</div>
                             <div class="form-row">
-                                <label for="strata-model-select">Model boyutu:</label>
+                                <label for="strata-model-select" data-i18n="label_model_size">Model size:</label>
                                 <select id="strata-model-select"></select>
+                            </div>
+                            <div class="form-row">
+                                <label for="strata-vision" data-i18n="label_vision">Image reading (vision):</label>
+                                <select id="strata-vision">
+                                    <option value="no" selected data-i18n="opt_vision_off">Off — text only (recommended)</option>
+                                    <option value="gpu" data-i18n="opt_vision_gpu">On — encoder on GPU (fast, uses VRAM)</option>
+                                    <option value="cpu" data-i18n="opt_vision_cpu">On — encoder on CPU (no VRAM, slower)</option>
+                                </select>
                             </div>
                             <div class="server-controls">
                                 <div class="btn-group">
-                                    <button id="btn-strata-install" class="primary-btn">⬇ Model İndir & Kur</button>
+                                    <button id="btn-strata-install" class="primary-btn" data-i18n="btn_strata_install">⬇ Download & Install Model</button>
                                     <span id="strata-install-state"></span>
                                 </div>
                             </div>
@@ -464,10 +472,10 @@
 
                     <div class="server-section">
                         <fieldset id="strata-server-fieldset" class="hidden">
-                            <legend>🧠 Strata — Qwen3.8-Flash-Next (çoklu model kapısı)</legend>
+                            <legend data-i18n="legend_strata">🧠 Strata — Qwen3.8-Flash-Next (multi-model gateway)</legend>
 
                             <div class="server-info">
-                                <span class="info-desc">Tek portta OpenAI/Anthropic API: iki model adı ("Qwen3.8-Flash-Next" + "coder-Qwen3.8-Flash-Next") tek motoru paylaşır, fark yalnız sampling. Boşta 600 sn sonra model kapatılır.</span>
+                                <span class="info-desc" data-i18n="desc_strata">OpenAI/Anthropic API on one port: two model names share a single engine; only sampling differs. Model unloads when idle.</span>
                             </div>
 
                             <div class="server-controls">
@@ -475,9 +483,9 @@
                                     <button id="btn-start-strata" class="start-btn" disabled>▶ Start</button>
                                     <button id="btn-stop-strata" class="stop-btn" disabled>⏹ Stop</button>
                                     <button id="btn-open-strata" class="browser-btn" disabled>🌐 Open in Browser</button>
-                                    <button id="btn-strata-calibrate" class="secondary-btn" disabled>🎯 Calibrate</button>
+                                    <button id="btn-strata-calibrate" class="secondary-btn" disabled data-i18n="btn_calibrate">🎯 Calibrate</button>
                                     <button id="btn-strata-update" class="secondary-btn" disabled>🔄 Update</button>
-                                    <button id="btn-strata-connect-owui" class="secondary-btn">🔗 Open WebUI'ye Ekle</button>
+                                    <button id="btn-strata-connect-owui" class="secondary-btn" data-i18n="btn_connect_owui">🔗 Add to Open WebUI</button>
                                 </div>
                             </div>
 
@@ -485,11 +493,11 @@
                                 Status: <span class="status-text-label">Stopped</span> <span id="strata-status" class="status-indicator stopped">Stopped</span>
                             </div>
 
-                            <button id="btn-hide-strata-config" class="secondary-btn small-btn" onclick="toggleConfigPanel('strata-config', this)">🔧 Hide Config</button>
+                            <button id="btn-hide-strata-config" class="secondary-btn small-btn" onclick="toggleConfigPanel('strata-config', this)" data-i18n="hide_config_btn">🔧 Hide Config</button>
 
                             <div id="strata-config" class="server-config hidden">
                                 <div class="form-row">
-                                    <label>Context:</label>
+                                    <label data-i18n="label_context">Context:</label>
                                     <select id="strata-context">
                                         <option value="32768">32K</option>
                                         <option value="65536">64K</option>
@@ -498,22 +506,22 @@
                                     </select>
                                 </div>
                                 <div class="form-row">
-                                    <label>Bind to:</label>
+                                    <label data-i18n="label_bind_to">Bind to:</label>
                                     <select id="strata-host">
                                         <option value="pc">This PC Only</option>
                                         <option value="lan">Local Network (+API key)</option>
                                     </select>
                                 </div>
                                 <div class="form-row">
-                                    <label>Port:</label>
+                                    <label data-i18n="label_port">Port:</label>
                                     <input type="number" id="strata-port" value="1235" min="1024" max="65000">
                                 </div>
                                 <div class="form-row">
-                                    <label>Idle unload (sn):</label>
+                                    <label data-i18n="label_idle_unload">Idle unload (s):</label>
                                     <input type="number" id="strata-idle" value="600" min="10">
                                 </div>
                                 <div class="help-text" id="strata-apikey-info"></div>
-                                <button id="btn-strata-config-save" class="primary-btn small-btn">💾 Save Config</button>
+                                <button id="btn-strata-config-save" class="primary-btn small-btn" data-i18n="btn_save_config">💾 Save Config</button>
                             </div>
 
                             <div class="log-panel">
@@ -796,6 +804,10 @@ Pi Coding Agent - Setup and Usage Instructions:
                         <label>
                             <input type="checkbox" id="cb-auto-wan2gp" class="server-autostart-cb">
                             <span data-i18n="section_wan2gp">Wan2GP - Video Generation</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="cb-auto-strata" class="server-autostart-cb">
+                            <span data-i18n="section_strata">Strata - Multi-Model Gateway</span>
                         </label>
                     </div>
                 </div>

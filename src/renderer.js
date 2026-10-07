@@ -165,7 +165,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             { key: 'auto_start_openwebui', type: 'openwebui' },
             { key: 'auto_start_vane', type: 'vane' },
             { key: 'auto_start_llamacpp', type: 'llamacpp' },
-            { key: 'auto_start_wan2gp', type: 'wan2gp' }
+            { key: 'auto_start_wan2gp', type: 'wan2gp' },
+            { key: 'auto_start_strata', type: 'strata' }
         ];
         
         for (const srv of serverMap) {
@@ -185,11 +186,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                         continue;
                     }
                 }
+
+                // Strata: model kurulumu + config yoksa otomatik baslatma yapma
+                if (srv.type === 'strata') {
+                    try {
+                        const st = await window.electronAPI.strata.status();
+                        if (!st.configured || st.running) {
+                            console.log('[AUTO] Strata not configured or already running - skipping.');
+                            continue;
+                        }
+                    } catch (e) {
+                        console.log('[AUTO] Strata status check failed - skipping.');
+                        continue;
+                    }
+                }
                 
                 const portInput = document.getElementById(`${srv.type}-port`);
                 const hostInput = document.getElementById(`${srv.type}-host`);
-                const port = parseInt(portInput?.value || (srv.type === 'searxng' ? 8080 : srv.type === 'openwebui' ? 3000 : srv.type === 'vane' ? 3001 : srv.type === 'wan2gp' ? 7860 : 1234));
-                const host = hostInput?.value || '127.0.0.1';
+                const port = parseInt(portInput?.value || (srv.type === 'searxng' ? 8080 : srv.type === 'openwebui' ? 3000 : srv.type === 'vane' ? 3001 : srv.type === 'wan2gp' ? 7860 : srv.type === 'strata' ? 1235 : 1234));
+                const host = srv.type === 'strata' ? '127.0.0.1' : (hostInput?.value || '127.0.0.1');
                 
                 // llama.cpp: ekran uzerindeki canli degerleri kullan (INI, CPU Threads, parallel, sleep-idle, max-model)
                 const startOptions = srv.type === 'llamacpp'
@@ -419,13 +434,15 @@ async function restorePreviousSelection() {
             { key: 'auto_start_openwebui', id: 'cb-auto-openwebui' },
             { key: 'auto_start_vane', id: 'cb-auto-vane' },
             { key: 'auto_start_llamacpp', id: 'cb-auto-llamacpp' },
-            { key: 'auto_start_wan2gp', id: 'cb-auto-wan2gp' }
+            { key: 'auto_start_wan2gp', id: 'cb-auto-wan2gp' },
+            { key: 'auto_start_strata', id: 'cb-auto-strata' }
         ];
         
         for (const check of autoStartChecks) {
             const el = document.getElementById(check.id);
             if (el) {
-                el.checked = !!state.config[check.key];
+                // Strata: kullanici acikca kapatmadiksa varsayilan olarak otomatik baslat secili.
+                el.checked = check.key === 'auto_start_strata' ? state.config[check.key] !== false : !!state.config[check.key];
             }
         }
         
@@ -484,6 +501,7 @@ async function saveAllSettings() {
             auto_start_vane: !!document.getElementById('cb-auto-vane')?.checked,
             auto_start_llamacpp: !!document.getElementById('cb-auto-llamacpp')?.checked,
             auto_start_wan2gp: !!document.getElementById('cb-auto-wan2gp')?.checked,
+            auto_start_strata: !!document.getElementById('cb-auto-strata')?.checked,
             start_with_windows: !!document.getElementById('cb-start-windows')?.checked
         };
         
@@ -1291,7 +1309,7 @@ async function refreshStrataStatus() {
             for (const c of st.choices) {
                 const opt = document.createElement('option');
                 opt.value = c.size;
-                opt.textContent = c.label + ' — ~' + c.downloadGb + ' GB' + (c.fits ? '' : ' (RAM yetersiz)');
+                opt.textContent = c.label + ' — ~' + c.downloadGb + ' GB' + (c.fits ? '' : ' (insufficient RAM)');
                 if (!c.fits) opt.disabled = true;
                 sel.appendChild(opt);
             }
@@ -1301,8 +1319,13 @@ async function refreshStrataStatus() {
 
         const installBtn = document.getElementById('btn-strata-install');
         if (installBtn) installBtn.disabled = !!st.setupRunning || !st.eligible;
+        const visionSel = document.getElementById('strata-vision');
+        if (visionSel && st.vision) {
+            const mapped = ['gpu', 'cpu'].includes(st.vision) ? st.vision : 'no';
+            if ([...visionSel.options].some(o => o.value === mapped)) visionSel.value = mapped;
+        }
         const stateSpan = document.getElementById('strata-install-state');
-        if (stateSpan) stateSpan.textContent = st.configured ? '\u2713 Model kurulu' : (st.installed ? '\u23f3 Ortam hazir, model bekliyor' : 'Kurulum yapilmadi');
+        if (stateSpan) stateSpan.textContent = st.configured ? '\u2713 Model installed' : (st.installed ? '\u23f3 Environment ready, model pending' : 'Not installed');
 
         const startBtn = document.getElementById('btn-start-strata');
         if (startBtn) startBtn.disabled = !st.configured || st.running;
@@ -1347,7 +1370,7 @@ async function runStrataSetup() {
     if (!confirmed) return;
     strataBusyInFlight = true;
     appendToLog('strata', '[SETUP] Basliyor (' + size + ')...');
-    const result = await window.electronAPI.strata.setup({ size }).catch(e => ({ success: false, error: e.message }));
+    const result = await window.electronAPI.strata.setup({ size, vision: document.getElementById('strata-vision')?.value || 'no' }).catch(e => ({ success: false, error: e.message }));
     strataBusyInFlight = false;
     if (result.success) {
         appendToLog('strata', '[SETUP] Tamamlandi.');

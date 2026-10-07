@@ -1,5 +1,5 @@
 {
-  "app_title": "LLM Runner AIO v1.7",
+  "app_title": "LLM Runner AIO v1.9",
   "tab_system": "Détection Matériel",
   "tab_servers": "Serveurs",
   "tab_picoding": "Pi Coding",
@@ -71,7 +71,7 @@
   "label_downloading": "Téléchargement...",
   "label_download_progress": "Progression du Téléchargement",
   "label_model_name": "Modèle",
-  "label_model_size": "Taille",
+  "label_model_size": "Taille du modèle :",
   "label_model_url": "URL",
   "label_download_btn": "Télécharger",
   "label_start_auto": "Configuration de Démarrage",
@@ -223,5 +223,20 @@
   "update_success": "Mis à jour avec succès !",
   "update_error": "Échec de la mise à jour : {error}",
   "update_restarting": "Redémarrage du serveur...",
-  "btn_update_picoding": "Mettre à jour PiCoding"
+  "btn_update_picoding": "Mettre à jour PiCoding",
+  "section_strata": "Strata - Passerelle multi-modèles",
+  "legend_strata": "🧠 Strata — Qwen3.8-Flash-Next (passerelle multi-modèles)",
+  "desc_strata": "API OpenAI/Anthropic sur un port : deux noms de modèle partagent un moteur ; seul l'échantillonnage diffère. Inactif, le modèle est déchargé.",
+  "strata_install_legend": "🧠 Strata — Qwen3.8-Flash-Next (125B MoE, local)",
+  "strata_install_help": "Ce PC est adapté à Strata (RAM ≥ 48 Go, VRAM ≥ 12 Go). Le modèle télécharge ~58–84 Go → models\\. Après l'installation, lancez-le depuis l'onglet Serveurs.",
+  "btn_strata_install": "⬇ Télécharger et installer le modèle",
+  "label_vision": "Lecture d'images (vision) :",
+  "opt_vision_off": "Désactivé — texte seul (recommandé)",
+  "opt_vision_gpu": "Activé — encodeur sur GPU (rapide, utilise la VRAM)",
+  "opt_vision_cpu": "Activé — encodeur sur CPU (sans VRAM, plus lent)",
+  "label_context": "Contexte :",
+  "label_idle_unload": "Déchargement après inactivité (s) :",
+  "btn_calibrate": "🎯 Calibrer",
+  "btn_connect_owui": "🔗 Ajouter à Open WebUI",
+  "btn_save_config": "💾 Enregistrer la config"
 }

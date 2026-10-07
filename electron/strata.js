@@ -107,9 +107,12 @@ function register(deps) {
         const s = readJson(MODELS_JSON);
         const general = readJson(path.join(DIR, 'strata-general.json'));
         let maxContext = null;
+        let vision = null;
         if (general && Array.isArray(general.args)) {
             const i = general.args.indexOf('--max-context');
             if (i >= 0) maxContext = Number(general.args[i + 1]);
+            const v = general.args.indexOf('--vision');
+            if (v >= 0) vision = String(general.args[v + 1]).toLowerCase();
         }
         return {
             // STRATA_DEV=1: test makinesinde karti RAM esigi altinda da gorunur kilar (varsayilan davranis degismez).
@@ -126,6 +129,7 @@ function register(deps) {
             hasApiKey: !!(s && String(s.api_key || '').trim()),
             idleUnloadS: s ? s.idle_unload_s : 600,
             maxContext,
+            vision,
             choices: CHOICES.map((c) => ({ ...c, fits: hw.ramGb >= c.minRamGb }))
         };
     });
@@ -139,9 +143,10 @@ function register(deps) {
         try {
             if (!fs.existsSync(path.join(DIR, 'setup.py'))) throw new Error('Strata klasoru bulunamadi — once klon gerekli.');
             ensureLayer();
-            send('[SETUP] Model ' + choice.size + ' indiriliyor (~' + choice.downloadGb + ' GB) -> models\ ...');
+            const vision = ['gpu', 'cpu'].includes(options.vision) ? options.vision : 'no';
+            send('[SETUP] Model ' + choice.size + ' indiriliyor (~' + choice.downloadGb + ' GB) -> models\ ...' + (vision !== 'no' ? ' + vision (' + vision + ')' : ''));
             await runStreaming(['cmd', '/c', path.join(DIR, 'START-HERE.bat'),
-                '--yes', '--model', choice.size, '--vision', 'no',
+                '--yes', '--model', choice.size, '--vision', vision,
                 '--models-dir', path.join(PROJECT_DIR, 'models'),
                 '--data-dir', path.join(PROJECT_DIR, 'models', 'strata'),
                 '--no-start'], send);
@@ -192,7 +197,7 @@ function register(deps) {
         const send = (m) => safeSend('strata-setup-log', { message: m });
         try {
             send('[CALIBRATE] Donanim olcumu basladi (~5-10 dk). --no-start: model gateway uzerinden calisacak.');
-            await runStreaming(['cmd', '/c', path.join(DIR, 'START-HERE.bat'), '--calibrate', '--no-start'], send);
+            await runStreaming(['cmd', '/c', path.join(DIR, 'START-HERE.bat'), '--calibrate', '--no-start', '--yes'], send);
             const backupDir = backupStampDir();
             if (syncCoderArgs(backupDir)) send('[CALIBRATE] coder args <- general ile birebir esitlendi (sampling korundu). Yedek: ' + backupDir);
             await checkargsReport(send);
