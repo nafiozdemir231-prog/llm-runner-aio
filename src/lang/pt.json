@@ -240,5 +240,7 @@
   "btn_connect_owui": "🔗 Adicionar ao Open WebUI",
   "btn_save_config": "💾 Salvar configuração",
   "label_api_key": "Chave de API:",
-  "strata_calibrate_hint": "Execute Calibrar após o primeiro início e sempre que alterar Contexto ou visão."
+  "strata_calibrate_hint": "Execute Calibrar após o primeiro início e sempre que alterar Contexto ou visão.",
+  "label_parallel": "Requisições paralelas:",
+  "opt_parallel_off": "Desativado — uma por vez (recomendado)"
 }

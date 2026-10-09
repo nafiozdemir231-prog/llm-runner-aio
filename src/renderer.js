@@ -1331,6 +1331,10 @@ async function refreshStrataStatus() {
             const vsel = document.getElementById(vid);
             if (vsel && [...vsel.options].some(o => o.value === mappedVision)) vsel.value = mappedVision;
         }
+        // #465 paralel istek durumu (config paneli dropdown'u kurulu degerle senkron)
+        state.servers.strata.parallel = Number(st.parallel) >= 2 ? Number(st.parallel) : 1;
+        const parSel = document.getElementById('strata-parallel');
+        if (parSel) parSel.value = String(state.servers.strata.parallel);
 
         const installBtn = document.getElementById('btn-strata-install');
         if (installBtn) installBtn.disabled = !!st.setupRunning || !st.eligible;
@@ -1470,6 +1474,12 @@ async function saveStrataConfig() {
         port: parseInt(document.getElementById('strata-port')?.value) || null,
         idleUnloadS: document.getElementById('strata-idle')?.value
     };
+    // #465 paralel istek: yalniz degistiyse gonderilir (1 = sirayla, 2-8 = es zamanli --batch).
+    const parSel = document.getElementById('strata-parallel');
+    const newParallel = parSel ? (parseInt(parSel.value) || 1) : null;
+    const curParallel = Number(state.servers.strata.parallel) || 1;
+    const parallelChanged = newParallel !== null && newParallel !== curParallel;
+    if (parallelChanged) options.parallel = newParallel;
     // API key alani degistirildiyse gonderilir (bos = PC modunda temizle / LAN'da yeniden uret).
     const apiKeyInput = document.getElementById('strata-apikey-input');
     if (apiKeyInput && String(apiKeyInput.value || '').trim() !== String(state.servers.strata.apiKey || '').trim()) {
@@ -1494,6 +1504,17 @@ async function saveStrataConfig() {
     if (result.success) {
         appendToLog('strata', '[CONFIG] Kaydedildi: ' + (result.changed || []).join(', ') + ' | Yedek: ' + result.backupDir);
         String(result.checkargs || '').split(/\r?\n/).forEach(l => l.trim() && appendToLog('strata', 'checkargs| ' + l));
+        // Parallel motor acilis argumani (--batch) — calisan ark'a etki etmez; gateway yeniden baslatilir.
+        if (parallelChanged) {
+            if (state.servers.strata.running) {
+                appendToLog('strata', '[CONFIG] Parallel ' + curParallel + ' -> ' + newParallel + ': gateway yeniden baslatiliyor...');
+                await window.electronAPI.server.stop('strata').catch(() => {});
+                await new Promise(r => setTimeout(r, 1500));
+                await window.electronAPI.server.start('strata').catch(e => appendToLog('strata', '[CONFIG] Restart FAILED: ' + e.message, true));
+            } else {
+                appendToLog('strata', '[CONFIG] Parallel ' + curParallel + ' -> ' + newParallel + ': Start butonuna bastiginda gecerli olacak.');
+            }
+        }
         showNotification('Success', 'Strata config guncellendi. Context/vision degistiysen 🎯 Calibrate calistir, sonra Start.');
     } else {
         appendToLog('strata', '[CONFIG] FAILED: ' + result.error, true);

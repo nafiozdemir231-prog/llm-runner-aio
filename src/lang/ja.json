@@ -240,5 +240,7 @@
   "btn_connect_owui": "🔗 Open WebUI に追加",
   "btn_save_config": "💾 設定を保存",
   "label_api_key": "APIキー：",
-  "strata_calibrate_hint": "初回起動時と、コンテキストまたは vision 設定を変更するたびにキャリブレーションを実行してください。"
+  "strata_calibrate_hint": "初回起動時と、コンテキストまたは vision 設定を変更するたびにキャリブレーションを実行してください。",
+  "label_parallel": "並列リクエスト:",
+  "opt_parallel_off": "オフ — 1ずつ（推奯）"
 }

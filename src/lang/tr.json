@@ -240,5 +240,7 @@
   "btn_connect_owui": "🔗 Open WebUI'ye Ekle",
   "btn_save_config": "💾 Ayarı Kaydet",
   "label_api_key": "API anahtarı:",
-  "strata_calibrate_hint": "İlk başlatmadan sonra ve Context veya vision ayarını her değiştirdiğinde 🎯 Calibrate çalıştır."
+  "strata_calibrate_hint": "İlk başlatmadan sonra ve Context veya vision ayarını her değiştirdiğinde 🎯 Calibrate çalıştır.",
+  "label_parallel": "Paralel istekler:",
+  "opt_parallel_off": "Kapalı — sırayla (önerilen)"
 }

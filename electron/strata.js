@@ -81,6 +81,8 @@ function register(deps) {
         const c = readJson(path.join(DIR, 'strata-coder.json'));
         if (!g || !c) return false;
         c.args = (g.args || []).map(String);
+        // #465 parallel anahtari args'ta degil config seviyesinde: iki kapida ayni olmali (tek motor kurali).
+        c.parallel = Number.isInteger(g.parallel) ? g.parallel : 1;
         writeBackup(path.join(DIR, 'strata-coder.json'), c, backupDir);
         return true;
     }
@@ -109,6 +111,7 @@ function register(deps) {
         let maxContext = null;
         let vision = null;
         let modelSize = null;
+        let parallel = 1;
         if (general && Array.isArray(general.args)) {
             const i = general.args.indexOf('--max-context');
             if (i >= 0) maxContext = Number(general.args[i + 1]);
@@ -118,6 +121,8 @@ function register(deps) {
             const pk = general.args.indexOf('--pack');
             if (pk >= 0) modelSize = String(general.args[pk + 1]).replace(/[\\/]+$/, '').split(/[\\/]/).pop().toUpperCase();
         }
+        // #465: "parallel": N config anahtari (serve bunu --batch N'ye cevirir; 1 = sirayla).
+        if (general && Number.isInteger(general.parallel) && general.parallel >= 2) parallel = general.parallel;
         return {
             // STRATA_DEV=1: test makinesinde karti RAM esigi altinda da gorunur kilar (varsayilan davranis degismez).
             eligible: (hw.ramGb >= 48 && (hw.vramGb || 0) >= 12) || process.env.STRATA_DEV === '1',
@@ -136,6 +141,7 @@ function register(deps) {
             maxContext,
             vision,
             modelSize,
+            parallel,
             choices: CHOICES.map((c) => ({ ...c, fits: hw.ramGb >= c.minRamGb }))
         };
     });
@@ -150,12 +156,17 @@ function register(deps) {
             if (!fs.existsSync(path.join(DIR, 'setup.py'))) throw new Error('Strata klasoru bulunamadi — once klon gerekli.');
             ensureLayer();
             const vision = ['gpu', 'cpu'].includes(options.vision) ? options.vision : 'no';
-            send('[SETUP] Model ' + choice.size + ' indiriliyor (~' + choice.downloadGb + ' GB) -> models\ ...' + (vision !== 'no' ? ' + vision (' + vision + ')' : ''));
-            await runStreaming(['cmd', '/c', path.join(DIR, 'START-HERE.bat'),
+            // #465 paralel istek (opt-in): setup.py --parallel N -> config'e "parallel": N yazilir (2-8).
+            const parallelN = Number(options.parallel);
+            const useParallel = Number.isInteger(parallelN) && parallelN >= 2 ? Math.min(parallelN, 8) : null;
+            send('[SETUP] Model ' + choice.size + ' indiriliyor (~' + choice.downloadGb + ' GB) -> models\ ...' + (vision !== 'no' ? ' + vision (' + vision + ')' : '') + (useParallel ? ' + parallel ' + useParallel : ''));
+            const setupArgs = ['cmd', '/c', path.join(DIR, 'START-HERE.bat'),
                 '--yes', '--model', choice.size, '--vision', vision,
                 '--models-dir', path.join(PROJECT_DIR, 'models'),
                 '--data-dir', path.join(PROJECT_DIR, 'models', 'strata'),
-                '--no-start'], send);
+                '--no-start'];
+            if (useParallel) setupArgs.push('--parallel', String(useParallel));
+            await runStreaming(setupArgs, send);
 
             // Uretilen config'ten iki kapi config'i: AYNI args (tek motor) + ayri sampling profili.
             const gen = fs.readdirSync(DIR)
@@ -230,7 +241,8 @@ function register(deps) {
             const i = g.args.indexOf('--max-context');
             if (i >= 0) maxContext = Number(g.args[i + 1]);
         }
-        return { success: true, config: { host: String(s.host || '127.0.0.1'), port: Number(s.port || 1235), backendPortBase: Number(s.backend_port_base || 1236), apiKey: String(s.api_key || ''), idleUnloadS: Number(s.idle_unload_s === undefined ? 600 : s.idle_unload_s), maxContext } };
+        const parallel = (g && Number.isInteger(g.parallel) && g.parallel >= 2) ? g.parallel : 1;
+        return { success: true, config: { host: String(s.host || '127.0.0.1'), port: Number(s.port || 1235), backendPortBase: Number(s.backend_port_base || 1236), apiKey: String(s.api_key || ''), idleUnloadS: Number(s.idle_unload_s === undefined ? 600 : s.idle_unload_s), maxContext, parallel } };
     });
 
     // UI config paneli: context, PC/YerelAg host modu, port. Her degisiklik yedekli (kural 7).
@@ -281,6 +293,20 @@ function register(deps) {
                     writeBackup(p, g, backupDir);   // iki config de ayni kalir -> tek motor bozulmaz
                 }
                 changed.push('max-context=' + c);
+            }
+            // #465 paralel istek: "parallel" config anahtari (serve --batch N'ye cevirir). Iki kapida da ayni
+            // yazilir; args degismez -> motor imzasi bozulmaz, tek ark paylasimi korunur. 1 = sirayla (eski davranis).
+            if (options.parallel !== undefined && options.parallel !== '') {
+                const p = Number(options.parallel);
+                if (!Number.isInteger(p) || p < 1 || p > 8) throw new Error('Parallel 1-8 arasinda tam sayi olmali (1 = sirayla).');
+                for (const name of ['strata-general.json', 'strata-coder.json']) {
+                    const fp = path.join(DIR, name);
+                    const g = readJson(fp);
+                    if (!g) continue;
+                    g.parallel = p >= 2 ? p : 1;
+                    writeBackup(fp, g, backupDir);
+                }
+                changed.push('parallel=' + (p >= 2 ? p + ' istek es zamanli (--batch)' : '1 (sirayla)'));
             }
             const chk = fs.existsSync(VENV_PY) ? await runCapture([VENV_PY, path.join(DIR, 'local', 'checkargs.py')]) : null;
             return { success: true, backupDir, changed, checkargs: chk ? String(chk.out || '') : 'venv yok - checkargs atlandi' };
