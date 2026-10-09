@@ -1458,7 +1458,7 @@ async function runStrataUpdate() {
 async function connectStrataToOwui() {
     const result = await window.electronAPI.strata.connectOpenWebui().catch(e => ({ success: false, error: e.message }));
     if (result.success) {
-        const msg = result.status === 'exists' ? 'Zaten ekliydi: ' + result.url : 'Eklendi: ' + result.url;
+        const msg = result.status === 'exists' ? 'Zaten ekliydi: ' + result.url : (result.status === 'updated' ? 'API key guncellendi: ' + result.url : 'Eklendi: ' + result.url);
         appendToLog('strata', '[OWUI] Baglanti ' + msg);
         showNotification('Success', 'Open WebUI baglantisi: ' + msg);
     } else {
