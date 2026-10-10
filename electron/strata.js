@@ -208,12 +208,18 @@ function register(deps) {
             if (!base || !Array.isArray(base.args)) throw new Error('Config okunamadi: ' + gen[0].f);
             ensureParking(base);
             const backupDir = backupStampDir();
+            // Setup args'i bastan uretir: eski kapida kalibrasyon tuningi varsa ve yenide yoksa uyar
+            // (upstream kayitli kalibrasyonu yalniz ayni imzada - model/ctx/vision - geri uygular).
+            const prevG = readJson(path.join(DIR, 'strata-general.json'));
+            const prevCalib = prevG && Array.isArray(prevG.args) ? CALIB_FLAGS.filter((f) => prevG.args.map(String).includes(f)) : [];
             for (const [name, temp] of [['strata-general.json', 1.0], ['strata-coder.json', 0.6]]) {
                 const c = JSON.parse(JSON.stringify(base));
                 c.sampling = SAMPLING(temp);
                 writeBackup(path.join(DIR, name), c, backupDir);
             }
             send('[SETUP] strata-general.json + strata-coder.json yazildi (args birebir, sampling ayri). Yedek: ' + backupDir);
+            if (prevCalib.length && !prevCalib.every((f) => (base.args || []).map(String).includes(f)))
+                send('[SETUP] UYARI: Onceki kalibrasyon tuningi (' + prevCalib.join(', ') + ') setup ile sifirlandi - imza degisti ise (vision/context) 🎯 Calibrate tekrar calistirilmali.');
 
             // models.json garanti; API key artik ZORUNLU DEGIL ve otomatik uretilmez — bos birakilirsa ansikiz calisir.
             if (!fs.existsSync(MODELS_JSON)) fs.copyFileSync(path.join(LAYER, 'models.json'), MODELS_JSON);
