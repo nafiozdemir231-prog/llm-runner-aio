@@ -4,7 +4,6 @@
 
 const path = require('path');
 const fs = require('fs');
-const crypto = require('crypto');
 
 // Surum tablosu setup.py MODELS ile hizali (download GB / onerilen minimum RAM GB).
 const CHOICES = [
@@ -55,10 +54,11 @@ function ensureLayer() {
         ['models.json', 'local/models.json'], ['MULTI-MODEL.bat', 'MULTI-MODEL.bat'], ['GUNCELLE.bat', 'GUNCELLE.bat']];
     for (const [srcName, rel] of wanted) {
         const dst = path.join(ctx.DIR, rel);
-        if (!fs.existsSync(dst)) {
-            const src = path.join(ctx.LAYER, srcName);
-            if (fs.existsSync(src)) { fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.copyFileSync(src, dst); }
-        }
+        const src = path.join(ctx.LAYER, srcName);
+        if (!fs.existsSync(src)) continue;
+        // Icerik farkliysa katmani tazele: hedef PC'de eski kopyalar durur, eksikse-kopyala yetmez.
+        const same = fs.existsSync(dst) && fs.readFileSync(dst).equals(fs.readFileSync(src));
+        if (!same) { fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.copyFileSync(src, dst); }
     }
 }
 
@@ -210,15 +210,9 @@ function register(deps) {
             }
             send('[SETUP] strata-general.json + strata-coder.json yazildi (args birebir, sampling ayri). Yedek: ' + backupDir);
 
-            // models.json garanti + kural 9: LAN aciksa api_key ZORUNLU — yoksa uret ve bildir.
+            // models.json garanti; API key artik ZORUNLU DEGIL ve otomatik uretilmez — bos birakilirsa ansikiz calisir.
             if (!fs.existsSync(MODELS_JSON)) fs.copyFileSync(path.join(LAYER, 'models.json'), MODELS_JSON);
-            let s = readJson(MODELS_JSON) || {};
-            const loopback = ['127.0.0.1', 'localhost', '::1'].includes(String(s.host));
-            if (!loopback && !String(s.api_key || '').trim()) {
-                s.api_key = crypto.randomBytes(24).toString('hex');
-                writeBackup(MODELS_JSON, s, backupDir);
-                send('[SETUP] KURAL 9: host ' + s.host + ' agacik — API key uretildi: ' + s.api_key);
-            }
+            const s = readJson(MODELS_JSON) || {};
             const chk = await checkargsReport(send);
             if (chk && chk.code !== 0) send('[SETUP] UYARI: checkargs sert sorun buldu (yukarida liste).');
             send('[SETUP] Kurulum tamamlandi. Sunucular sekmesinden baslatabilirsin.');
@@ -285,16 +279,15 @@ function register(deps) {
             if (options.hostMode === 'pc') { s.host = '127.0.0.1'; changed.push('host=127.0.0.1 (sadece bu PC)'); }
             else if (options.hostMode === 'lan') {
                 s.host = '0.0.0.0';
-                if (!String(s.api_key || '').trim()) s.api_key = crypto.randomBytes(24).toString('hex');
-                changed.push('host=0.0.0.0 (yerel ag) + api_key (' + s.api_key.slice(0, 8) + '...)');
+                changed.push('host=0.0.0.0 (yerel ag)');
             }
             // API key alani: yazilan deger aynen kullanilir; bos birakilirsa PC modunda temizlenir,
             // LAN modunda yeni key uretilir (Kural 9 bos keyle agaciga cikmaya izin vermez).
             if (options.apiKey !== undefined) {
                 const k = String(options.apiKey).trim();
-                if (k) { s.api_key = k; changed.push('api_key guncellendi'); }
-                else if (String(s.host) === '127.0.0.1') { s.api_key = ''; changed.push('api_key temizlendi (PC modu)'); }
-                else { s.api_key = crypto.randomBytes(24).toString('hex'); changed.push('api_key yeniden uretildi (LAN): ' + s.api_key.slice(0, 8) + '...'); }
+                // Bos birakilan alan artik bos kalir: key zorunlu degil, otomatik uretilmez.
+                s.api_key = k;
+                changed.push(k ? 'api_key guncellendi' : 'api_key temizlendi (ansikiz mod)');
             }
             if (options.idleUnloadS !== undefined && options.idleUnloadS !== '') {
                 const v = Number(options.idleUnloadS);

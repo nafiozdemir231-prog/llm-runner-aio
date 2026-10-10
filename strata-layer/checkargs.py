@@ -59,9 +59,9 @@ def main():
     if float(s.get("idle_unload_s", 0)) <= 0:
         say("HARD", "idle_unload_s must be > 0 seconds (#1)")
     if str(s["host"]) not in ("127.0.0.1", "localhost", "::1") and not str(s.get("api_key", "")).strip():
-        say("HARD", "host %s is exposed but api_key is empty (#9)" % s["host"])
+        say("WARN", "host %s acik ve api_key bos: ag uzerinden kimlik dogrulamasiz erisim (#9 gevsetildi)" % s["host"])
     else:
-        say("OK", "host/api-key rule satisfied (%s)" % s["host"])
+        say("OK", "host/api-key kurali tamam (%s)" % s["host"])
 
     cfgs = {}
     for m in s["models"]:

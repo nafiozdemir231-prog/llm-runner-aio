@@ -234,7 +234,7 @@ class Gateway:
         """--check: print the routing plan; exit 1 on hard problems."""
         problems = []
         if not is_loopback(str(self.s["host"])) and not str(self.s.get("api_key", "")).strip():
-            problems.append("HARD: host %s is not loopback but api_key is empty (rule 9)" % self.s["host"])
+            problems.append("NOTE: host %s acik ve api_key bos - ag uzerinden kimlik dogrulamasiz erisim (rule 9 gevsetildi)" % self.s["host"])
         print("[check] gateway http://%s:%d/v1" % (self.s["host"], self.s["port"]))
         for name, m in sorted(self.models.items()):
             a = self.arks[m["ark"]]
@@ -405,9 +405,8 @@ def main():
     if check:
         return gw.plan()
     if not is_loopback(str(settings["host"])) and not str(settings.get("api_key", "")).strip():
-        print("[gateway] refusing to bind %s without an api key (rule 9): set api_key in models.json "
-              "or use host 127.0.0.1" % settings["host"])
-        return 1
+        print("[gateway] NOT: host %s api_key olmadan baglaniyor - yerel agdaki herkesten erisilebilir (rule 9 gevsetildi)"
+              % settings["host"])
     Handler.gw = gw
     httpd = ThreadingHTTPServer((settings["host"], int(settings["port"])), Handler)
     print("[gateway] Strata multi-model gateway on http://%s:%s/v1 - models: %s (idle unload %ss)"

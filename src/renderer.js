@@ -1316,12 +1316,13 @@ async function refreshStrataStatus() {
             for (const c of st.choices) {
                 const opt = document.createElement('option');
                 opt.value = c.size;
-                opt.textContent = c.label + ' — ~' + c.downloadGb + ' GB' + (c.fits ? '' : ' (insufficient RAM)');
-                if (!c.fits) opt.disabled = true;
+                // Strata zaten calismayacak modeli kurulumda kendisi eler; burada secenek pasif birakilmaz,
+                // yalnizca RAM onerisi etikete eklenir.
+                opt.textContent = c.label + ' — ~' + c.downloadGb + ' GB' + (c.fits ? '' : ' (≈' + c.minRamGb + ' GB RAM)');
                 sel.appendChild(opt);
             }
-            const firstFit = st.choices.find(c => c.fits);
-            if (firstFit) sel.value = firstFit.size;
+            const defChoice = st.choices.find(c => c.fits) || st.choices[0];
+            if (defChoice) sel.value = defChoice.size;
         }
         if (sel && st.modelSize && [...sel.options].some(o => o.value === st.modelSize)) sel.value = st.modelSize;
 
@@ -1367,11 +1368,6 @@ async function refreshStrataStatus() {
             const keyInput = document.getElementById('strata-apikey-input');
             if (keyInput && document.activeElement !== keyInput) keyInput.value = cfgR.config.apiKey || '';
 
-            // Open in Browser: key zorunluysa URL'ye eklenir (?api_key= gateway'de desteklenir)
-            if (st.running) {
-                const base = 'http://127.0.0.1:' + (cfgR.config.port || st.port || 1235);
-                updateBrowserButton('btn-open-strata', true, cfgR.config.apiKey ? base + '/?api_key=' + cfgR.config.apiKey : base);
-            }
         }
     } catch (err) {
         console.error('[STRATA] Status query failed:', err.message);
@@ -1546,7 +1542,7 @@ function setupServerControls() {
         },
         { type: 'vane', startId: 'btn-start-vane', stopId: 'btn-stop-vane', updateId: null, browserId: 'btn-open-vane', portId: 'vane-port', hostId: 'vane-host', statusId: 'vane-status', logId: 'vane-log' },
         { type: 'wan2gp', startId: 'btn-start-wan2gp', stopId: 'btn-stop-wan2gp', updateId: null, browserId: 'btn-open-wan2gp', portId: 'wan2gp-port', hostId: 'wan2gp-host', statusId: 'wan2gp-status', logId: 'wan2gp-log' },
-        { type: 'strata', startId: 'btn-start-strata', stopId: 'btn-stop-strata', updateId: null, browserId: 'btn-open-strata', portId: 'strata-port', hostId: null, statusId: 'strata-status', logId: 'strata-log' }
+        { type: 'strata', startId: 'btn-start-strata', stopId: 'btn-stop-strata', updateId: null, browserId: null, portId: 'strata-port', hostId: null, statusId: 'strata-status', logId: 'strata-log' }
     ];
     
     // IPC Event Listeners (Server logs)
