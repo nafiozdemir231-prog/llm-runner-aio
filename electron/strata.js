@@ -18,7 +18,7 @@ const PARK = { '--conversation-cache-mib': '4096', '--conversation-cache-slots':
 const SAMPLING = (temp) => ({ temperature: temp, top_k: 20, top_p: 0.95, min_p: 0.0, presence_penalty: 0.0, repetition_penalty: 1.08 });
 
 // Kalibrasyon bayraklari: setup.py CAL.apply bunlari args'a yazar; hangi kapinin kalibre oldugunu bundan anlariz.
-const CALIB_FLAGS = ['--pool-workers', '--adapt-every', '--adapt-swaps', '--adapt-decay'];
+const CALIB_FLAGS = ['--pool-workers', '--adapt-every', '--adapt-swaps', '--adapt-decay', '--pcie-frac', '--spec-min-p'];
 function pickCalibratedSource(g, c) {
     const score = (cfg) => CALIB_FLAGS.reduce((n, f) => n + ((cfg.args || []).map(String).includes(f) ? 1 : 0), 0);
     return score(c) > score(g) ? c : g;
