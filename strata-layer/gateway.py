@@ -96,8 +96,9 @@ class Job:
         ctypes.windll.kernel32.AssignProcessToJobObject(self.h, ctypes.c_void_p(popen._handle))
 
 
-# Ark logundan app'e tasinacak hiz satirlari: istek basi prefill/decode tok/s ve yukleme hizi (GiB/s).
-SPEED_LINE_RE = re.compile(r"tok/s|GiB/s")
+# Ark logundan app'e tasinacak hiz satirlari: istek sonu ozetleri (done / request prompt -> prefill+decode tok/s)
+# ve motor yukleme hizi (GiB/s). Canli ilerleme satirlari (thinking/answering...) dosyada kalir - UI spam olmaz.
+SPEED_LINE_RE = re.compile(r"done:|request prompt|GiB/s")
 
 
 def tail_speed_lines(log_path, base_offset, alive, emit):
