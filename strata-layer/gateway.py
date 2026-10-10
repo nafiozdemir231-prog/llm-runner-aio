@@ -13,6 +13,7 @@ Backend arks die together with this gateway (Windows job object).
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -95,6 +96,37 @@ class Job:
         ctypes.windll.kernel32.AssignProcessToJobObject(self.h, ctypes.c_void_p(popen._handle))
 
 
+# Ark logundan app'e tasinacak hiz satirlari: istek basi prefill/decode tok/s ve yukleme hizi (GiB/s).
+SPEED_LINE_RE = re.compile(r"tok/s|GiB/s")
+
+
+def tail_speed_lines(log_path, base_offset, alive, emit):
+    """log_path'i base_offset'ten itibaren kuyruklayip SPEED_LINE_RE eslesen satirlari emit eder.
+    Dosya kisalirsa (truncate/rotate) offset sifirdan devam eder."""
+    offset = base_offset
+    while True:
+        try:
+            size = os.path.getsize(str(log_path))
+            if size < offset:                                   # log dondu / trunc edildi
+                offset = 0
+            with open(str(log_path), "rb") as f:
+                f.seek(offset)
+                chunk = f.read()
+            cut = chunk.rfind(b"\n")
+            if cut >= 0:
+                consumed = chunk[:cut + 1]
+                offset += len(consumed)
+                for raw in consumed.split(b"\n"):
+                    line = raw.decode("utf-8", "replace").strip()
+                    if line and SPEED_LINE_RE.search(line):
+                        emit(line)
+        except OSError:
+            pass
+        if not alive():
+            break
+        time.sleep(0.5)
+
+
 class Ark:
     """One backend serve/server.py process (lazy start), shared by models with the same signature."""
 
@@ -107,6 +139,14 @@ class Ark:
 
     def signature(self):
         return (str(self.cfg.get("exe")), " ".join(map(str, self.cfg.get("args", []))), str(self.cfg.get("cwd")))
+
+    def _tail_speeds(self, log_path, base_offset):
+        """Ark logundaki hiz satirlarini app loguna iletir: istek basi prefill/decode tok/s
+        (STRATA_REQUEST_LINES=1 ile serve stdout'a dusen satirlar) ve motor yukleme hizi (GiB/s).
+        Diger satirlar dosyada kalir - UI spam olmaz."""
+        def emit(line):
+            print("[gateway] ark%d> %s" % (self.idx, line), flush=True)
+        threading.Thread(target=tail_speed_lines, args=(log_path, base_offset, self.up, emit), daemon=True).start()
 
     def up(self):
         return self.proc is not None and self.proc.poll() is None
@@ -121,7 +161,9 @@ class Ark:
                 return False
             log_dir = ROOT / "logs"
             log_dir.mkdir(exist_ok=True)
-            logf = open(log_dir / ("gateway-ark%d.log" % self.idx), "ab")
+            log_path = log_dir / ("gateway-ark%d.log" % self.idx)
+            base_offset = os.path.getsize(str(log_path)) if log_path.exists() else 0
+            logf = open(log_path, "ab")
             cfg_arg = self.cfg_path if self.cfg_path.is_absolute() else ROOT / self.cfg_path
             cmd = [str(py), str(ROOT / "serve" / "server.py"), "--engine", self.settings.get("engine", "strata"),
                    "--config", str(cfg_arg), "--host", "127.0.0.1", "--port", str(self.port)]
@@ -130,7 +172,12 @@ class Ark:
             if int(self.settings.get("min_free_vram_mib") or 0) > 0:
                 cmd += ["--min-free-vram-mib", str(int(self.settings["min_free_vram_mib"]))]
             print("[gateway] starting ark %d: port %d config %s" % (self.idx, self.port, cfg_arg.name), flush=True)
-            self.proc = subprocess.Popen(cmd, cwd=str(ROOT), stdout=logf, stderr=subprocess.STDOUT)
+            # STRATA_REQUEST_LINES=1: serve, istek bitisinde "prefill X tok/s decode Y tok/s" satirini stdout'a basar;
+            # tail_speed_lines bunu (ve GiB/s yukleme satirlarini) app loguna tasir.
+            env = dict(os.environ)
+            env.setdefault("STRATA_REQUEST_LINES", "1")
+            self.proc = subprocess.Popen(cmd, cwd=str(ROOT), stdout=logf, stderr=subprocess.STDOUT, env=env)
+            self._tail_speeds(log_path, base_offset)
             self.job.assign(self.proc)
             return self.wait_ready()
 
