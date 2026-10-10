@@ -141,7 +141,12 @@ function register(deps) {
             const i = general.args.indexOf('--max-context');
             if (i >= 0) maxContext = Number(general.args[i + 1]);
             const v = general.args.indexOf('--vision');
-            if (v >= 0) vision = String(general.args[v + 1]).toLowerCase();
+            // Vision durumu args'tan DEGIL config'in "vision" bolumunden okunur (upstream: args'ta --vision
+            // bayragindan hemen sonra --vram-reserve-mib gelir; gpu/cpu ayrimi cfg["vision"] = {gpu: bool}'da).
+            const vis = general.vision;
+            if (vis && typeof vis === 'object') vision = vis.gpu ? 'gpu' : 'cpu';
+            else if (typeof vis === 'string') vision = ['gpu', 'cpu'].includes(vis.toLowerCase()) ? vis.toLowerCase() : 'no';
+            else vision = v >= 0 ? 'gpu' : 'no'; // eski config: bolum yoksa bayragin varligi
             // Uretilen args'te boyut '--pack <.../packs/iq3_xxs>' olarak geciyor -> basename = CHOICES.size (kucuk harf).
             const pk = general.args.indexOf('--pack');
             if (pk >= 0) modelSize = String(general.args[pk + 1]).replace(/[\\/]+$/, '').split(/[\\/]/).pop().toUpperCase();

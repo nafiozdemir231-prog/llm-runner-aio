@@ -1488,11 +1488,14 @@ async function saveStrataConfig() {
     if (newVision !== curVision) {
         if (!state.servers.strata.modelSize) {
             appendToLog('strata', '[CONFIG] Vision degisikligi uygulanamadi: model boyutu tespit edilemedi.', true);
+        } else if (state.servers.strata.setupRunning) {
+            appendToLog('strata', '[CONFIG] Vision degisikligi bekleniyor: setup zaten calisiyor, ikinci tetikleme atlandi.');
         } else {
             if (state.servers.strata.running) await window.electronAPI.server.stop('strata').catch(() => {});
             appendToLog('strata', '[CONFIG] Vision ' + curVision + ' -> ' + newVision + ': setup yeniden calisir (indirme atlanir), sonra Start...');
             const rs = await window.electronAPI.strata.setup({ size: state.servers.strata.modelSize, vision: newVision }).catch(e => ({ success: false, error: e.message }));
             if (!rs.success) appendToLog('strata', '[CONFIG] Vision setup FAILED: ' + rs.error, true);
+            else state.servers.strata.vision = newVision; // state'i hemen guncelle: ardindan gelen Save'ler ayni degisikligi tekrar tetiklemesin
         }
     }
 
