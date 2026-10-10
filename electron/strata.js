@@ -18,6 +18,31 @@ const CHOICES = [
 const PARK = { '--conversation-cache-mib': '4096', '--conversation-cache-slots': '2', '--conversation-cache-min-free-mib': '4096' };
 const SAMPLING = (temp) => ({ temperature: temp, top_k: 20, top_p: 0.95, min_p: 0.0, presence_penalty: 0.0, repetition_penalty: 1.08 });
 
+// Kalibrasyon bayraklari: setup.py CAL.apply bunlari args'a yazar; hangi kapinin kalibre oldugunu bundan anlariz.
+const CALIB_FLAGS = ['--pool-workers', '--adapt-every', '--adapt-swaps', '--adapt-decay'];
+function pickCalibratedSource(g, c) {
+    const score = (cfg) => CALIB_FLAGS.reduce((n, f) => n + ((cfg.args || []).map(String).includes(f) ? 1 : 0), 0);
+    return score(c) > score(g) ? c : g;
+}
+
+// Iki kapinin args listelerini esitler (spec #2/#3: tek motor = birebir args).
+// afterCalibration=true: kalibrasyon setup.py'de mtime'i en yeni config'e uygulanir (genelde coder);
+// kalibre bayraklarin tam kumesi hangisindeyse KAYNAK odur ve iki kapida ayni degerleri alir —
+// aksi halde kalibre edilmemis general, kalibre coder'i ezerdi (hedef PC bulgusu: --pool-workers 15 kaldisi).
+function mergeGateConfigs(g, c, afterCalibration) {
+    // #465 parallel anahtari args'ta degil config seviyesinde: iki kapida ayni olmali.
+    const par = Number.isInteger(g.parallel) ? g.parallel : (Number.isInteger(c.parallel) ? c.parallel : 1);
+    const src = afterCalibration ? pickCalibratedSource(g, c) : g;
+    const args = (src.args || []).map(String);
+    return {
+        general: { ...g, args, parallel: par },
+        coder: { ...c, args, parallel: par },
+        changedGeneral: JSON.stringify(g.args || []) !== JSON.stringify(args),
+        changedCoder: JSON.stringify(c.args || []) !== JSON.stringify(args),
+        source: src === g ? 'general' : 'coder',
+    };
+}
+
 let ctx = null;
 let gatewayProc = null;
 
@@ -75,15 +100,15 @@ function register(deps) {
         fs.renameSync(tmp, p);
     }
 
-    // syncCoderArgs: coder args <- general (spec #2/#3)
-    function syncCoderArgs(backupDir) {
+    // syncCoderArgs: mergeGateConfigs sonucu iki dosyaya yazar; ayni olan dosyaya yazmaz (mtime stabil kalir,
+    // siradaki kalibrasyonun "en yeni config" secimi bozulmaz).
+    function syncCoderArgs(backupDir, afterCalibration) {
         const g = readJson(path.join(DIR, 'strata-general.json'));
         const c = readJson(path.join(DIR, 'strata-coder.json'));
         if (!g || !c) return false;
-        c.args = (g.args || []).map(String);
-        // #465 parallel anahtari args'ta degil config seviyesinde: iki kapida ayni olmali (tek motor kurali).
-        c.parallel = Number.isInteger(g.parallel) ? g.parallel : 1;
-        writeBackup(path.join(DIR, 'strata-coder.json'), c, backupDir);
+        const m = mergeGateConfigs(g, c, afterCalibration);
+        if (m.changedGeneral) writeBackup(path.join(DIR, 'strata-general.json'), m.general, backupDir);
+        if (m.changedCoder) writeBackup(path.join(DIR, 'strata-coder.json'), m.coder, backupDir);
         return true;
     }
 
@@ -220,9 +245,8 @@ function register(deps) {
                 await runStreaming(['cmd', '/c', path.join(DIR, 'START-HERE.bat'), '--calibrate', '--no-start', '--yes'], send);
             } finally { clearInterval(beat); }
             const backupDir = backupStampDir();
-            if (syncCoderArgs(backupDir)) send('[CALIBRATE] coder args <- general ile birebir esitlendi (sampling korundu). Yedek: ' + backupDir);
+            if (syncCoderArgs(backupDir, true)) send('[CALIBRATE] Args iki kapida da kalibre degerlerle esitlendi (sampling korundu). Yedek: ' + backupDir);
             await checkargsReport(send);
-            send('[CALIBRATE] Tamamlandi.');
             return { success: true };
         } catch (err) {
             console.error('[STRATA-CALIBRATE] Failed:', err.message);
@@ -433,4 +457,4 @@ function stopGateway() {
     return { success: true };
 }
 
-module.exports = { register, startGateway, stopGateway, CHOICES };
+module.exports = { register, startGateway, stopGateway, CHOICES, pickCalibratedSource, mergeGateConfigs, CALIB_FLAGS };
