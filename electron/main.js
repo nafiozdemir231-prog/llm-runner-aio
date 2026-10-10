@@ -3534,7 +3534,8 @@ ipcMain.handle('server-update', async (_event, serverType) => {
                             const buildEnv = {
                                 ...process.env,
                                 npm_config_engine_strict: 'false',
-                                NODE_OPTIONS: ((process.env.NODE_OPTIONS || '').trim() ? process.env.NODE_OPTIONS + ' ' : '') + '--max-old-space-size=8192'
+                                // OW 0.12 tam build'i 8 GB heap'te V8'de cokiyor; 12 GB ile tamamlaniyor (dev test).
+                                NODE_OPTIONS: ((process.env.NODE_OPTIONS || '').trim() ? process.env.NODE_OPTIONS + ' ' : '') + '--max-old-space-size=12288'
                             };
                             
                             const runBuildStep = (label, args) => new Promise((resolveStep) => {
@@ -3562,6 +3563,16 @@ ipcMain.handle('server-update', async (_event, serverType) => {
                                 : false;
                             if (!buildOk) {
                                 log('[UPDATE] ⚠️ Frontend derlenemedi — tarayıcıda eski arayüz görünebilir. Update\u2019i tekrar deneyin.');
+                            }
+
+                            // OW backend: yeni surumun pip gereksinimleri venv'e senkronlanir (pip adimi eksikti).
+                            if (serverType === 'openwebui') {
+                                const reqTxt = path.join(serverDir, 'backend', 'requirements.txt');
+                                const pyExe = path.join(PROJECT_DIR, 'venv', 'Scripts', 'python.exe');
+                                if (fs.existsSync(reqTxt) && fs.existsSync(pyExe)) {
+                                    await runBuildStep('[UPDATE] Backend Python bagimliliklari senkronize ediliyor (pip install -r backend/requirements.txt)...',
+                                        [pyExe, '-m', 'pip', 'install', '-r', path.join('backend', 'requirements.txt'), '--quiet']);
+                                }
                             }
                         }
                         
