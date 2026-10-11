@@ -3260,11 +3260,32 @@ window.switchTab = switchTab;
         nav.querySelectorAll('.srv-nav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-srv') === srv));
     }
 
+    // Faz 11: alt menu akordeon — Servers'a ilk giriste acik; ayni sekmede tekrar
+    // tiklama daraltir/genisletir. Chevron donerek durumu belli eder.
+    let expanded = true, onServersPrev = false, enteringStamp = 0;
+    const chev = document.getElementById('srv-chev');
+    function setExpanded(v) {
+        expanded = v;
+        nav.classList.toggle('collapsed', !v);
+        if (chev) chev.classList.toggle('closed', !v);
+    }
+
     window.serversViewReset = function (tabName) {
         const onServers = (tabName || state.currentTab) === 'servers';
         nav.classList.toggle('hidden', !onServers);
+        if (onServers && !onServersPrev) { expanded = true; enteringStamp = Date.now(); }
+        nav.classList.toggle('collapsed', !expanded);
+        if (chev) chev.classList.toggle('closed', !expanded);
         if (onServers) showLauncher();
+        onServersPrev = onServers;
     };
+
+    const srvBtn = document.querySelector('#sidebar [data-tab="servers"]');
+    if (srvBtn) srvBtn.addEventListener('click', () => {
+        // switchTab dinleyicisi bundan once calisir: yeni giris damgali -> menu acik kalir;
+        // ayni sekmede tekrar tiklama akordeonu cevirir.
+        if (state.currentTab === 'servers' && Date.now() - enteringStamp > 400) setExpanded(!expanded);
+    });
 
     nav.addEventListener('click', e => {
         const btn = e.target.closest('.srv-nav-btn');
