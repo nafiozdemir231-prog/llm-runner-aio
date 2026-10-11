@@ -22,9 +22,6 @@
         </div>
         
         <div class="toolbar-right">
-            <!-- Settings Button -->
-            <button id="settings-btn" class="tool-btn" title="Settings">⚙️</button>
-            
             <!-- Support Button -->
             <button id="support-btn" class="tool-btn" title="Support the Project">☕ Buy a Coffee</button>
             
@@ -67,6 +64,10 @@
             </button>
             <button data-tab="models" class="tab-btn side-btn" title="Model Management">
                 📦 <span data-i18n="tab_models">Models</span>
+            </button>
+            <!-- Faz 3 (UI gocu): Ayarlar artik bir sidebar gorunumu -->
+            <button data-tab="settings" class="tab-btn side-btn" title="Settings">
+                ⚙️ <span data-i18n="panel_settings">Settings</span>
             </button>
             <div id="sidebar-foot">
                 <b>LLM Runner AIO v2.0</b><br>
@@ -729,6 +730,52 @@ Pi Coding Agent - Setup and Usage Instructions:
                     </fieldset>
                 </div>
             </div>
+
+            <!-- Faz 3 (UI gocu): Ayarlar sekmesi — modal icerigi buraya tasindi -->
+            <div id="tab-settings" class="tab-panel">
+                <div class="panel-header">
+                    <h2 data-i18n="panel_settings">Settings</h2>
+                </div>
+                <div class="panel-body settings-body">
+                    <!-- Theme Selection -->
+                    <div class="setting-group">
+                        <label data-i18n="label_theme">Theme</label>
+                        <div class="radio-group">
+                            <button id="theme-toggle-settings" class="theme-option active" data-theme="dark">🌙 <span data-i18n="theme_dark">Dark</span></button>
+                            <button id="theme-toggle-settings-light" class="theme-option" data-theme="light">☀️ <span data-i18n="theme_light">Light</span></button>
+                        </div>
+                    </div>
+
+                    <!-- Font Size -->
+                    <div class="setting-group">
+                        <label data-i18n="label_font_size">Font Size</label>
+                        <div class="font-controls">
+                            <button id="settings-font-decrease" class="small-btn">A-</button>
+                            <span id="settings-font-size">13px</span>
+                            <button id="settings-font-increase" class="small-btn">A+</button>
+                        </div>
+                    </div>
+
+                    <!-- Language Selection -->
+                    <div class="setting-group">
+                        <label>Language</label>
+                        <select id="language-select">
+                            <option value="en">English</option>
+                            <option value="tr">Türkçe</option>
+                            <option value="de">Deutsch</option>
+                            <option value="es">Español</option>
+                            <option value="fr">Français</option>
+                            <option value="pt">Português</option>
+                            <option value="zh">中文</option>
+                            <option value="ja">日本語</option>
+                        </select>
+                    </div>
+
+                    <div class="settings-actions">
+                        <button id="apply-settings" class="primary-btn">Apply</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -789,44 +836,7 @@ Pi Coding Agent - Setup and Usage Instructions:
             </div>
             
             <div class="modal-body">
-                <!-- Theme Selection -->
-                <div class="setting-group">
-                    <label data-i18n="label_theme">Theme</label>
-                    <div class="radio-group">
-                        <button id="theme-toggle-settings" class="theme-option active" data-theme="dark">🌙 <span data-i18n="theme_dark">Dark</span></button>
-                        <button id="theme-toggle-settings-light" class="theme-option" data-theme="light">☀️ <span data-i18n="theme_light">Light</span></button>
-                    </div>
-                </div>
-                
-                <!-- Font Size -->
-                <div class="setting-group">
-                    <label data-i18n="label_font_size">Font Size</label>
-                    <div class="font-controls">
-                        <button id="settings-font-decrease" class="small-btn">A-</button>
-                        <span id="settings-font-size">13px</span>
-                        <button id="settings-font-increase" class="small-btn">A+</button>
-                    </div>
-                </div>
-                
-                <!-- Language Selection -->
-                <div class="setting-group">
-                    <label>Language</label>
-                    <select id="language-select">
-                        <option value="en">English</option>
-                        <option value="tr">Türkçe</option>
-                        <option value="de">Deutsch</option>
-                        <option value="es">Español</option>
-                        <option value="fr">Français</option>
-                        <option value="pt">Português</option>
-                        <option value="zh">中文</option>
-                        <option value="ja">日本語</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="modal-footer">
-                <button id="apply-settings" class="primary-btn">Apply</button>
-                <button id="cancel-settings" class="secondary-btn">Cancel</button>
+                <!-- Faz 3: icerik Ayarlar sekmesine tasindi; modal kabugu closeModal baglantilari icin korunur -->
             </div>
         </div>
     </div>

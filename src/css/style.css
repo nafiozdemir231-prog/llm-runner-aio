@@ -1362,3 +1362,18 @@ input[type="checkbox"] {
 [data-theme="light"] #sidebar .side-btn:hover { background: rgba(0, 0, 0, .05); }
 
 #server-panel.hidden { display: none; }
+
+/* ============================================ */
+/* UI GOCU — Faz 3: Ayarlar sekmesi (modal -> gorunum) */
+/* ============================================ */
+.settings-body {
+    max-width: 560px;
+}
+
+.settings-body .setting-group {
+    margin-bottom: 18px;
+}
+
+.settings-actions {
+    margin-top: 8px;
+}

@@ -838,6 +838,9 @@ function switchTab(tabName) {
     // Faz 2 (UI gocu): Sunucular'a giriste Launcher perdesi acilir, alt menu gorunur olur
     if (typeof window.serversViewReset === 'function') window.serversViewReset(tabName);
     
+    // Faz 3 (UI gocu): Ayarlar sekmesine giriste form mevcut config ile doldurulur
+    if (tabName === 'settings' && typeof populateSettingsForm === 'function') { try { populateSettingsForm(); } catch (e) { console.warn('[SETTINGS] populate hatasi:', e); } }
+    
     console.log('[TAB] Switched to:', tabName);
 }
 
