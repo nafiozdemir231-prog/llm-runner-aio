@@ -369,6 +369,22 @@ class Handler(BaseHTTPRequestHandler):
                 entry["id"] = name
                 entry.setdefault("status", {"value": "loaded" if ark.up() else "unloaded"})
                 entry["gateway"] = {"ark": ark.idx, "port": ark.port}
+                # Vision beyani (pi/istemeciler icin): upstream #1322 semantigi -
+                # config'de "vision" bolumu varsa motor gorsel kabul eder (serve --vision ekler).
+                try:
+                    _cfg = ark.cfg if isinstance(ark.cfg, dict) else {}
+                    _v = _cfg.get("vision")
+                    if isinstance(_v, dict):
+                        _vis = True
+                    elif isinstance(_v, str):
+                        _vis = _v.strip().lower() in ("gpu", "cpu")
+                    else:
+                        _vis = "--vision" in [str(a) for a in (_cfg.get("args") or [])]
+                    if not isinstance(entry.get("meta"), dict):
+                        entry["meta"] = {}
+                    entry["meta"].setdefault("vision", bool(_vis))
+                except Exception:
+                    pass
                 data.append(entry)
             return self._json(200, {"object": "list", "data": data})
         if path == "/health":
