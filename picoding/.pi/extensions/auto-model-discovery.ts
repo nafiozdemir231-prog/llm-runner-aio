@@ -17,16 +17,28 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-type ModelLike = { id: string; name?: string; meta?: Record<string, any> };
+type ModelLike = { id: string; name?: string; meta?: Record<string, any>; status?: { value?: string; args?: string[] } };
+
+/** Vision tespiti: --mmproj (llama.cpp) / --vision gpu|cpu (Strata) veya meta.vision. */
+function hasVision(model: ModelLike): boolean {
+  if (typeof model.meta?.vision === "boolean") return model.meta.vision;
+  const args = model.status?.args;
+  if (Array.isArray(args)) {
+    if (args.includes("--mmproj")) return true;
+    const vIdx = args.indexOf("--vision");
+    if (vIdx !== -1) return args[vIdx + 1] !== "no";
+  }
+  return false;
+}
 
 function baseModels(data: ModelLike[] | undefined) {
   return (data ?? []).map((model) => ({
     id: model.id,
     name: model.name ?? model.id,
     reasoning: false,
-    input: ["text"] as const,
+    input: hasVision(model) ? (["text", "image"] as const) : (["text"] as const),
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: Number(model.meta?.max_context) || 131072,
+    contextWindow: Number(model.meta?.max_context || model.meta?.n_ctx) || 131072,
     maxTokens: 8192,
   }));
 }
