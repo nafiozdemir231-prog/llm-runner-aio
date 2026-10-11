@@ -330,6 +330,7 @@ async function autoDetectAndSaveHardware() {
             console.log('[HARDWARE] Cached detection used (<24h) — skipping full detect');
             state.hardware = cached;
             updateHardwareDisplay(cached);
+            if (typeof window.updateSidebarFootprint === 'function') window.updateSidebarFootprint(cached);
             const cfgFromCache = { ...state.config };
             cfgFromCache.vram_gb = cached.vramGb;
             cfgFromCache.ram_gb = cached.ramGb;
@@ -344,6 +345,7 @@ async function autoDetectAndSaveHardware() {
         console.log('[HARDWARE] Auto-detecting hardware on startup...');
         const hw = await window.electronAPI.hardware.detect();
         writeHwCache(hw);
+        if (typeof window.updateSidebarFootprint === 'function') window.updateSidebarFootprint(hw);
         
         // Save to config immediately
         const updatedConfig = { ...state.config };
@@ -461,6 +463,15 @@ async function restorePreviousSelection() {
         // Update hardware display if already detected
         if (state.hardware) {
             updateHardwareDisplay(state.hardware);
+        } else if (state.config.cpu_name || state.config.gpu_name) {
+            // Son caresafe: kayitli config'ten sidebar altbilgisi + state doldur
+            state.hardware = {
+                cpuName: state.config.cpu_name,
+                gpuName: state.config.gpu_name,
+                vramGb: state.config.vram_gb,
+                ramGb: state.config.ram_gb
+            };
+            if (typeof window.updateSidebarFootprint === 'function') window.updateSidebarFootprint(state.hardware);
         }
         
         console.log('[RESTORE] Settings restored successfully');
