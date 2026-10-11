@@ -1442,7 +1442,7 @@ input[type="checkbox"] {
 /* UI GOCU — Faz 5: mock04 teması (Mock #4'ün paleti ve bileşen ruhu) */
 /* Dark tema için :root override; light tema [data-theme="light"] kendi degiskenlerini korur. */
 /* ============================================ */
-:root {
+[data-theme="dark"] {
     --bg-primary: #101317;
     --bg-secondary: #161b22;
     --bg-tertiary: #0b0d10;
@@ -1458,50 +1458,59 @@ input[type="checkbox"] {
     --log-bg: #0c0f13;
     --log-text: #95a3b3;
     --shadow: 0 10px 30px rgba(0, 0, 0, .45);
+    --nav-active-bg: #1d2430;
+    --panel-fieldset-bg: #161b22;
+    --legend-bg: #1d2430;
+    --chip-bg: #1d2430;
+    --input-bg: #0f1318;
+    --input-border: rgba(255, 255, 255, .09);
+    --card-deep-bg: #0f1318;
+    --summary-text: #9ecbff;
+    --toolbar-bg: #0b0d10;
 }
 
-#toolbar { background: #0b0d10; border-bottom: 1px solid var(--border); }
-#app-title { color: #fff; }
+#toolbar { background: var(--toolbar-bg); border-bottom: 1px solid var(--border); }
+#app-title { color: var(--text-primary); }
 
 #sidebar .side-btn.active,
-.srv-nav-btn.active { background: #1d2430; box-shadow: none; }
+.srv-nav-btn.active { background: var(--nav-active-bg); box-shadow: none; }
 
 .tab-panel > .panel-body fieldset,
 #server-panel .server-section fieldset,
 #srv-launcher .startup-card {
-    background: #161b22;
+    background: var(--panel-fieldset-bg);
     border: 1px solid var(--border);
 }
 
 .tab-panel > .panel-body fieldset legend,
 #server-panel .server-section fieldset legend {
-    background: #1d2430;
-    color: #dde3ea;
+    background: var(--legend-bg);
+    color: var(--text-primary);
 }
 
 .primary-btn { background: var(--accent); }
 .primary-btn:hover { background: var(--accent-hover); }
-.secondary-btn { background: #1d2430; border: 1px solid rgba(255, 255, 255, .09); color: #dde3ea; }
+.secondary-btn { background: var(--chip-bg); border: 1px solid var(--input-border); color: var(--text-primary); }
 .secondary-btn:hover { filter: brightness(1.15); }
 .start-btn { background: #14532d; }
 .start-btn:hover { filter: brightness(1.2); }
 .stop-btn, .danger-btn { background: #7f1d1d; }
 .stop-btn:hover, .danger-btn:hover { filter: brightness(1.2); }
-.tool-btn { background: #1d2430; border: 1px solid rgba(255, 255, 255, .09); }
+.tool-btn { background: var(--chip-bg); border: 1px solid var(--input-border); color: var(--text-primary); }
 
 /* mock04'teki büyük launcher butonları */
 .launcher-actions .primary-btn { background: linear-gradient(135deg, #059669, #10b981); }
 .launcher-actions .danger-btn  { background: linear-gradient(135deg, #b91c1c, #ef4444); }
 
-.server-config { background: #0f1318; border-color: var(--border); }
+.server-config { background: var(--card-deep-bg); border-color: var(--border); }
 
 .tab-panel input[type="text"],
 .tab-panel input[type="number"],
 .tab-panel input[type="password"],
 .tab-panel select {
-    background: #0f1318;
-    border: 1px solid rgba(255, 255, 255, .09);
-    color: #dde3ea;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-primary);
 }
 
 .log-area { background: var(--log-bg); color: var(--log-text); border: 1px solid var(--border); font-family: Consolas, 'Cascadia Code', monospace; }
@@ -1533,7 +1542,7 @@ input[type="checkbox"] {
     align-items: center;
     gap: 10px;
     font-size: 14.5px;
-    color: #fff;
+    color: var(--text-primary);
     margin-bottom: 8px;
 }
 
@@ -1548,7 +1557,7 @@ input[type="checkbox"] {
 details.cfgbox, details.logbox {
     border: 1px solid var(--border);
     border-radius: 10px;
-    background: #0f1318;
+    background: var(--card-deep-bg);
     margin-top: 8px;
 }
 
@@ -1557,7 +1566,7 @@ details.cfgbox > summary, details.logbox > summary {
     list-style: none;
     padding: 9px 14px;
     font-size: 12.5px;
-    color: #9ecbff;
+    color: var(--summary-text);
 }
 
 details.cfgbox > summary::-webkit-details-marker, details.logbox > summary::-webkit-details-marker { display: none; }
@@ -1593,7 +1602,7 @@ details.logbox .log-area {
 .srv-led.err { background: #f87171; box-shadow: 0 0 8px rgba(248, 113, 113, .5); }
 
 #sidebar hr { border: 0; border-top: 1px solid var(--border); margin: 10px 4px; }
-#side-hw-line { color: #9fb0c4; font-weight: 600; }
+#side-hw-line { color: var(--text-secondary); font-weight: 600; }
 
 .panel-header h2 { color: var(--text-primary); }
 
@@ -1622,7 +1631,7 @@ details.logbox .log-area {
     align-items: center;
     gap: 10px;
     width: 100%;
-    background: #0f1318;
+    background: var(--input-bg);
     border: 1px solid var(--border);
     border-radius: 9px;
     padding: 10px 12px;
@@ -1637,3 +1646,44 @@ details.logbox .log-area {
 }
 
 #srv-launcher .server-checkboxes label { margin-bottom: 0; }
+
+/* ============================================ */
+/* UI GOCU — Faz 8: LIGHT TEMA FIX              */
+/* Faz5 :root override'u [data-theme="dark"]    */
+/* kapsamina alindi; light degiskenleri dosyanin*/
+/* EN SONUNDA tanimli -> dogru kazanc.          */
+/* ============================================ */
+[data-theme="light"] {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --accent: #6d28d9;
+    --accent-hover: #5b21b6;
+    --accent-active: #4c1d95;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --border: #d7dfe9;
+    --success: #059669;
+    --danger: #dc2626;
+    --warning: #d97706;
+    --log-bg: #f1f5f9;
+    --log-text: #166534;
+    --shadow: 0 8px 24px rgba(15, 23, 42, .08);
+    --nav-active-bg: #e8eef7;
+    --panel-fieldset-bg: #ffffff;
+    --legend-bg: #eef2f7;
+    --chip-bg: #eef2f7;
+    --input-bg: #ffffff;
+    --input-border: #cbd5e1;
+    --card-deep-bg: #f4f7fb;
+    --summary-text: #3b5bb0;
+    --toolbar-bg: #ffffff;
+}
+
+[data-theme="light"] .status-indicator.running { color: #047857; background: rgba(5, 150, 105, .12); }
+[data-theme="light"] .status-indicator.stopped { color: #64748b; background: rgba(100, 116, 139, .14); }
+[data-theme="light"] .status-indicator.error   { color: #b91c1c; background: rgba(220, 38, 38, .10); }
+[data-theme="light"] .srv-led { background: #b6c2cf; }
+[data-theme="light"] .srv-led.run { background: #059669; box-shadow: 0 0 6px rgba(5, 150, 105, .45); }
+[data-theme="light"] .srv-led.err { background: #dc2626; box-shadow: 0 0 6px rgba(220, 38, 38, .45); }
+[data-theme="light"] #app-title { color: #1e293b; }
