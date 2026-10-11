@@ -41,38 +41,39 @@
         <!-- Faz 1 (UI gocu): sol sidebar — ayni .tab-btn / data-tab yuzeyi, renderer.js degismedi -->
         <aside id="sidebar" class="no-drag">
             <button data-tab="home" class="tab-btn side-btn" title="aihublocal.com — Community LLM Configurations">
-                🌐 <span data-i18n="tab_home">aihublocal</span>
-            </button>
-            <button data-tab="system" class="tab-btn side-btn active" title="System Detection & Configuration">
-                🔍 <span data-i18n="tab_system">System Detection</span>
+                🏠 <span data-i18n="tab_home">aihublocal</span>
             </button>
             <button data-tab="servers" class="tab-btn side-btn" title="Start/Stop Servers">
-                🖥️ <span data-i18n="tab_servers">Servers</span>
+                ⚡ <span data-i18n="tab_servers">Servers</span> <span class="srv-led" id="led-any"></span>
             </button>
-            <!-- Faz 2 (UI gocu): sunucu alt menuyu — sunucuya tiklaninca sadece o panel acilir -->
+            <!-- Faz 2+7: sunucu alt menuyu — kisa ad + canli durum led'i -->
             <div id="srv-subnav" class="hidden">
                 <button class="srv-nav-btn active" data-srv="back">↩ Launcher</button>
-                <button class="srv-nav-btn" data-srv="vane">🌐 <span data-i18n="section_vane">Vane - AI Answer Engine</span></button>
-                <button class="srv-nav-btn" data-srv="searxng">🔎 <span data-i18n="section_searxng">SearXNG - Private Search</span></button>
-                <button class="srv-nav-btn" data-srv="openwebui">💬 <span data-i18n="section_openwebui">Open WebUI - Chat Interface</span></button>
-                <button class="srv-nav-btn" data-srv="llamacpp">🦙 <span data-i18n="section_llamacpp">llama.cpp - AI Engine</span></button>
-                <button class="srv-nav-btn" data-srv="wan2gp">🎬 <span data-i18n="section_wan2gp">Wan2GP - Video Generation</span></button>
-                <button class="srv-nav-btn" data-srv="strata">🧠 <span data-i18n="section_strata">Strata - Multi-Model Gateway</span></button>
+                <button class="srv-nav-btn" data-srv="strata">🧠 Strata Gateway <span class="srv-led" id="led-strata"></span></button>
+                <button class="srv-nav-btn" data-srv="llamacpp">🦙 llama.cpp <span class="srv-led" id="led-llamacpp"></span></button>
+                <button class="srv-nav-btn" data-srv="openwebui">💬 Open WebUI <span class="srv-led" id="led-openwebui"></span></button>
+                <button class="srv-nav-btn" data-srv="vane">🌐 Vane <span class="srv-led" id="led-vane"></span></button>
+                <button class="srv-nav-btn" data-srv="searxng">🔎 SearXNG <span class="srv-led" id="led-searxng"></span></button>
+                <button class="srv-nav-btn" data-srv="wan2gp">🎬 Wan2GP / ComfyUI <span class="srv-led" id="led-wan2gp"></span></button>
             </div>
-            <button data-tab="picoding" class="tab-btn side-btn" title="PiCoding IDE">
-                💻 <span data-i18n="tab_picoding">PiCoding</span>
-            </button>
             <button data-tab="models" class="tab-btn side-btn" title="Model Management">
                 📦 <span data-i18n="tab_models">Models</span>
             </button>
+            <button data-tab="picoding" class="tab-btn side-btn" title="PiCoding IDE">
+                🤖 <span data-i18n="tab_picoding">PiCoding</span>
+            </button>
+            <button data-tab="system" class="tab-btn side-btn active" title="System Detection & Configuration">
+                🖥️ <span data-i18n="tab_system">System Detection</span>
+            </button>
+            <hr>
             <!-- Faz 3 (UI gocu): Ayarlar artik bir sidebar gorunumu -->
             <button data-tab="settings" class="tab-btn side-btn" title="Settings">
                 ⚙️ <span data-i18n="panel_settings">Settings</span>
             </button>
             <div id="sidebar-foot">
-                <b>LLM Runner AIO v2.0</b><br>
-                py3.11 · node24<br>
-                Strata · OW UI · Vane · SearXNG · llama.cpp · Wan2GP
+                <b id="side-hw-line">Donanım algılanmadı — Donanım Algıla sekmesinden çalıştırın</b><br>
+                <span id="side-hw-sub"></span><br>
+                v2.0 · py3.11 · node24
             </div>
         </aside>
         <!-- Tab Panels — PyQt6 QTabWidget panel'leri -->
@@ -208,9 +209,12 @@
                 </div>
                 
                 <div id="srv-launcher">
-                    <div class="launcher-actions">
-                        <button id="btn-start-all" class="primary-btn big-btn">▶ Start All Servers</button>
-                        <button id="btn-stop-all" class="danger-btn big-btn">⏹ Stop All Servers</button>
+                    <div class="launcher-card">
+                        <div class="launcher-actions">
+                            <button id="btn-start-all" class="primary-btn big-btn">▶ Start All Servers</button>
+                            <button id="btn-stop-all" class="danger-btn big-btn">⏹ Stop All Servers</button>
+                        </div>
+                        <p class="launcher-hint" data-i18n="launcher_hint">All servers start/stop in order (Strata · llama.cpp · Open WebUI · Vane · SearXNG · Wan2GP).<br>Open individual server panels from the sidebar sub-menu.</p>
                     </div>
                     <fieldset class="startup-card">
                         <legend data-i18n="startup_options_label">Startup Options</legend>
@@ -228,8 +232,8 @@
                             <label><input type="checkbox" id="cb-auto-strata" class="server-autostart-cb"><span data-i18n="section_strata">Strata - Multi-Model Gateway</span></label>
                         </div>
                         <button id="apply-startup" class="primary-btn small-btn" data-i18n="btn_save">💾 Save</button>
+                        <button id="cancel-startup" class="secondary-btn small-btn" data-i18n="btn_cancel">Cancel</button>
                     </fieldset>
-                    <p class="launcher-hint">Open a server panel from the sidebar sub-menu (Strata, Open WebUI, Vane, SearXNG, llama.cpp, Wan2GP).</p>
                 </div>
                 <div class="panel-body hidden" id="server-panel">
                     <div class="server-section" data-srv="vane">

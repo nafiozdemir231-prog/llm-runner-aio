@@ -1,5 +1,5 @@
 {
-  "app_title": "LLM Runner AIO v1.9",
+  "app_title": "LLM Runner AIO v2.0",
   "tab_system": "Donanım Algıla",
   "tab_servers": "Sunucular",
   "tab_picoding": "Pi Coding",
@@ -242,5 +242,6 @@
   "label_api_key": "API anahtarı:",
   "strata_calibrate_hint": "İlk başlatmadan sonra ve Context veya vision ayarını her değiştirdiğinde 🎯 Calibrate çalıştır.",
   "label_parallel": "Paralel istekler:",
-  "opt_parallel_off": "Kapalı — sırayla (önerilen)"
+  "opt_parallel_off": "Kapalı — sırayla (önerilen)",
+  "launcher_hint": "Tüm sunucular sırayla kalkar / durur (Strata · llama.cpp · Open WebUI · Vane · SearXNG · Wan2GP).<br>Bireysel sunucu panellerini soldaki alt menüden açın."
 }

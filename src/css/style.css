@@ -1577,3 +1577,63 @@ details.logbox .log-area {
     border: 0;
     background: var(--log-bg);
 }
+
+/* ============================================ */
+/* UI GOCU — Faz 7: mock04 sidebar/launcher eslesmesi */
+/* ============================================ */
+.srv-led {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #5b6672;
+    margin-left: auto;
+    flex: none;
+}
+.srv-led.run { background: #4ade80; box-shadow: 0 0 8px rgba(74, 222, 128, .5); }
+.srv-led.err { background: #f87171; box-shadow: 0 0 8px rgba(248, 113, 113, .5); }
+
+#sidebar hr { border: 0; border-top: 1px solid var(--border); margin: 10px 4px; }
+#side-hw-line { color: #9fb0c4; font-weight: 600; }
+
+.panel-header h2 { color: var(--text-primary); }
+
+.launcher-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 34px 24px 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+}
+
+.launcher-card .launcher-hint { text-align: center; line-height: 1.8; }
+
+#srv-launcher .startup-card legend {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    font-size: 14px;
+    font-weight: 650;
+    color: var(--text-primary);
+}
+
+#srv-launcher .checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: #0f1318;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+
+#srv-launcher .server-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+}
+
+#srv-launcher .server-checkboxes label { margin-bottom: 0; }

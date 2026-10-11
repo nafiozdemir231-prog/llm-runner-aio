@@ -1,5 +1,5 @@
 {
-  "app_title": "LLM Runner AIO v1.9",
+  "app_title": "LLM Runner AIO v2.0",
   "tab_system": "硬件检测",
   "tab_servers": "服务器",
   "tab_picoding": "Pi Coding",
@@ -242,5 +242,6 @@
   "label_api_key": "API 密钥：",
   "strata_calibrate_hint": "首次启动后以及每次更改上下文或 vision 设置后请运行校准。",
   "label_parallel": "并行请求：",
-  "opt_parallel_off": "关闭 — 逐个处理（推荐）"
+  "opt_parallel_off": "关闭 — 逐个处理（推荐）",
+  "launcher_hint": "所有服务器按顺序启动/停止。<br>请从左侧子菜单打开单个服务器面板。"
 }

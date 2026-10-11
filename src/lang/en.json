@@ -1,5 +1,5 @@
 {
-  "app_title": "LLM Runner AIO v1.9",
+  "app_title": "LLM Runner AIO v2.0",
   "tab_system": "System Detection",
   "tab_servers": "Servers",
   "tab_picoding": "Pi Coding",
@@ -242,5 +242,6 @@
   "label_api_key": "API key:",
   "strata_calibrate_hint": "Run Calibrate after the first start and whenever you change Context or vision settings.",
   "label_parallel": "Parallel requests:",
-  "opt_parallel_off": "Off — one at a time (recommended)"
+  "opt_parallel_off": "Off — one at a time (recommended)",
+  "launcher_hint": "All servers start/stop in order (Strata · llama.cpp · Open WebUI · Vane · SearXNG · Wan2GP).<br>Open individual server panels from the sidebar sub-menu."
 }

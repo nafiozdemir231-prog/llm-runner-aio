@@ -1,5 +1,5 @@
 {
-  "app_title": "LLM Runner AIO v1.9",
+  "app_title": "LLM Runner AIO v2.0",
   "tab_system": "Hardware-Erkennung",
   "tab_servers": "Server",
   "tab_picoding": "Pi Coding",
@@ -242,5 +242,6 @@
   "label_api_key": "API-Schlüssel:",
   "strata_calibrate_hint": "Nach dem ersten Start und nach jeder Änderung von Kontext oder Vision 🎯 Kalibrieren ausführen.",
   "label_parallel": "Parallele Anfragen:",
-  "opt_parallel_off": "Aus — nacheinander (empfohlen)"
+  "opt_parallel_off": "Aus — nacheinander (empfohlen)",
+  "launcher_hint": "Alle Server starten/stoppen der Reihe nach.<br>Einzelne Serverpanels über das Untermenü links öffnen."
 }

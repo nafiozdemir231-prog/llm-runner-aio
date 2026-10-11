@@ -1124,6 +1124,7 @@ async function detectHardware() {
     try {
         const hw = await window.electronAPI.hardware.detect();
         state.hardware = hw;
+        if (typeof window.updateSidebarFootprint === 'function') window.updateSidebarFootprint(hw);
         writeHwCache(hw);
         
         // Update UI — null kontrolleri ile
@@ -3276,4 +3277,46 @@ console.log('[RENDERER] All event listeners attached');
         const s = state.languages || {};
         sp.textContent = d.open ? (s.hide_config_btn || '🔧 Hide Config') : (s.show_config_btn || '🔧 Show Config');
     }));
+})();
+
+// ============================================
+// UI GOCU Faz 7 — sidebar durum led'leri + donanim altbilgisi + Vazgeç (geri yukle)
+// ============================================
+(function setupSidebarStatusLeds() {
+    const ledMap = { vane: 'led-vane', searxng: 'led-searxng', openwebui: 'led-openwebui', llamacpp: 'led-llamacpp', wan2gp: 'led-wan2gp', strata: 'led-strata' };
+
+    function refreshLeds() {
+        let anyRun = false, anyErr = false;
+        for (const srv in ledMap) {
+            const led = document.getElementById(ledMap[srv]);
+            if (!led) continue;
+            const st = document.querySelector('.server-section[data-srv="' + srv + '"] .status-indicator');
+            const cls = st ? st.className : '';
+            let mode = '';
+            if (/running/.test(cls)) { mode = ' run'; anyRun = true; }
+            else if (/error/.test(cls)) { mode = ' err'; anyErr = true; }
+            led.className = 'srv-led' + mode;
+        }
+        const anyLed = document.getElementById('led-any');
+        if (anyLed) anyLed.className = 'srv-led' + (anyRun ? ' run' : anyErr ? ' err' : '');
+    }
+
+    // Status span'lari renderer tarafindan guncellenirken led'ler de tazelenir
+    document.querySelectorAll('#server-panel .status-indicator').forEach(el => {
+        new MutationObserver(refreshLeds).observe(el, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true });
+    });
+    setTimeout(refreshLeds, 1500);
+
+    window.updateSidebarFootprint = function (hw) {
+        const line = document.getElementById('side-hw-line');
+        const sub = document.getElementById('side-hw-sub');
+        if (!line || !hw) return;
+        line.textContent = (hw.cpuName || 'CPU') + ' · ' + (hw.gpuName || 'GPU') + ' ' + (hw.vramGb || '?') + ' GB';
+        if (sub) sub.textContent = ((hw.totalRamGb || hw.ramGb || hw.totalMemGb || '?') + ' GB RAM');
+    };
+
+    const cancel = document.getElementById('cancel-startup');
+    if (cancel) cancel.addEventListener('click', () => {
+        try { populateSettingsForm(); } catch (e) { console.warn('[FAZ7] geri yukleme:', e); }
+    });
 })();

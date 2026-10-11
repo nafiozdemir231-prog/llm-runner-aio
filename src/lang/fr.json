@@ -1,5 +1,5 @@
 {
-  "app_title": "LLM Runner AIO v1.9",
+  "app_title": "LLM Runner AIO v2.0",
   "tab_system": "Détection Matériel",
   "tab_servers": "Serveurs",
   "tab_picoding": "Pi Coding",
@@ -242,5 +242,6 @@
   "label_api_key": "Clé d'API :",
   "strata_calibrate_hint": "Lancez Calibrer après le premier démarrage et à chaque modification de Contexte ou vision.",
   "label_parallel": "Requêtes parallèles :",
-  "opt_parallel_off": "Désactivé — une à la fois (recommandé)"
+  "opt_parallel_off": "Désactivé — une à la fois (recommandé)",
+  "launcher_hint": "Tous les serveurs démarrent/s’arrêtent en ordre.<br>Ouvrez les panneaux individuels via le sous-menu latéral."
 }
