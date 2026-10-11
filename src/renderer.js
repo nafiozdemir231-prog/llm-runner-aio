@@ -3265,3 +3265,15 @@ window.switchTab = switchTab;
 window.selectModel = selectModel;
 
 console.log('[RENDERER] All event listeners attached');
+
+// ============================================
+// UI GOCU Faz 6 — details summary etiketlerini mock04 gibi ac/kapa ceviren baglayici
+// ============================================
+(function setupDetailsSummaryLabels() {
+    document.querySelectorAll('details.cfgbox').forEach(d => d.addEventListener('toggle', () => {
+        const sp = d.querySelector('summary span');
+        if (!sp) return;
+        const s = state.languages || {};
+        sp.textContent = d.open ? (s.hide_config_btn || '🔧 Hide Config') : (s.show_config_btn || '🔧 Show Config');
+    }));
+})();
