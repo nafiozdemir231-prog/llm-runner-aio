@@ -749,16 +749,11 @@ function updateUIText() {
     const lblAutoServers = document.getElementById('lbl-auto-servers');
     if (lblAutoServers && s.cb_auto_servers) lblAutoServers.textContent = s.cb_auto_servers;
     
-    // 15b) Server auto-start checkboxes
-    const serverLabels = [
-        { id: 'section_searxng', key: 'section_searxng' },
-        { id: 'section_openwebui', key: 'section_openwebui' },
-        { id: 'section_vane', key: 'section_vane' },
-        { id: 'section_llamacpp', key: 'section_llamacpp' },
-        { id: 'section_wan2gp', key: 'section_wan2gp' }
-    ];
-    document.querySelectorAll('.server-checkboxes label span').forEach((label, i) => {
-        if (s[serverLabels[i].key]) label.textContent = s[serverLabels[i].key];
+    // 15b) Server auto-start checkbox etiketleri — indeks yerine data-i18n anahtari
+    // (Strata 6. olarak sonradan eklendi; sabit 5'lik dizi undefined.key patlattiyordu)
+    document.querySelectorAll('.server-checkboxes label span[data-i18n]').forEach((label) => {
+        const key = label.getAttribute('data-i18n');
+        if (s[key]) label.textContent = s[key];
     });
     
     
