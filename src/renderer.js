@@ -797,7 +797,7 @@ function applyFontSize(size) {
 // ============================================
 // Tab Switching Logic
 // ============================================
-const HOME_SITE_URL = 'https://www.aihublocal.com/llm/configs';
+const HOME_SITE_URL = 'https://www.aihublocal.com/llm-runner-aio';
 
 function switchTab(tabName) {
     // Hide all panels
