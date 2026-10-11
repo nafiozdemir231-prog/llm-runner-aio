@@ -1,150 +1,822 @@
-1)System Detection sekmesi
-
-(icon)LLM Runner AIO                                                                       O      X
-LLM Runner AIO                                                               Support Me    Settings
-
-System Detection  Servers  Pi Coding   Models
-
-Detect Hardware(butona tiklandiginda sistem vram , ram tespitine gore .ini secimi)
-
-Settings
-
-GPU: NVIDIA GeForce RTX 5080 Laptop GPU
-VRAM: 15.9208984375 GB
-
-RAM: 63.7 GB
-
-Models Configuration
-
-Select INI:
-
-Config: gpu1vram 16ram32models.ini
-
-Download Models
-
-Download All Models
-
-[qwen3.6]
-[qwen3.6-vision]
-.......
-
-Download Progress
-
-Start Configuration
-
-Auto-generated start_auto.bat after download
-
-[OK] models_gpu1vram16ram32.ini created with 6 sections
-[OK] models_gpu1vram16ram32.ini created with 6 sections
-TOK1 models gpu1vram16ram32. ini created with 6 sections
-
-
-2)Servers Sekmesi
-
-(icon)LLM Runner AIO                                                                                        O      X
-LLM Runner AIO                                                                                 Support Me    Settings
-
-System Detection  Servers  Pi Coding   Models
-
-
-SearXNG - Private Search                                       Ilama.cpp - Al Engine
-
-Port: 8080                            i Description            Port: 1234   Context Size: 131072          i Description
-                                     
-Bind to: This PC Only                                          Bind to: Local Network
-
-SearXNG  Stopped                                               llama.cpp  .Running
-
-Start  Stop   Open in Browser  Log                             Start  Stop  Open in Browser  Log
-
-
-
-
-Open WebUI - Chat Interface                                    Vane - Al Answer Engine
-
-
-Port: 3000 CPU Threads: 4             i Description            Port: 3001                                   i Description
-
-Bind to: Local Network       Load Database                     Bind to: Local Network
-
-OpenWebUI   · Stopped                                          Vane  . Stopped
-
-Start  Stop  Open in Browser  Log                              Start  Stop   Open in Browser  Log
-
-
-3)pi coding sekmesi
-
-(icon)LLM Runner AIO                                                                                        O      X
-LLM Runner AIO                                                                                 Support Me    Settings
-
-System Detection  Servers  Pi Coding   Models
-
-Working Directory
-
-(Detected: requirements.txt, launcher)
-
-Detect Project  Add to PATH
-
-Instructions
-
-                                       Instructions
-
-Pi Coding Agent - Setup and Usage Instructions:
-
-1) Click 'Detect Project' button, then click 'Add to PATH' button.
-
-2) Open any folder where you want to create a project:
-- Navigate to that folder in File Explorer
-- Type 'cmd' in the address bar and press Enter
-- A terminal will open in that location
-
-3) In the opened terminal, type 'pi' to start the application.
-
-.....................................................
-
-MCP Advisor Settings
-
-Advisor URL:  http://localhost:3000/api/chat/completions
-API Key:  ....
-Model Name:  NIM-nvidia.moonshotai/kimi-k2.6
-
-                                   Save Advisor Settings
-
-
-4)models sekmesi
-
-
-(icon)LLM Runner AIO                                                                                        O      X
-LLM Runner AIO                                                                                 Support Me    Settings
-
-System Detection  Servers  Pi Coding   Models
-
-Refresh  Delete Selected
-
-Qwen3.6-35B-A3B-APEX-I-Compact.gguf | 16.11 GB | qwen3.6
-gemma-4-26B-it-mmproj.gguf | 1.11 GB | gemma-4
-gemma-4-26B_q4_0-it.gguf | 13.45 GB | gemma-4
-mmproj.gguf | 0.84 GB | qwen3.6
-
-
-4 models | 31.5 GB total
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+========================================
+  LLM Runner AIO - Launcher
+========================================
+
+venv already exists.
+
+Checking dependencies...
+Requirement already satisfied: PyQt6>=6.6.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 10)) (6.11.0)
+Requirement already satisfied: psutil>=7.0.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 11)) (7.2.2)
+Requirement already satisfied: huggingface_hub>=0.20.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 12)) (1.33.0)
+Collecting huggingface_hub>=0.20.0 (from -r requirements.txt (line 12))
+  Using cached huggingface_hub-2.2.0-py3-none-any.whl.metadata (16 kB)
+Requirement already satisfied: pywin32>=306 in .\venv\Lib\site-packages (from -r requirements.txt (line 13)) (312)
+Requirement already satisfied: rapidocr==3.9.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 18)) (3.9.2)
+Requirement already satisfied: hiredis==3.4.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 19)) (3.4.0)
+Requirement already satisfied: aiodns==3.6.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 20)) (3.6.1)
+Requirement already satisfied: google-re2==1.1.20251105 in .\venv\Lib\site-packages (from -r requirements.txt (line 21)) (1.1.20251105)
+Requirement already satisfied: joserfc==1.7.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 22)) (1.7.2)
+Requirement already satisfied: fastapi==0.135.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 23)) (0.135.1)
+Requirement already satisfied: uvicorn==0.41.0 in .\venv\Lib\site-packages (from uvicorn[standard]==0.41.0->-r requirements.txt (line 24)) (0.41.0)
+Requirement already satisfied: pydantic==2.12.5 in .\venv\Lib\site-packages (from -r requirements.txt (line 25)) (2.12.5)
+Requirement already satisfied: python-multipart==0.0.22 in .\venv\Lib\site-packages (from -r requirements.txt (line 26)) (0.0.22)
+Requirement already satisfied: itsdangerous==2.2.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 27)) (2.2.0)
+Requirement already satisfied: python-socketio==5.16.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 28)) (5.16.1)
+Requirement already satisfied: python-jose==3.5.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 29)) (3.5.0)
+Requirement already satisfied: cryptography==46.0.5 in .\venv\Lib\site-packages (from -r requirements.txt (line 30)) (46.0.5)
+Requirement already satisfied: bcrypt==5.0.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 31)) (5.0.0)
+Requirement already satisfied: argon2-cffi==25.1.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 32)) (25.1.0)
+Requirement already satisfied: PyJWT==2.11.0 in .\venv\Lib\site-packages (from PyJWT[crypto]==2.11.0->-r requirements.txt (line 33)) (2.11.0)
+Requirement already satisfied: authlib==1.6.10 in .\venv\Lib\site-packages (from -r requirements.txt (line 34)) (1.6.10)
+Requirement already satisfied: requests==2.33.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 35)) (2.33.1)
+Requirement already satisfied: aiohttp==3.13.5 in .\venv\Lib\site-packages (from -r requirements.txt (line 36)) (3.13.5)
+Requirement already satisfied: async-timeout==5.0.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 37)) (5.0.1)
+Requirement already satisfied: aiocache==0.12.3 in .\venv\Lib\site-packages (from -r requirements.txt (line 38)) (0.12.3)
+Requirement already satisfied: aiofiles==25.1.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 39)) (25.1.0)
+Requirement already satisfied: starlette-compress==1.7.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 40)) (1.7.0)
+Requirement already satisfied: Brotli==1.2.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 41)) (1.2.0)
+Requirement already satisfied: brotlicffi==1.2.0.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 42)) (1.2.0.1)
+Requirement already satisfied: httpx==0.28.1 in .\venv\Lib\site-packages (from httpx[brotli,cli,http2,socks,zstd]==0.28.1->-r requirements.txt (line 43)) (0.28.1)
+Requirement already satisfied: starsessions==2.2.1 in .\venv\Lib\site-packages (from starsessions[redis]==2.2.1->-r requirements.txt (line 44)) (2.2.1)
+Requirement already satisfied: python-mimeparse==2.0.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 45)) (2.0.0)
+Requirement already satisfied: sqlalchemy==2.0.48 in .\venv\Lib\site-packages (from sqlalchemy[asyncio]==2.0.48->-r requirements.txt (line 46)) (2.0.48)
+Requirement already satisfied: aiosqlite==0.21.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 47)) (0.21.0)
+Requirement already satisfied: psycopg==3.2.9 in .\venv\Lib\site-packages (from psycopg[binary]==3.2.9->-r requirements.txt (line 48)) (3.2.9)
+Requirement already satisfied: alembic==1.18.4 in .\venv\Lib\site-packages (from -r requirements.txt (line 49)) (1.18.4)
+Requirement already satisfied: peewee==3.19.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 50)) (3.19.0)
+Requirement already satisfied: peewee-migrate==1.14.3 in .\venv\Lib\site-packages (from -r requirements.txt (line 51)) (1.14.3)
+Requirement already satisfied: pycrdt==0.12.47 in .\venv\Lib\site-packages (from -r requirements.txt (line 52)) (0.12.47)
+Requirement already satisfied: redis==7.4.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 53)) (7.4.0)
+Requirement already satisfied: APScheduler==3.11.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 54)) (3.11.2)
+Requirement already satisfied: RestrictedPython==8.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 55)) (8.1)
+Requirement already satisfied: pytz==2026.1.post1 in .\venv\Lib\site-packages (from -r requirements.txt (line 56)) (2026.1.post1)
+Requirement already satisfied: loguru==0.7.3 in .\venv\Lib\site-packages (from -r requirements.txt (line 57)) (0.7.3)
+Requirement already satisfied: asgiref==3.11.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 58)) (3.11.1)
+Requirement already satisfied: tiktoken==0.12.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 59)) (0.12.0)
+Requirement already satisfied: mcp==1.26.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 60)) (1.26.0)
+Requirement already satisfied: openai==2.29.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 61)) (2.29.0)
+Requirement already satisfied: anthropic==0.86.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 62)) (0.86.0)
+Requirement already satisfied: google-genai==1.66.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 63)) (1.66.0)
+Requirement already satisfied: langchain==1.2.10 in .\venv\Lib\site-packages (from -r requirements.txt (line 64)) (1.2.10)
+Requirement already satisfied: langchain-community==0.4.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 65)) (0.4.1)
+Requirement already satisfied: langchain-classic==1.0.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 66)) (1.0.1)
+Requirement already satisfied: langchain-text-splitters==1.1.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 67)) (1.1.1)
+Requirement already satisfied: fake-useragent==2.2.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 68)) (2.2.0)
+Requirement already satisfied: chromadb==1.5.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 69)) (1.5.2)
+Requirement already satisfied: weaviate-client==4.20.3 in .\venv\Lib\site-packages (from -r requirements.txt (line 70)) (4.20.3)
+Requirement already satisfied: opensearch-py==3.1.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 71)) (3.1.0)
+Requirement already satisfied: transformers==5.5.4 in .\venv\Lib\site-packages (from -r requirements.txt (line 72)) (5.5.4)
+Requirement already satisfied: sentence-transformers==5.4.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 73)) (5.4.0)
+Requirement already satisfied: accelerate==1.13.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 74)) (1.13.0)
+Requirement already satisfied: pyarrow==20.0.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 75)) (20.0.0)
+Requirement already satisfied: einops==0.8.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 76)) (0.8.2)
+Requirement already satisfied: ftfy==6.3.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 77)) (6.3.1)
+Requirement already satisfied: chardet==5.2.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 78)) (5.2.0)
+Requirement already satisfied: pypdf==6.7.5 in .\venv\Lib\site-packages (from -r requirements.txt (line 79)) (6.7.5)
+Requirement already satisfied: fpdf2==2.8.7 in .\venv\Lib\site-packages (from -r requirements.txt (line 80)) (2.8.7)
+Requirement already satisfied: pymdown-extensions==10.21 in .\venv\Lib\site-packages (from -r requirements.txt (line 81)) (10.21)
+Requirement already satisfied: docx2txt==0.9 in .\venv\Lib\site-packages (from -r requirements.txt (line 82)) (0.9)
+Requirement already satisfied: python-pptx==1.0.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 83)) (1.0.2)
+Requirement already satisfied: msoffcrypto-tool==6.0.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 84)) (6.0.0)
+Requirement already satisfied: unstructured==0.18.31 in .\venv\Lib\site-packages (from -r requirements.txt (line 85)) (0.18.31)
+Requirement already satisfied: nltk==3.9.3 in .\venv\Lib\site-packages (from -r requirements.txt (line 86)) (3.9.3)
+Requirement already satisfied: Markdown==3.10.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 87)) (3.10.2)
+Requirement already satisfied: beautifulsoup4==4.14.3 in .\venv\Lib\site-packages (from -r requirements.txt (line 88)) (4.14.3)
+Requirement already satisfied: pypandoc==1.16.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 89)) (1.16.2)
+Requirement already satisfied: pandas==3.0.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 90)) (3.0.1)
+Requirement already satisfied: openpyxl==3.1.5 in .\venv\Lib\site-packages (from -r requirements.txt (line 91)) (3.1.5)
+Requirement already satisfied: pyxlsb==1.0.10 in .\venv\Lib\site-packages (from -r requirements.txt (line 92)) (1.0.10)
+Requirement already satisfied: xlrd==2.0.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 93)) (2.0.2)
+Requirement already satisfied: validators==0.35.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 94)) (0.35.0)
+Requirement already satisfied: sentencepiece==0.2.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 96)) (0.2.1)
+Requirement already satisfied: soundfile==0.13.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 97)) (0.13.1)
+Requirement already satisfied: pillow==12.1.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 98)) (12.1.1)
+Requirement already satisfied: opencv-python-headless==4.13.0.92 in .\venv\Lib\site-packages (from -r requirements.txt (line 99)) (4.13.0.92)
+Requirement already satisfied: rapidocr-onnxruntime==1.4.4 in .\venv\Lib\site-packages (from -r requirements.txt (line 100)) (1.4.4)
+Requirement already satisfied: rank-bm25==0.2.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 101)) (0.2.2)
+Requirement already satisfied: onnxruntime==1.24.3 in .\venv\Lib\site-packages (from -r requirements.txt (line 102)) (1.24.3)
+Requirement already satisfied: faster-whisper==1.2.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 103)) (1.2.1)
+Requirement already satisfied: black==26.3.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 104)) (26.3.1)
+Requirement already satisfied: youtube-transcript-api==1.2.4 in .\venv\Lib\site-packages (from -r requirements.txt (line 105)) (1.2.4)
+Requirement already satisfied: pytube==15.0.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 106)) (15.0.0)
+Requirement already satisfied: pydub==0.25.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 107)) (0.25.1)
+Requirement already satisfied: ddgs==9.11.3 in .\venv\Lib\site-packages (from -r requirements.txt (line 108)) (9.11.3)
+Requirement already satisfied: azure-ai-documentintelligence==1.0.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 109)) (1.0.2)
+Requirement already satisfied: azure-identity==1.25.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 110)) (1.25.2)
+Requirement already satisfied: azure-storage-blob==12.28.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 111)) (12.28.0)
+Requirement already satisfied: azure-search-documents==11.6.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 112)) (11.6.0)
+Requirement already satisfied: google-api-python-client==2.193.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 113)) (2.193.0)
+Requirement already satisfied: google-auth-httplib2==0.3.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 114)) (0.3.0)
+Requirement already satisfied: google-auth-oauthlib==1.3.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 115)) (1.3.0)
+Requirement already satisfied: googleapis-common-protos==1.72.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 116)) (1.72.0)
+Requirement already satisfied: google-cloud-storage==3.9.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 117)) (3.9.0)
+Requirement already satisfied: pymongo==4.16.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 118)) (4.16.0)
+Requirement already satisfied: psycopg2-binary==2.9.11 in .\venv\Lib\site-packages (from -r requirements.txt (line 119)) (2.9.11)
+Requirement already satisfied: pgvector==0.4.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 120)) (0.4.2)
+Requirement already satisfied: PyMySQL==1.1.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 121)) (1.1.2)
+Requirement already satisfied: boto3==1.42.62 in .\venv\Lib\site-packages (from -r requirements.txt (line 122)) (1.42.62)
+Requirement already satisfied: pymilvus==2.6.9 in .\venv\Lib\site-packages (from -r requirements.txt (line 123)) (2.6.9)
+Requirement already satisfied: qdrant-client==1.17.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 124)) (1.17.0)
+Requirement already satisfied: playwright==1.58.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 125)) (1.58.0)
+Requirement already satisfied: elasticsearch==9.3.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 126)) (9.3.0)
+Requirement already satisfied: pinecone==6.0.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 127)) (6.0.2)
+Requirement already satisfied: oracledb==3.4.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 128)) (3.4.2)
+Requirement already satisfied: av==14.0.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 129)) (14.0.1)
+Requirement already satisfied: colbert-ai==0.2.22 in .\venv\Lib\site-packages (from -r requirements.txt (line 130)) (0.2.22)
+Requirement already satisfied: ldap3==2.9.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 131)) (2.9.1)
+Requirement already satisfied: opentelemetry-api==1.40.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 132)) (1.40.0)
+Requirement already satisfied: opentelemetry-sdk==1.40.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 133)) (1.40.0)
+Requirement already satisfied: opentelemetry-exporter-otlp==1.40.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 134)) (1.40.0)
+Requirement already satisfied: opentelemetry-instrumentation==0.61b0 in .\venv\Lib\site-packages (from -r requirements.txt (line 135)) (0.61b0)
+Requirement already satisfied: opentelemetry-instrumentation-fastapi==0.61b0 in .\venv\Lib\site-packages (from -r requirements.txt (line 136)) (0.61b0)
+Requirement already satisfied: opentelemetry-instrumentation-sqlalchemy==0.61b0 in .\venv\Lib\site-packages (from -r requirements.txt (line 137)) (0.61b0)
+Requirement already satisfied: opentelemetry-instrumentation-redis==0.61b0 in .\venv\Lib\site-packages (from -r requirements.txt (line 138)) (0.61b0)
+Requirement already satisfied: opentelemetry-instrumentation-requests==0.61b0 in .\venv\Lib\site-packages (from -r requirements.txt (line 139)) (0.61b0)
+Requirement already satisfied: opentelemetry-instrumentation-logging==0.61b0 in .\venv\Lib\site-packages (from -r requirements.txt (line 140)) (0.61b0)
+Requirement already satisfied: opentelemetry-instrumentation-httpx==0.61b0 in .\venv\Lib\site-packages (from -r requirements.txt (line 141)) (0.61b0)
+Requirement already satisfied: opentelemetry-instrumentation-aiohttp-client==0.61b0 in .\venv\Lib\site-packages (from -r requirements.txt (line 142)) (0.61b0)
+Requirement already satisfied: opentelemetry-instrumentation-system-metrics==0.61b0 in .\venv\Lib\site-packages (from -r requirements.txt (line 143)) (0.61b0)
+Requirement already satisfied: certifi==2026.5.20 in .\venv\Lib\site-packages (from -r requirements.txt (line 148)) (2026.5.20)
+Requirement already satisfied: babel==2.18.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 149)) (2.18.0)
+Requirement already satisfied: flask-babel==4.0.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 150)) (4.0.0)
+Requirement already satisfied: flask==3.1.3 in .\venv\Lib\site-packages (from -r requirements.txt (line 151)) (3.1.3)
+Requirement already satisfied: jinja2==3.1.6 in .\venv\Lib\site-packages (from -r requirements.txt (line 152)) (3.1.6)
+Requirement already satisfied: lxml==6.1.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 153)) (6.1.1)
+Requirement already satisfied: pygments==2.20.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 154)) (2.20.0)
+Requirement already satisfied: python-dateutil==2.9.0.post0 in .\venv\Lib\site-packages (from -r requirements.txt (line 155)) (2.9.0.post0)
+Requirement already satisfied: pyyaml==6.0.3 in .\venv\Lib\site-packages (from -r requirements.txt (line 156)) (6.0.3)
+Requirement already satisfied: httpx-socks==0.10.0 in .\venv\Lib\site-packages (from httpx-socks[asyncio]==0.10.0->-r requirements.txt (line 158)) (0.10.0)
+Requirement already satisfied: sniffio==1.3.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 159)) (1.3.1)
+Requirement already satisfied: valkey==6.1.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 160)) (6.1.1)
+Requirement already satisfied: markdown-it-py==4.2.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 161)) (4.2.0)
+Requirement already satisfied: msgspec==0.21.1 in .\venv\Lib\site-packages (from -r requirements.txt (line 162)) (0.21.1)
+Requirement already satisfied: typer==0.26.7 in .\venv\Lib\site-packages (from -r requirements.txt (line 163)) (0.26.7)
+Requirement already satisfied: isodate==0.7.2 in .\venv\Lib\site-packages (from -r requirements.txt (line 164)) (0.7.2)
+Requirement already satisfied: whitenoise==6.12.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 165)) (6.12.0)
+Requirement already satisfied: typing-extensions==4.15.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 166)) (4.15.0)
+Requirement already satisfied: xhtml2pdf>=0.2.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 171)) (0.2.23)
+Requirement already satisfied: weasyprint>=60.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 172)) (70.0)
+Requirement already satisfied: trafilatura>=1.0.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 177)) (2.2.0)
+Collecting trafilatura>=1.0.0 (from -r requirements.txt (line 177))
+  Using cached trafilatura-2.3.1-py3-none-any.whl.metadata (13 kB)
+Requirement already satisfied: scrapling>=0.2.0 in .\venv\Lib\site-packages (from scrapling[fetchers]>=0.2.0->-r requirements.txt (line 178)) (0.4.7)
+Collecting scrapling>=0.2.0 (from scrapling[fetchers]>=0.2.0->-r requirements.txt (line 178))
+  Using cached scrapling-0.4.15-py3-none-any.whl.metadata (41 kB)
+Requirement already satisfied: python-docx>=1.0.0 in .\venv\Lib\site-packages (from -r requirements.txt (line 179)) (1.2.0)
+Requirement already satisfied: pyclipper>=1.2.0 in .\venv\Lib\site-packages (from rapidocr==3.9.2->-r requirements.txt (line 18)) (1.4.0)
+Requirement already satisfied: opencv_python>=4.5.1.48 in .\venv\Lib\site-packages (from rapidocr==3.9.2->-r requirements.txt (line 18)) (5.0.0.93)
+Requirement already satisfied: numpy<3.0.0,>=1.19.5 in .\venv\Lib\site-packages (from rapidocr==3.9.2->-r requirements.txt (line 18)) (2.4.6)
+Requirement already satisfied: six>=1.15.0 in .\venv\Lib\site-packages (from rapidocr==3.9.2->-r requirements.txt (line 18)) (1.17.0)
+Requirement already satisfied: Shapely!=2.0.4,>=1.7.1 in .\venv\Lib\site-packages (from rapidocr==3.9.2->-r requirements.txt (line 18)) (2.1.2)
+Requirement already satisfied: tqdm in .\venv\Lib\site-packages (from rapidocr==3.9.2->-r requirements.txt (line 18)) (4.70.0)
+Requirement already satisfied: omegaconf!=2.2.1 in .\venv\Lib\site-packages (from rapidocr==3.9.2->-r requirements.txt (line 18)) (2.3.1)
+Requirement already satisfied: colorlog in .\venv\Lib\site-packages (from rapidocr==3.9.2->-r requirements.txt (line 18)) (6.12.0)
+Requirement already satisfied: pycares<5,>=4.9.0 in .\venv\Lib\site-packages (from aiodns==3.6.1->-r requirements.txt (line 20)) (4.11.0)
+Requirement already satisfied: starlette>=0.46.0 in .\venv\Lib\site-packages (from fastapi==0.135.1->-r requirements.txt (line 23)) (1.6.0)
+Requirement already satisfied: typing-inspection>=0.4.2 in .\venv\Lib\site-packages (from fastapi==0.135.1->-r requirements.txt (line 23)) (0.4.4)
+Requirement already satisfied: annotated-doc>=0.0.2 in .\venv\Lib\site-packages (from fastapi==0.135.1->-r requirements.txt (line 23)) (0.0.5)
+Requirement already satisfied: click>=7.0 in .\venv\Lib\site-packages (from uvicorn==0.41.0->uvicorn[standard]==0.41.0->-r requirements.txt (line 24)) (8.4.2)
+Requirement already satisfied: h11>=0.8 in .\venv\Lib\site-packages (from uvicorn==0.41.0->uvicorn[standard]==0.41.0->-r requirements.txt (line 24)) (0.16.0)
+Requirement already satisfied: annotated-types>=0.6.0 in .\venv\Lib\site-packages (from pydantic==2.12.5->-r requirements.txt (line 25)) (0.8.0)
+Requirement already satisfied: pydantic-core==2.41.5 in .\venv\Lib\site-packages (from pydantic==2.12.5->-r requirements.txt (line 25)) (2.41.5)
+Requirement already satisfied: bidict>=0.21.0 in .\venv\Lib\site-packages (from python-socketio==5.16.1->-r requirements.txt (line 28)) (0.23.1)
+Requirement already satisfied: python-engineio>=4.11.0 in .\venv\Lib\site-packages (from python-socketio==5.16.1->-r requirements.txt (line 28)) (4.13.5)
+Requirement already satisfied: ecdsa!=0.15 in .\venv\Lib\site-packages (from python-jose==3.5.0->-r requirements.txt (line 29)) (0.19.2)
+Requirement already satisfied: rsa!=4.1.1,!=4.4,<5.0,>=4.0 in .\venv\Lib\site-packages (from python-jose==3.5.0->-r requirements.txt (line 29)) (4.9.1)
+Requirement already satisfied: pyasn1>=0.5.0 in .\venv\Lib\site-packages (from python-jose==3.5.0->-r requirements.txt (line 29)) (0.6.4)
+Requirement already satisfied: cffi>=2.0.0 in .\venv\Lib\site-packages (from cryptography==46.0.5->-r requirements.txt (line 30)) (2.1.1)
+Requirement already satisfied: argon2-cffi-bindings in .\venv\Lib\site-packages (from argon2-cffi==25.1.0->-r requirements.txt (line 32)) (26.1.0)
+Requirement already satisfied: charset_normalizer<4,>=2 in .\venv\Lib\site-packages (from requests==2.33.1->-r requirements.txt (line 35)) (3.5.1)
+Requirement already satisfied: idna<4,>=2.5 in .\venv\Lib\site-packages (from requests==2.33.1->-r requirements.txt (line 35)) (3.19)
+Requirement already satisfied: urllib3<3,>=1.26 in .\venv\Lib\site-packages (from requests==2.33.1->-r requirements.txt (line 35)) (2.7.0)
+Requirement already satisfied: aiohappyeyeballs>=2.5.0 in .\venv\Lib\site-packages (from aiohttp==3.13.5->-r requirements.txt (line 36)) (2.7.1)
+Requirement already satisfied: aiosignal>=1.4.0 in .\venv\Lib\site-packages (from aiohttp==3.13.5->-r requirements.txt (line 36)) (1.4.0)
+Requirement already satisfied: attrs>=17.3.0 in .\venv\Lib\site-packages (from aiohttp==3.13.5->-r requirements.txt (line 36)) (26.1.0)
+Requirement already satisfied: frozenlist>=1.1.1 in .\venv\Lib\site-packages (from aiohttp==3.13.5->-r requirements.txt (line 36)) (1.8.0)
+Requirement already satisfied: multidict<7.0,>=4.5 in .\venv\Lib\site-packages (from aiohttp==3.13.5->-r requirements.txt (line 36)) (6.7.1)
+Requirement already satisfied: propcache>=0.2.0 in .\venv\Lib\site-packages (from aiohttp==3.13.5->-r requirements.txt (line 36)) (0.5.2)
+Requirement already satisfied: yarl<2.0,>=1.17.0 in .\venv\Lib\site-packages (from aiohttp==3.13.5->-r requirements.txt (line 36)) (1.24.5)
+Requirement already satisfied: zstandard>=0.15 in .\venv\Lib\site-packages (from starlette-compress==1.7.0->-r requirements.txt (line 40)) (0.25.0)
+Requirement already satisfied: anyio in .\venv\Lib\site-packages (from httpx==0.28.1->httpx[brotli,cli,http2,socks,zstd]==0.28.1->-r requirements.txt (line 43)) (4.14.2)
+Requirement already satisfied: httpcore==1.* in .\venv\Lib\site-packages (from httpx==0.28.1->httpx[brotli,cli,http2,socks,zstd]==0.28.1->-r requirements.txt (line 43)) (1.0.9)
+Requirement already satisfied: greenlet>=1 in .\venv\Lib\site-packages (from sqlalchemy==2.0.48->sqlalchemy[asyncio]==2.0.48->-r requirements.txt (line 46)) (3.5.5)
+Requirement already satisfied: tzdata in .\venv\Lib\site-packages (from psycopg==3.2.9->psycopg[binary]==3.2.9->-r requirements.txt (line 48)) (2026.3)
+Requirement already satisfied: Mako in .\venv\Lib\site-packages (from alembic==1.18.4->-r requirements.txt (line 49)) (1.4.1)
+Requirement already satisfied: tzlocal>=3.0 in .\venv\Lib\site-packages (from APScheduler==3.11.2->-r requirements.txt (line 54)) (5.4.4)
+Requirement already satisfied: colorama>=0.3.4 in .\venv\Lib\site-packages (from loguru==0.7.3->-r requirements.txt (line 57)) (0.4.6)
+Requirement already satisfied: win32-setctime>=1.0.0 in .\venv\Lib\site-packages (from loguru==0.7.3->-r requirements.txt (line 57)) (1.2.0)
+Requirement already satisfied: regex>=2022.1.18 in .\venv\Lib\site-packages (from tiktoken==0.12.0->-r requirements.txt (line 59)) (2026.7.19)
+Requirement already satisfied: httpx-sse>=0.4 in .\venv\Lib\site-packages (from mcp==1.26.0->-r requirements.txt (line 60)) (0.4.3)
+Requirement already satisfied: jsonschema>=4.20.0 in .\venv\Lib\site-packages (from mcp==1.26.0->-r requirements.txt (line 60)) (4.26.0)
+Requirement already satisfied: pydantic-settings>=2.5.2 in .\venv\Lib\site-packages (from mcp==1.26.0->-r requirements.txt (line 60)) (2.15.0)
+Requirement already satisfied: sse-starlette>=1.6.1 in .\venv\Lib\site-packages (from mcp==1.26.0->-r requirements.txt (line 60)) (3.4.8)
+Requirement already satisfied: distro<2,>=1.7.0 in .\venv\Lib\site-packages (from openai==2.29.0->-r requirements.txt (line 61)) (1.9.0)
+Requirement already satisfied: jiter<1,>=0.10.0 in .\venv\Lib\site-packages (from openai==2.29.0->-r requirements.txt (line 61)) (0.16.0)
+Requirement already satisfied: docstring-parser<1,>=0.15 in .\venv\Lib\site-packages (from anthropic==0.86.0->-r requirements.txt (line 62)) (0.18.0)
+Requirement already satisfied: google-auth<3.0.0,>=2.47.0 in .\venv\Lib\site-packages (from google-auth[requests]<3.0.0,>=2.47.0->google-genai==1.66.0->-r requirements.txt (line 63)) (2.56.3)
+Requirement already satisfied: tenacity<9.2.0,>=8.2.3 in .\venv\Lib\site-packages (from google-genai==1.66.0->-r requirements.txt (line 63)) (9.1.4)
+Requirement already satisfied: websockets<17.0,>=13.0.0 in .\venv\Lib\site-packages (from google-genai==1.66.0->-r requirements.txt (line 63)) (16.1.1)
+Requirement already satisfied: langchain-core<2.0.0,>=1.2.10 in .\venv\Lib\site-packages (from langchain==1.2.10->-r requirements.txt (line 64)) (1.6.0)
+Requirement already satisfied: langgraph<1.1.0,>=1.0.8 in .\venv\Lib\site-packages (from langchain==1.2.10->-r requirements.txt (line 64)) (1.0.10)
+Requirement already satisfied: dataclasses-json<0.7.0,>=0.6.7 in .\venv\Lib\site-packages (from langchain-community==0.4.1->-r requirements.txt (line 65)) (0.6.7)
+Requirement already satisfied: langsmith<1.0.0,>=0.1.125 in .\venv\Lib\site-packages (from langchain-community==0.4.1->-r requirements.txt (line 65)) (0.11.1)
+Requirement already satisfied: build>=1.0.3 in .\venv\Lib\site-packages (from chromadb==1.5.2->-r requirements.txt (line 69)) (1.5.0)
+Requirement already satisfied: pybase64>=1.4.1 in .\venv\Lib\site-packages (from chromadb==1.5.2->-r requirements.txt (line 69)) (1.5.0)
+Requirement already satisfied: posthog<6.0.0,>=2.4.0 in .\venv\Lib\site-packages (from chromadb==1.5.2->-r requirements.txt (line 69)) (5.4.0)
+Requirement already satisfied: opentelemetry-exporter-otlp-proto-grpc>=1.2.0 in .\venv\Lib\site-packages (from chromadb==1.5.2->-r requirements.txt (line 69)) (1.40.0)
+Requirement already satisfied: tokenizers>=0.13.2 in .\venv\Lib\site-packages (from chromadb==1.5.2->-r requirements.txt (line 69)) (0.22.2)
+Requirement already satisfied: pypika>=0.48.9 in .\venv\Lib\site-packages (from chromadb==1.5.2->-r requirements.txt (line 69)) (0.51.1)
+Requirement already satisfied: overrides>=7.3.1 in .\venv\Lib\site-packages (from chromadb==1.5.2->-r requirements.txt (line 69)) (7.7.0)
+Requirement already satisfied: importlib-resources in .\venv\Lib\site-packages (from chromadb==1.5.2->-r requirements.txt (line 69)) (7.1.0)
+Requirement already satisfied: grpcio>=1.58.0 in .\venv\Lib\site-packages (from chromadb==1.5.2->-r requirements.txt (line 69)) (1.78.0)
+Requirement already satisfied: kubernetes>=28.1.0 in .\venv\Lib\site-packages (from chromadb==1.5.2->-r requirements.txt (line 69)) (36.0.3)
+Requirement already satisfied: mmh3>=4.0.1 in .\venv\Lib\site-packages (from chromadb==1.5.2->-r requirements.txt (line 69)) (5.2.1)
+Requirement already satisfied: orjson>=3.9.12 in .\venv\Lib\site-packages (from chromadb==1.5.2->-r requirements.txt (line 69)) (3.12.0)
+Requirement already satisfied: rich>=10.11.0 in .\venv\Lib\site-packages (from chromadb==1.5.2->-r requirements.txt (line 69)) (13.9.4)
+Requirement already satisfied: protobuf<7.0.0,>=4.21.6 in .\venv\Lib\site-packages (from weaviate-client==4.20.3->-r requirements.txt (line 70)) (6.33.6)
+Requirement already satisfied: deprecation<3.0.0,>=2.1.0 in .\venv\Lib\site-packages (from weaviate-client==4.20.3->-r requirements.txt (line 70)) (2.1.0)
+Requirement already satisfied: Events in .\venv\Lib\site-packages (from opensearch-py==3.1.0->-r requirements.txt (line 71)) (0.5)
+Requirement already satisfied: opensearch-protobufs==0.19.0 in .\venv\Lib\site-packages (from opensearch-py==3.1.0->-r requirements.txt (line 71)) (0.19.0)
+Requirement already satisfied: packaging>=20.0 in .\venv\Lib\site-packages (from transformers==5.5.4->-r requirements.txt (line 72)) (26.3)
+Requirement already satisfied: safetensors>=0.4.3 in .\venv\Lib\site-packages (from transformers==5.5.4->-r requirements.txt (line 72)) (0.8.0)
+Requirement already satisfied: torch>=1.11.0 in .\venv\Lib\site-packages (from sentence-transformers==5.4.0->-r requirements.txt (line 73)) (2.13.0)
+Requirement already satisfied: scikit-learn>=0.22.0 in .\venv\Lib\site-packages (from sentence-transformers==5.4.0->-r requirements.txt (line 73)) (1.9.0)
+Requirement already satisfied: scipy>=1.0.0 in .\venv\Lib\site-packages (from sentence-transformers==5.4.0->-r requirements.txt (line 73)) (1.17.1)
+Requirement already satisfied: wcwidth in .\venv\Lib\site-packages (from ftfy==6.3.1->-r requirements.txt (line 77)) (0.8.2)
+Requirement already satisfied: defusedxml in .\venv\Lib\site-packages (from fpdf2==2.8.7->-r requirements.txt (line 80)) (0.7.1)
+Requirement already satisfied: fonttools>=4.34.0 in .\venv\Lib\site-packages (from fpdf2==2.8.7->-r requirements.txt (line 80)) (4.63.0)
+Requirement already satisfied: XlsxWriter>=0.5.7 in .\venv\Lib\site-packages (from python-pptx==1.0.2->-r requirements.txt (line 83)) (3.2.9)
+Requirement already satisfied: olefile>=0.46 in .\venv\Lib\site-packages (from msoffcrypto-tool==6.0.0->-r requirements.txt (line 84)) (0.47)
+Requirement already satisfied: filetype in .\venv\Lib\site-packages (from unstructured==0.18.31->-r requirements.txt (line 85)) (1.2.0)
+Requirement already satisfied: python-magic in .\venv\Lib\site-packages (from unstructured==0.18.31->-r requirements.txt (line 85)) (0.4.27)
+Requirement already satisfied: emoji in .\venv\Lib\site-packages (from unstructured==0.18.31->-r requirements.txt (line 85)) (2.15.0)
+Requirement already satisfied: python-iso639 in .\venv\Lib\site-packages (from unstructured==0.18.31->-r requirements.txt (line 85)) (2026.7.23)
+Requirement already satisfied: langdetect in .\venv\Lib\site-packages (from unstructured==0.18.31->-r requirements.txt (line 85)) (1.0.9)
+Requirement already satisfied: rapidfuzz in .\venv\Lib\site-packages (from unstructured==0.18.31->-r requirements.txt (line 85)) (3.14.5)
+Requirement already satisfied: backoff in .\venv\Lib\site-packages (from unstructured==0.18.31->-r requirements.txt (line 85)) (2.2.1)
+Requirement already satisfied: unstructured-client in .\venv\Lib\site-packages (from unstructured==0.18.31->-r requirements.txt (line 85)) (0.42.12)
+Requirement already satisfied: wrapt in .\venv\Lib\site-packages (from unstructured==0.18.31->-r requirements.txt (line 85)) (1.17.3)
+Requirement already satisfied: python-oxmsg in .\venv\Lib\site-packages (from unstructured==0.18.31->-r requirements.txt (line 85)) (0.0.2)
+Requirement already satisfied: html5lib in .\venv\Lib\site-packages (from unstructured==0.18.31->-r requirements.txt (line 85)) (1.1)
+Requirement already satisfied: numba in .\venv\Lib\site-packages (from unstructured==0.18.31->-r requirements.txt (line 85)) (0.67.0)
+Requirement already satisfied: joblib in .\venv\Lib\site-packages (from nltk==3.9.3->-r requirements.txt (line 86)) (1.5.3)
+Requirement already satisfied: soupsieve>=1.6.1 in .\venv\Lib\site-packages (from beautifulsoup4==4.14.3->-r requirements.txt (line 88)) (2.9.2)
+Requirement already satisfied: et-xmlfile in .\venv\Lib\site-packages (from openpyxl==3.1.5->-r requirements.txt (line 91)) (2.0.0)
+Requirement already satisfied: flatbuffers in .\venv\Lib\site-packages (from onnxruntime==1.24.3->-r requirements.txt (line 102)) (25.12.19)
+Requirement already satisfied: sympy in .\venv\Lib\site-packages (from onnxruntime==1.24.3->-r requirements.txt (line 102)) (1.14.0)
+Requirement already satisfied: ctranslate2<5,>=4.0 in .\venv\Lib\site-packages (from faster-whisper==1.2.1->-r requirements.txt (line 103)) (4.8.1)
+Requirement already satisfied: mypy-extensions>=0.4.3 in .\venv\Lib\site-packages (from black==26.3.1->-r requirements.txt (line 104)) (1.1.0)
+Requirement already satisfied: pathspec>=1.0.0 in .\venv\Lib\site-packages (from black==26.3.1->-r requirements.txt (line 104)) (1.1.1)
+Requirement already satisfied: platformdirs>=2 in .\venv\Lib\site-packages (from black==26.3.1->-r requirements.txt (line 104)) (4.11.3)
+Requirement already satisfied: pytokens~=0.4.0 in .\venv\Lib\site-packages (from black==26.3.1->-r requirements.txt (line 104)) (0.4.1)
+Requirement already satisfied: primp==1.1.3 in .\venv\Lib\site-packages (from ddgs==9.11.3->-r requirements.txt (line 108)) (1.1.3)
+Requirement already satisfied: azure-core>=1.30.0 in .\venv\Lib\site-packages (from azure-ai-documentintelligence==1.0.2->-r requirements.txt (line 109)) (1.41.0)
+Requirement already satisfied: msal>=1.31.0 in .\venv\Lib\site-packages (from azure-identity==1.25.2->-r requirements.txt (line 110)) (1.37.0)
+Requirement already satisfied: msal-extensions>=1.2.0 in .\venv\Lib\site-packages (from azure-identity==1.25.2->-r requirements.txt (line 110)) (1.3.1)
+Requirement already satisfied: azure-common>=1.1 in .\venv\Lib\site-packages (from azure-search-documents==11.6.0->-r requirements.txt (line 112)) (1.1.28)
+Requirement already satisfied: httplib2<1.0.0,>=0.19.0 in .\venv\Lib\site-packages (from google-api-python-client==2.193.0->-r requirements.txt (line 113)) (0.32.0)
+Requirement already satisfied: google-api-core!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0,<3.0.0,>=1.31.5 in .\venv\Lib\site-packages (from google-api-python-client==2.193.0->-r requirements.txt (line 113)) (2.34.0)
+Requirement already satisfied: uritemplate<5,>=3.0.1 in .\venv\Lib\site-packages (from google-api-python-client==2.193.0->-r requirements.txt (line 113)) (4.2.0)
+Requirement already satisfied: requests-oauthlib>=0.7.0 in .\venv\Lib\site-packages (from google-auth-oauthlib==1.3.0->-r requirements.txt (line 115)) (2.0.0)
+Requirement already satisfied: google-cloud-core<3.0.0,>=2.4.2 in .\venv\Lib\site-packages (from google-cloud-storage==3.9.0->-r requirements.txt (line 117)) (2.6.1)
+Requirement already satisfied: google-resumable-media<3.0.0,>=2.7.2 in .\venv\Lib\site-packages (from google-cloud-storage==3.9.0->-r requirements.txt (line 117)) (2.10.1)
+Requirement already satisfied: google-crc32c<2.0.0,>=1.1.3 in .\venv\Lib\site-packages (from google-cloud-storage==3.9.0->-r requirements.txt (line 117)) (1.8.0)
+Requirement already satisfied: dnspython<3.0.0,>=2.6.1 in .\venv\Lib\site-packages (from pymongo==4.16.0->-r requirements.txt (line 118)) (2.8.0)
+Requirement already satisfied: botocore<1.43.0,>=1.42.62 in .\venv\Lib\site-packages (from boto3==1.42.62->-r requirements.txt (line 122)) (1.42.97)
+Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in .\venv\Lib\site-packages (from boto3==1.42.62->-r requirements.txt (line 122)) (1.1.0)
+Requirement already satisfied: s3transfer<0.17.0,>=0.16.0 in .\venv\Lib\site-packages (from boto3==1.42.62->-r requirements.txt (line 122)) (0.16.1)
+Requirement already satisfied: setuptools>69 in .\venv\Lib\site-packages (from pymilvus==2.6.9->-r requirements.txt (line 123)) (84.0.0)
+Requirement already satisfied: python-dotenv<2.0.0,>=1.0.1 in .\venv\Lib\site-packages (from pymilvus==2.6.9->-r requirements.txt (line 123)) (1.2.3)
+Requirement already satisfied: cachetools>=5.0.0 in .\venv\Lib\site-packages (from pymilvus==2.6.9->-r requirements.txt (line 123)) (7.1.7)
+Requirement already satisfied: portalocker<4.0,>=2.7.0 in .\venv\Lib\site-packages (from qdrant-client==1.17.0->-r requirements.txt (line 124)) (3.2.0)
+Requirement already satisfied: pyee<14,>=13 in .\venv\Lib\site-packages (from playwright==1.58.0->-r requirements.txt (line 125)) (13.0.1)
+Requirement already satisfied: elastic-transport<10,>=9.2.0 in .\venv\Lib\site-packages (from elasticsearch==9.3.0->-r requirements.txt (line 126)) (9.4.2)
+Requirement already satisfied: pinecone-plugin-interface<0.0.8,>=0.0.7 in .\venv\Lib\site-packages (from pinecone==6.0.2->-r requirements.txt (line 127)) (0.0.7)
+Requirement already satisfied: bitarray in .\venv\Lib\site-packages (from colbert-ai==0.2.22->-r requirements.txt (line 130)) (3.10.1)
+Requirement already satisfied: datasets in .\venv\Lib\site-packages (from colbert-ai==0.2.22->-r requirements.txt (line 130)) (4.0.0)
+Requirement already satisfied: GitPython in .\venv\Lib\site-packages (from colbert-ai==0.2.22->-r requirements.txt (line 130)) (3.1.59)
+Requirement already satisfied: ninja in .\venv\Lib\site-packages (from colbert-ai==0.2.22->-r requirements.txt (line 130)) (1.13.0)
+Requirement already satisfied: ujson in .\venv\Lib\site-packages (from colbert-ai==0.2.22->-r requirements.txt (line 130)) (5.13.0)
+Requirement already satisfied: importlib-metadata<8.8.0,>=6.0 in .\venv\Lib\site-packages (from opentelemetry-api==1.40.0->-r requirements.txt (line 132)) (8.7.1)
+Requirement already satisfied: opentelemetry-semantic-conventions==0.61b0 in .\venv\Lib\site-packages (from opentelemetry-sdk==1.40.0->-r requirements.txt (line 133)) (0.61b0)
+Requirement already satisfied: opentelemetry-exporter-otlp-proto-http==1.40.0 in .\venv\Lib\site-packages (from opentelemetry-exporter-otlp==1.40.0->-r requirements.txt (line 134)) (1.40.0)
+Requirement already satisfied: opentelemetry-instrumentation-asgi==0.61b0 in .\venv\Lib\site-packages (from opentelemetry-instrumentation-fastapi==0.61b0->-r requirements.txt (line 136)) (0.61b0)
+Requirement already satisfied: opentelemetry-util-http==0.61b0 in .\venv\Lib\site-packages (from opentelemetry-instrumentation-fastapi==0.61b0->-r requirements.txt (line 136)) (0.61b0)
+Requirement already satisfied: blinker>=1.9.0 in .\venv\Lib\site-packages (from flask==3.1.3->-r requirements.txt (line 151)) (1.9.0)
+Requirement already satisfied: markupsafe>=2.1.1 in .\venv\Lib\site-packages (from flask==3.1.3->-r requirements.txt (line 151)) (3.0.3)
+Requirement already satisfied: werkzeug>=3.1.0 in .\venv\Lib\site-packages (from flask==3.1.3->-r requirements.txt (line 151)) (3.1.8)
+Requirement already satisfied: python-socks>=2.0.0 in .\venv\Lib\site-packages (from httpx-socks==0.10.0->httpx-socks[asyncio]==0.10.0->-r requirements.txt (line 158)) (3.0.0)
+Requirement already satisfied: mdurl~=0.1 in .\venv\Lib\site-packages (from markdown-it-py==4.2.0->-r requirements.txt (line 161)) (0.1.2)
+Requirement already satisfied: shellingham>=1.3.0 in .\venv\Lib\site-packages (from typer==0.26.7->-r requirements.txt (line 163)) (1.5.4)
+Requirement already satisfied: h2<5,>=3 in .\venv\Lib\site-packages (from httpx[brotli,cli,http2,socks,zstd]==0.28.1->-r requirements.txt (line 43)) (4.4.1)
+Requirement already satisfied: socksio==1.* in .\venv\Lib\site-packages (from httpx[brotli,cli,http2,socks,zstd]==0.28.1->-r requirements.txt (line 43)) (1.0.0)
+Requirement already satisfied: opentelemetry-exporter-otlp-proto-common==1.40.0 in .\venv\Lib\site-packages (from opentelemetry-exporter-otlp-proto-grpc>=1.2.0->chromadb==1.5.2->-r requirements.txt (line 69)) (1.40.0)
+Requirement already satisfied: opentelemetry-proto==1.40.0 in .\venv\Lib\site-packages (from opentelemetry-exporter-otlp-proto-grpc>=1.2.0->chromadb==1.5.2->-r requirements.txt (line 69)) (1.40.0)
+Requirement already satisfied: psycopg-binary==3.2.9 in .\venv\Lib\site-packages (from psycopg[binary]==3.2.9->-r requirements.txt (line 48)) (3.2.9)
+Requirement already satisfied: httptools>=0.6.3 in .\venv\Lib\site-packages (from uvicorn[standard]==0.41.0->-r requirements.txt (line 24)) (0.8.0)
+Requirement already satisfied: watchfiles>=0.20 in .\venv\Lib\site-packages (from uvicorn[standard]==0.41.0->-r requirements.txt (line 24)) (1.2.0)
+Requirement already satisfied: filelock>=3.10.0 in .\venv\Lib\site-packages (from huggingface_hub>=0.20.0->-r requirements.txt (line 12)) (3.32.4)
+Requirement already satisfied: fsspec>=2023.5.0 in .\venv\Lib\site-packages (from huggingface_hub>=0.20.0->-r requirements.txt (line 12)) (2025.3.0)
+Requirement already satisfied: hf-xet<2.0.0,>=1.6.0 in .\venv\Lib\site-packages (from huggingface_hub>=0.20.0->-r requirements.txt (line 12)) (1.6.0)
+Requirement already satisfied: marshmallow<4.0.0,>=3.18.0 in .\venv\Lib\site-packages (from dataclasses-json<0.7.0,>=0.6.7->langchain-community==0.4.1->-r requirements.txt (line 65)) (3.26.2)
+Requirement already satisfied: typing-inspect<1,>=0.4.0 in .\venv\Lib\site-packages (from dataclasses-json<0.7.0,>=0.6.7->langchain-community==0.4.1->-r requirements.txt (line 65)) (0.9.0)
+Requirement already satisfied: proto-plus<2.0.0,>=1.26.1 in .\venv\Lib\site-packages (from google-api-core!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0,<3.0.0,>=1.31.5->google-api-python-client==2.193.0->-r requirements.txt (line 113)) (1.28.3)
+Requirement already satisfied: pyasn1-modules>=0.2.1 in .\venv\Lib\site-packages (from google-auth<3.0.0,>=2.47.0->google-auth[requests]<3.0.0,>=2.47.0->google-genai==1.66.0->-r requirements.txt (line 63)) (0.4.2)
+Requirement already satisfied: hyperframe<7,>=6.1 in .\venv\Lib\site-packages (from h2<5,>=3->httpx[brotli,cli,http2,socks,zstd]==0.28.1->-r requirements.txt (line 43)) (6.1.0)
+Requirement already satisfied: hpack<5,>=4.2 in .\venv\Lib\site-packages (from h2<5,>=3->httpx[brotli,cli,http2,socks,zstd]==0.28.1->-r requirements.txt (line 43)) (4.2.0)
+Requirement already satisfied: pyparsing<4,>=3.1 in .\venv\Lib\site-packages (from httplib2<1.0.0,>=0.19.0->google-api-python-client==2.193.0->-r requirements.txt (line 113)) (3.3.2)
+Requirement already satisfied: zipp>=3.20 in .\venv\Lib\site-packages (from importlib-metadata<8.8.0,>=6.0->opentelemetry-api==1.40.0->-r requirements.txt (line 132)) (4.1.0)
+Requirement already satisfied: jsonpatch<2.0.0,>=1.33.0 in .\venv\Lib\site-packages (from langchain-core<2.0.0,>=1.2.10->langchain==1.2.10->-r requirements.txt (line 64)) (1.33)
+Requirement already satisfied: langchain-protocol>=0.0.17 in .\venv\Lib\site-packages (from langchain-core<2.0.0,>=1.2.10->langchain==1.2.10->-r requirements.txt (line 64)) (0.0.18)
+Requirement already satisfied: uuid-utils<1.0,>=0.12.0 in .\venv\Lib\site-packages (from langchain-core<2.0.0,>=1.2.10->langchain==1.2.10->-r requirements.txt (line 64)) (0.17.0)
+Requirement already satisfied: jsonpointer>=1.9 in .\venv\Lib\site-packages (from jsonpatch<2.0.0,>=1.33.0->langchain-core<2.0.0,>=1.2.10->langchain==1.2.10->-r requirements.txt (line 64)) (3.1.1)
+Requirement already satisfied: langgraph-checkpoint<5.0.0,>=2.1.0 in .\venv\Lib\site-packages (from langgraph<1.1.0,>=1.0.8->langchain==1.2.10->-r requirements.txt (line 64)) (4.2.0)
+Requirement already satisfied: langgraph-prebuilt<1.1.0,>=1.0.8 in .\venv\Lib\site-packages (from langgraph<1.1.0,>=1.0.8->langchain==1.2.10->-r requirements.txt (line 64)) (1.0.13)
+Requirement already satisfied: langgraph-sdk<0.4.0,>=0.3.0 in .\venv\Lib\site-packages (from langgraph<1.1.0,>=1.0.8->langchain==1.2.10->-r requirements.txt (line 64)) (0.3.15)
+Requirement already satisfied: xxhash>=3.5.0 in .\venv\Lib\site-packages (from langgraph<1.1.0,>=1.0.8->langchain==1.2.10->-r requirements.txt (line 64)) (4.0.1)
+Requirement already satisfied: ormsgpack>=1.12.0 in .\venv\Lib\site-packages (from langgraph-checkpoint<5.0.0,>=2.1.0->langgraph<1.1.0,>=1.0.8->langchain==1.2.10->-r requirements.txt (line 64)) (1.12.2)
+Requirement already satisfied: requests-toolbelt>=1.0.0 in .\venv\Lib\site-packages (from langsmith<1.0.0,>=0.1.125->langchain-community==0.4.1->-r requirements.txt (line 65)) (1.0.0)
+Requirement already satisfied: PyQt6-sip<14,>=13.8 in .\venv\Lib\site-packages (from PyQt6>=6.6.0->-r requirements.txt (line 10)) (13.12.0)
+Requirement already satisfied: PyQt6-Qt6<6.12.0,>=6.11.0 in .\venv\Lib\site-packages (from PyQt6>=6.6.0->-r requirements.txt (line 10)) (6.11.2)
+Requirement already satisfied: arabic-reshaper>=3.0.0 in .\venv\Lib\site-packages (from xhtml2pdf>=0.2.0->-r requirements.txt (line 171)) (3.0.1)
+Requirement already satisfied: pyHanko>=0.12.1 in .\venv\Lib\site-packages (from xhtml2pdf>=0.2.0->-r requirements.txt (line 171)) (0.34.1)
+Requirement already satisfied: pyhanko-certvalidator>=0.19.5 in .\venv\Lib\site-packages (from xhtml2pdf>=0.2.0->-r requirements.txt (line 171)) (0.30.2)
+Requirement already satisfied: python-bidi>=0.5.0 in .\venv\Lib\site-packages (from xhtml2pdf>=0.2.0->-r requirements.txt (line 171)) (0.6.11)
+Requirement already satisfied: reportlab<6,>=4.4.9 in .\venv\Lib\site-packages (from xhtml2pdf>=0.2.0->-r requirements.txt (line 171)) (4.5.1)
+Requirement already satisfied: svglib>=1.2.1 in .\venv\Lib\site-packages (from xhtml2pdf>=0.2.0->-r requirements.txt (line 171)) (2.2.0)
+Requirement already satisfied: pydyf>=0.11.0 in .\venv\Lib\site-packages (from weasyprint>=60.0->-r requirements.txt (line 172)) (0.12.1)
+Requirement already satisfied: tinyhtml5>=2.0.0b1 in .\venv\Lib\site-packages (from weasyprint>=60.0->-r requirements.txt (line 172)) (2.1.0)
+Requirement already satisfied: tinycss2>=1.5.0 in .\venv\Lib\site-packages (from weasyprint>=60.0->-r requirements.txt (line 172)) (1.5.1)
+Requirement already satisfied: cssselect2>=0.8.0 in .\venv\Lib\site-packages (from weasyprint>=60.0->-r requirements.txt (line 172)) (0.9.0)
+Requirement already satisfied: Pyphen>=0.9.1 in .\venv\Lib\site-packages (from weasyprint>=60.0->-r requirements.txt (line 172)) (0.18.1)
+Collecting charset_normalizer<4,>=2 (from requests==2.33.1->-r requirements.txt (line 35))
+  Using cached charset_normalizer-3.5.2-cp311-cp311-win_amd64.whl.metadata (47 kB)
+Requirement already satisfied: courlan>=1.4.0 in .\venv\Lib\site-packages (from trafilatura>=1.0.0->-r requirements.txt (line 177)) (1.4.0)
+Collecting htmldate>=1.11.0 (from trafilatura>=1.0.0->-r requirements.txt (line 177))
+  Using cached htmldate-1.11.0-py3-none-any.whl.metadata (9.8 kB)
+Requirement already satisfied: justext>=3.0.2 in .\venv\Lib\site-packages (from trafilatura>=1.0.0->-r requirements.txt (line 177)) (3.0.2)
+INFO: pip is looking at multiple versions of trafilatura to determine which version is compatible with other requirements. This could take a while.
+Collecting trafilatura>=1.0.0 (from -r requirements.txt (line 177))
+  Using cached trafilatura-2.3.0-py3-none-any.whl.metadata (13 kB)
+Requirement already satisfied: htmldate>=1.10.0 in .\venv\Lib\site-packages (from trafilatura>=1.0.0->-r requirements.txt (line 177)) (1.10.0)
+Requirement already satisfied: cssselect>=1.5.0 in .\venv\Lib\site-packages (from scrapling>=0.2.0->scrapling[fetchers]>=0.2.0->-r requirements.txt (line 178)) (1.5.0)
+Requirement already satisfied: tld>=0.13.2 in .\venv\Lib\site-packages (from scrapling>=0.2.0->scrapling[fetchers]>=0.2.0->-r requirements.txt (line 178)) (0.13.2)
+Requirement already satisfied: w3lib>=2.4.1 in .\venv\Lib\site-packages (from scrapling>=0.2.0->scrapling[fetchers]>=0.2.0->-r requirements.txt (line 178)) (2.4.1)
+Requirement already satisfied: pyproject_hooks in .\venv\Lib\site-packages (from build>=1.0.3->chromadb==1.5.2->-r requirements.txt (line 69)) (1.2.0)
+Requirement already satisfied: pycparser in .\venv\Lib\site-packages (from cffi>=2.0.0->cryptography==46.0.5->-r requirements.txt (line 30)) (3.0)
+Requirement already satisfied: webencodings in .\venv\Lib\site-packages (from cssselect2>=0.8.0->weasyprint>=60.0->-r requirements.txt (line 172)) (0.6.1)
+Requirement already satisfied: zopfli>=0.1.4 in .\venv\Lib\site-packages (from fonttools[woff]>=4.59.2->weasyprint>=60.0->-r requirements.txt (line 172)) (0.4.3)
+Requirement already satisfied: dateparser>=1.1.2 in .\venv\Lib\site-packages (from htmldate>=1.10.0->trafilatura>=1.0.0->-r requirements.txt (line 177)) (1.4.2)
+Requirement already satisfied: jsonschema-specifications>=2023.03.6 in .\venv\Lib\site-packages (from jsonschema>=4.20.0->mcp==1.26.0->-r requirements.txt (line 60)) (2025.9.1)
+Requirement already satisfied: referencing>=0.28.4 in .\venv\Lib\site-packages (from jsonschema>=4.20.0->mcp==1.26.0->-r requirements.txt (line 60)) (0.37.0)
+Requirement already satisfied: rpds-py>=0.25.0 in .\venv\Lib\site-packages (from jsonschema>=4.20.0->mcp==1.26.0->-r requirements.txt (line 60)) (2026.6.3)
+Requirement already satisfied: websocket-client!=0.40.0,!=0.41.*,!=0.42.*,>=0.32.0 in .\venv\Lib\site-packages (from kubernetes>=28.1.0->chromadb==1.5.2->-r requirements.txt (line 69)) (1.9.0)
+Requirement already satisfied: durationpy>=0.7 in .\venv\Lib\site-packages (from kubernetes>=28.1.0->chromadb==1.5.2->-r requirements.txt (line 69)) (0.10)
+Requirement already satisfied: lxml_html_clean in .\venv\Lib\site-packages (from lxml[html_clean]>=4.4.2->justext>=3.0.2->trafilatura>=1.0.0->-r requirements.txt (line 177)) (0.4.5)
+Requirement already satisfied: antlr4-python3-runtime==4.9.* in .\venv\Lib\site-packages (from omegaconf!=2.2.1->rapidocr==3.9.2->-r requirements.txt (line 18)) (4.9.3)
+Requirement already satisfied: asn1crypto>=1.5.1 in .\venv\Lib\site-packages (from pyHanko>=0.12.1->xhtml2pdf>=0.2.0->-r requirements.txt (line 171)) (1.5.1)
+Requirement already satisfied: oscrypto>=1.1.0 in .\venv\Lib\site-packages (from pyhanko-certvalidator>=0.19.5->xhtml2pdf>=0.2.0->-r requirements.txt (line 171)) (1.3.0)
+Requirement already satisfied: uritools>=3.0.1 in .\venv\Lib\site-packages (from pyhanko-certvalidator>=0.19.5->xhtml2pdf>=0.2.0->-r requirements.txt (line 171)) (6.1.3)
+Requirement already satisfied: simple-websocket>=0.10.0 in .\venv\Lib\site-packages (from python-engineio>=4.11.0->python-socketio==5.16.1->-r requirements.txt (line 28)) (1.1.0)
+Requirement already satisfied: oauthlib>=3.0.0 in .\venv\Lib\site-packages (from requests-oauthlib>=0.7.0->google-auth-oauthlib==1.3.0->-r requirements.txt (line 115)) (3.3.1)
+Requirement already satisfied: narwhals>=2.0.1 in .\venv\Lib\site-packages (from scikit-learn>=0.22.0->sentence-transformers==5.4.0->-r requirements.txt (line 73)) (2.25.0)
+Requirement already satisfied: threadpoolctl>=3.5.0 in .\venv\Lib\site-packages (from scikit-learn>=0.22.0->sentence-transformers==5.4.0->-r requirements.txt (line 73)) (3.6.0)
+Requirement already satisfied: curl_cffi>=0.16.1 in .\venv\Lib\site-packages (from scrapling[fetchers]>=0.2.0->-r requirements.txt (line 178)) (0.16.1)
+INFO: pip is looking at multiple versions of scrapling[fetchers] to determine which version is compatible with other requirements. This could take a while.
+Collecting scrapling[fetchers]>=0.2.0 (from -r requirements.txt (line 178))
+  Using cached scrapling-0.4.14-py3-none-any.whl.metadata (39 kB)
+  Using cached scrapling-0.4.13-py3-none-any.whl.metadata (38 kB)
+  Using cached scrapling-0.4.12-py3-none-any.whl.metadata (38 kB)
+  Using cached scrapling-0.4.11-py3-none-any.whl.metadata (35 kB)
+  Using cached scrapling-0.4.10-py3-none-any.whl.metadata (37 kB)
+  Using cached scrapling-0.4.9-py3-none-any.whl.metadata (36 kB)
+  Using cached scrapling-0.4.8-py3-none-any.whl.metadata (37 kB)
+INFO: pip is still looking at multiple versions of scrapling[fetchers] to determine which version is compatible with other requirements. This could take a while.
+Requirement already satisfied: patchright==1.58.2 in .\venv\Lib\site-packages (from scrapling[fetchers]>=0.2.0->-r requirements.txt (line 178)) (1.58.2)
+Requirement already satisfied: browserforge>=1.2.4 in .\venv\Lib\site-packages (from scrapling[fetchers]>=0.2.0->-r requirements.txt (line 178)) (1.2.4)
+Requirement already satisfied: apify-fingerprint-datapoints>=0.12.0 in .\venv\Lib\site-packages (from scrapling[fetchers]>=0.2.0->-r requirements.txt (line 178)) (0.15.0)
+Requirement already satisfied: protego>=0.6.0 in .\venv\Lib\site-packages (from scrapling[fetchers]>=0.2.0->-r requirements.txt (line 178)) (0.6.2)
+Requirement already satisfied: wsproto in .\venv\Lib\site-packages (from simple-websocket>=0.10.0->python-engineio>=4.11.0->python-socketio==5.16.1->-r requirements.txt (line 28)) (1.3.2)
+Requirement already satisfied: networkx>=2.5.1 in .\venv\Lib\site-packages (from torch>=1.11.0->sentence-transformers==5.4.0->-r requirements.txt (line 73)) (3.6.1)
+Requirement already satisfied: mpmath<1.4,>=1.1.0 in .\venv\Lib\site-packages (from sympy->onnxruntime==1.24.3->-r requirements.txt (line 102)) (1.3.0)
+Requirement already satisfied: dill<0.3.9,>=0.3.0 in .\venv\Lib\site-packages (from datasets->colbert-ai==0.2.22->-r requirements.txt (line 130)) (0.3.8)
+Requirement already satisfied: multiprocess<0.70.17 in .\venv\Lib\site-packages (from datasets->colbert-ai==0.2.22->-r requirements.txt (line 130)) (0.70.16)
+Requirement already satisfied: gitdb<5,>=4.0.1 in .\venv\Lib\site-packages (from GitPython->colbert-ai==0.2.22->-r requirements.txt (line 130)) (4.0.12)
+Requirement already satisfied: smmap<6,>=3.0.1 in .\venv\Lib\site-packages (from gitdb<5,>=4.0.1->GitPython->colbert-ai==0.2.22->-r requirements.txt (line 130)) (5.0.3)
+Requirement already satisfied: llvmlite<0.50,>=0.49.0dev0 in .\venv\Lib\site-packages (from numba->unstructured==0.18.31->-r requirements.txt (line 85)) (0.49.0)
+Requirement already satisfied: pypdfium2>=5.0.0 in .\venv\Lib\site-packages (from unstructured-client->unstructured==0.18.31->-r requirements.txt (line 85)) (5.13.0)
+[OK] Dependencies up to date
+
+[OK] Node.js found
+
+[SKIP] node_modules already exists
+
+Creating desktop shortcut...
+✅ Kısyol oluşturuldu: C:\Users\nafio\OneDrive\Desktop\LLM Runner AIO.lnk
+   Hedef: launch_app.vbs → npx electron . (terminal GIZLI)
+   Çalışma dizini: D:\Programlar\LLM-Runner-AIO
+   İkon: D:\Programlar\LLM-Runner-AIO\assets\icon.ico
+   Pencere stili: Gizli (arka plan)
+[OK] Desktop shortcut created
+
+Syncing Pi configuration...
+============================================================
+  Syncing Pi Configuration Files
+============================================================
+  Base directory: D:\Programlar\LLM-Runner-AIO
+  Target dir:     C:\Users\nafio\.pi\agent
+------------------------------------------------------------
+[OK] mcp.json synced → C:\Users\nafio\.pi\agent\mcp.json
+[OK] settings.json synced → C:\Users\nafio\.pi\agent\settings.json
+[OK] AGENTS.md synced → C:\Users\nafio\.pi\agent\AGENTS.md
+[OK] auto-model-discovery.ts synced → C:\Users\nafio\.pi\agent\extensions\auto-model-discovery.ts
+[OK] providers.json synced → C:\Users\nafio\.pi\agent\providers.json
+------------------------------------------------------------
+[SUCCESS] All config files synced!
+============================================================
+[OK] Pi config synced
+
+========================================
+  Starting LLM Runner AIO (Electron)...
+========================================
+
+
+> llm-runner-aio@2.1.0 start
+> electron .
+
+
+[ELECTRON] LLM Runner AIO starting...
+[ELECTRON] App root: D:\Programlar\LLM-Runner-AIO\electron
+[ELECTRON] Project dir: D:\Programlar\LLM-Runner-AIO
+[CLEANUP] Scanning for orphaned processes...
+[CLEANUP] Cleaned up 0 orphaned process(es).
+[UI] Default menu bar hidden
+ERROR: The system was unable to find the specified registry key or value.
+[AUTOSTART] Disabled — skipping registry sync
+[TRAY] Icon loaded: D:\Programlar\LLM-Runner-AIO\assets\icon.ico
+[NOTIFICATION INFO]: Config Auto-Selected - Using gpu1vram16ram32models.ini for your GPU
+[DETECT] Found INI files: [
+  'gpu1vram10ram32models.ini',
+  'gpu1vram12ram32models.ini',
+  'gpu1vram16ram32models.ini',
+  'gpu1vram24ram32models.ini',
+  'gpu1vram32ram32models.ini',
+  'gpu1vram4ram16models.ini',
+  'gpu1vram4ram32models.ini',
+  'gpu1vram6ram16models.ini',
+  'gpu1vram6ram32models.ini',
+  'gpu1vram8ram32models.ini'
+]
+[DETECT] Selected INI: gpu1vram16ram32models.ini (score: 100)
+[DETECT] Final result: GPU=NVIDIA GeForce RTX 5080 Laptop GPU, VRAM=15.9208984375GB, INI=gpu1vram16ram32models.ini
+[DETECT] Found INI files: [
+  'gpu1vram10ram32models.ini',
+  'gpu1vram12ram32models.ini',
+  'gpu1vram16ram32models.ini',
+  'gpu1vram24ram32models.ini',
+  'gpu1vram32ram32models.ini',
+  'gpu1vram4ram16models.ini',
+  'gpu1vram4ram32models.ini',
+  'gpu1vram6ram16models.ini',
+  'gpu1vram6ram32models.ini',
+  'gpu1vram8ram32models.ini'
+]
+[DETECT] Selected INI: gpu1vram16ram32models.ini (score: 100)
+[DETECT] Final result: GPU=NVIDIA GeForce RTX 5080 Laptop GPU, VRAM=15.9208984375GB, INI=gpu1vram16ram32models.ini
+[CONFIG] Settings.yml updated: port=8080, bind=0.0.0.0
+[SPAWN] cmd=D:\Programlar\LLM-Runner-AIO\venv\Scripts\python.exe, args=[-m, searx.webapp], cwd=D:\Programlar\LLM-Runner-AIO\searxng, shell=false
+[SPAWN] Child PID: 13256
+[SEARXNG ERROR] INFO    searx                         : max_request_timeout=None
+[SEARXNG ERROR] ERROR   searx                         : Error while getting the version: fatal: not a git repository (or any of the parent directories): .git
+[SEARXNG ERROR] ERROR   searx                         : Error while getting the git URL & branch: fatal: not a git repository (or any of the parent directories): .git
+[SEARXNG ERROR] INFO    searx                         : version: 1.0.0
+[SEARXNG ERROR] DEBUG   asyncio                       : Using proactor: IocpProactor
+[SEARXNG ERROR] DEBUG   searx.data                    : init searx.data.ENGINE_DESCRIPTIONS
+[SEARXNG ERROR] DEBUG   searx.data                    : init searx.data.USER_AGENTS
+[SEARXNG ERROR] DEBUG   searx.data                    : init searx.data.WIKIDATA_UNITS
+[SEARXNG ERROR] DEBUG   searx.data                    : init searx.data.EXTERNAL_URLS
+[SEARXNG ERROR] DEBUG   searx.data                    : init searx.data.ENGINE_TRAITS
+[SEARXNG ERROR] DEBUG   searx.data                    : init searx.data.EXTERNAL_BANGS
+[SEARXNG ERROR] DEBUG   searx.webapp                  : static directory is D:\Programlar\LLM-Runner-AIO\searxng\searx\static
+DEBUG   searx.webapp                  : templates directory is D:\Programlar\LLM-Runner-AIO\searxng\searx\templates
+[SEARXNG ERROR] DEBUG   searx.data                    : init searx.data.LOCALES
+[SEARXNG ERROR] DEBUG   searx.plugins.calculator      : plugin has been loaded
+[SEARXNG ERROR] DEBUG   searx.plugins.infiniteScroll  : plugin has been loaded
+[SEARXNG ERROR] DEBUG   searx.plugins.hash_plugin     : plugin has been loaded
+[SEARXNG ERROR] DEBUG   searx.plugins.self_info       : plugin has been loaded
+[SEARXNG ERROR] DEBUG   searx.plugins.unit_converter  : plugin has been loaded
+DEBUG   searx.plugins.ahmia_filter    : plugin has been loaded
+[SEARXNG ERROR] DEBUG   searx.plugins.hostnames       : plugin has been loaded
+[SEARXNG ERROR] DEBUG   searx.plugins.time_zone       : plugin has been loaded
+[SEARXNG ERROR] DEBUG   searx.plugins.oa_doi_rewrite  : plugin has been loaded
+[SEARXNG ERROR] DEBUG   searx.plugins.tor_check       : plugin has been loaded
+[SEARXNG ERROR] DEBUG   searx.plugins.tracker_url_remo: plugin has been loaded
+DEBUG   searx.sqlitedb                : [2576] SQLiteProperties(C:\Users\nafio\AppData\Local\Temp\sxng_cache_DATA_CACHE.db) {'check_same_thread': False, 'cached_statements': 0} // WAL
+[SEARXNG ERROR] DEBUG   searx.sqlitedb                : init properties of DB: C:\Users\nafio\AppData\Local\Temp\sxng_cache_DATA_CACHE.db
+DEBUG   searx.sqlitedb                : [2576] DBSession: SQLiteProperties(C:\Users\nafio\AppData\Local\Temp\sxng_cache_DATA_CACHE.db) --> created new connection
+[SEARXNG ERROR] ERROR   searx.engines                 : loading engine ahmia failed: set engine to inactive!
+[SEARXNG ERROR] DEBUG   searx.data                    : init searx.data.OSM_KEYS_TAGS
+[SEARXNG ERROR] ERROR   searx.engines                 : loading engine torch failed: set engine to inactive!
+[SEARXNG ERROR] DEBUG   searx.sqlitedb                : [19864] SQLiteProperties(C:\Users\nafio\AppData\Local\Temp\sxng_cache_ENGINES_CACHE.db) {'check_same_thread': False, 'cached_statements': 0} // WAL
+[SEARXNG ERROR] DEBUG   searx.sqlitedb                : init properties of DB: C:\Users\nafio\AppData\Local\Temp\sxng_cache_ENGINES_CACHE.db
+[SEARXNG ERROR] DEBUG   searx.sqlitedb                : [19864] DBSession: SQLiteProperties(C:\Users\nafio\AppData\Local\Temp\sxng_cache_ENGINES_CACHE.db) --> created new connection
+[SEARXNG ERROR] DEBUG   searx.sqlitedb                : [5620] SQLiteProperties(C:\Users\nafio\AppData\Local\Temp\sxng_cache_ENGINES_CACHE.db) {'check_same_thread': False, 'cached_statements': 0} // WAL
+[SEARXNG ERROR] DEBUG   searx.sqlitedb                : [19864] ExpireCacheSQLite(C:\Users\nafio\AppData\Local\Temp\sxng_cache_ENGINES_CACHE.db) {'check_same_thread': False, 'cached_statements': 0} // WAL
+[SEARXNG ERROR] DEBUG   searx.botdetection.config     : load schema file: D:\Programlar\LLM-Runner-AIO\searxng\searx\limiter.toml
+[SEARXNG ERROR] WARNING searx.botdetection.config     : missing config file: D:\Programlar\LLM-Runner-AIO\searxng\searx-data\limiter.toml
+[SEARXNG ERROR] DEBUG   searx.favicons                : load favicon config: D:\Programlar\LLM-Runner-AIO\searxng\searx\favicons\favicons.toml
+[SEARXNG ERROR] DEBUG   searx.webapp                  : run local development server (DEBUG) on 0.0.0.0:8080
+[SEARXNG] * Serving Flask app 'webapp'
+ * Debug mode: on
+[SEARXNG ERROR] DEBUG   searx.sqlitedb                : init DB: C:\Users\nafio\AppData\Local\Temp\sxng_cache_ENGINES_CACHE.db
+[SEARXNG ERROR] DEBUG   searx.sqlitedb                : [5620] DBSession: SQLiteProperties(C:\Users\nafio\AppData\Local\Temp\sxng_cache_ENGINES_CACHE.db) --> created new connection
+DEBUG   searx.sqlitedb                : DB_SCHEMA = 1
+DEBUG   searx.cache                   : deleted 0 keys from table eng_radio_browser (expire date reached)
+DEBUG   searx.cache                   : deleted 0 keys from table eng_wikidata (expire date reached)
+DEBUG   searx.cache                   : deleted 0 keys from table eng_startpage (expire date reached)
+[SEARXNG ERROR] DEBUG   searx.cache                   : deleted 0 keys from table eng_duckduckgo (expire date reached)
+[SEARXNG ERROR] INFO    werkzeug                      : WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://192.168.1.185:8080
+INFO    werkzeug                      : Press CTRL+C to quit
+[SEARXNG ERROR] DEBUG   searx.network.wikidata        : HTTP Request: GET https://query.wikidata.org/sparql?query=%0ASELECT+%3Fitem+%3Fname%0AWHERE+%7B%0A++++%7B%0A++++++SELECT+%3Fitem%0A++++++WHERE+%7B+%3Fitem+wdt%3AP279%2A+wd%3AQ12132+%7D%0A++++%7D+UNION+%7B%0A++++++VALUES+%3Fitem+%7B+wd%3AP571+wd%3AP576+wd%3AP580+wd%3AP582+wd%3AP569+wd%3AP570+wd%3AP619+wd%3AP620+wd%3AP27+wd%3AP495+wd%3AP17+wd%3AP159+wd%3AP36+wd%3AP35+wd%3AP6+wd%3AP122+wd%3AP37+wd%3AP1082+wd%3AP2046+wd%3AP281+wd%3AP38+wd%3AP2048+wd%3AP400+wd%3AP50+wd%3AP170+wd%3AP57+wd%3AP175+wd%3AP178+wd%3AP162+wd%3AP176+wd%3AP58+wd%3AP272+wd%3AP264+wd%3AP123+wd%3AP449+wd%3AP750+wd%3AP86+wd%3AP577+wd%3AP136+wd%3AP364+wd%3AP212+wd%3AP957+wd%3AP275+wd%3AP277+wd%3AP348+wd%3AP840+wd%3AP1098+wd%3AP282+wd%3AP1018+wd%3AP218+wd%3AP169+wd%3AP112+wd%3AP1454+wd%3AP137+wd%3AP1029+wd%3AP225+wd%3AP274+wd%3AP1346+wd%3AP1120+wd%3AP498+wd%3AP856+wd%3AP1324+wd%3AP1581+%7D%0A++++%7D%0A++++OPTIONAL+%7B+%3Fitem+rdfs%3Alabel+%3Fname.+%7D%0A%7D%0A "HTTP/2 403 Forbidden" (text/html; charset=utf-8)
+[SEARXNG ERROR] WARNING searx.network.wikidata        : HTTP Request failed: GET https://query.wikidata.org/sparql?query=%0ASELECT+%3Fitem+%3Fname%0AWHERE+%7B%0A++++%7B%0A++++++SELECT+%3Fitem%0A++++++WHERE+%7B+%3Fitem+wdt%3AP279%2A+wd%3AQ12132+%7D%0A++++%7D+UNION+%7B%0A++++++VALUES+%3Fitem+%7B+wd%3AP571+wd%3AP576+wd%3AP580+wd%3AP582+wd%3AP569+wd%3AP570+wd%3AP619+wd%3AP620+wd%3AP27+wd%3AP495+wd%3AP17+wd%3AP159+wd%3AP36+wd%3AP35+wd%3AP6+wd%3AP122+wd%3AP37+wd%3AP1082+wd%3AP2046+wd%3AP281+wd%3AP38+wd%3AP2048+wd%3AP400+wd%3AP50+wd%3AP170+wd%3AP57+wd%3AP175+wd%3AP178+wd%3AP162+wd%3AP176+wd%3AP58+wd%3AP272+wd%3AP264+wd%3AP123+wd%3AP449+wd%3AP750+wd%3AP86+wd%3AP577+wd%3AP136+wd%3AP364+wd%3AP212+wd%3AP957+wd%3AP275+wd%3AP277+wd%3AP348+wd%3AP840+wd%3AP1098+wd%3AP282+wd%3AP1018+wd%3AP218+wd%3AP169+wd%3AP112+wd%3AP1454+wd%3AP137+wd%3AP1029+wd%3AP225+wd%3AP274+wd%3AP1346+wd%3AP1120+wd%3AP498+wd%3AP856+wd%3AP1324+wd%3AP1581+%7D%0A++++%7D%0A++++OPTIONAL+%7B+%3Fitem+rdfs%3Alabel+%3Fname.+%7D%0A%7D%0A
+[SEARXNG ERROR] ERROR   searx.searx.search.processor  : Init method of engine wikidata failed due to an exception.
+Traceback (most recent call last):
+  File "D:\Programlar\LLM-Runner-AIO\searxng\searx\search\processors\abstract.py", line 155, in init_engine
+    init_ok = self.engine.init(eng_setting)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programlar\LLM-Runner-AIO\searxng\searx\engines\wikidata.py", line 830, in init
+    init_wikidata_properties()
+  File "D:\Programlar\LLM-Runner-AIO\searxng\searx\engines\wikidata.py", line 852, in init_wikidata_properties
+    jsonresponse = send_wikidata_query(query, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programlar\LLM-Runner-AIO\searxng\searx\engines\wikidata.py", line 471, in send_wikidata_query
+    http_response = get(SPARQL_ENDPOINT_URL + "?" + urlencode({"query": query}), headers=get_headers(), **kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programlar\LLM-Runner-AIO\searxng\searx\network\__init__.py", line 175, in get
+    return request('get', url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programlar\LLM-Runner-AIO\searxng\searx\network\__init__.py", line 106, in request
+    return future.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nafio\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nafio\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "D:\Programlar\LLM-Runner-AIO\searxng\searx\network\network.py", line 304, in request
+    return await self.call_client(False, method, url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programlar\LLM-Runner-AIO\searxng\searx\network\network.py", line 287, in call_client
+    return self.patch_response(response, do_raise_for_httperror)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programlar\LLM-Runner-AIO\searxng\searx\network\network.py", line 256, in patch_response
+    raise_for_httperror(response)
+  File "D:\Programlar\LLM-Runner-AIO\searxng\searx\network\raise_for_httperror.py", line 76, in raise_for_httperror
+    raise SearxEngineAccessDeniedException(message='HTTP error ' + str(resp.status_code))
+searx.exceptions.SearxEngineAccessDeniedException: HTTP error 403 (suspended_time=180)
+ERROR   searx.search.processors       : can't register engine processor: wikidata (init failed)
+[STATE] searxng → RUNNING (port: 8080)
+[DETECT] Found INI files: [
+  'gpu1vram10ram32models.ini',
+  'gpu1vram12ram32models.ini',
+  'gpu1vram16ram32models.ini',
+  'gpu1vram24ram32models.ini',
+  'gpu1vram32ram32models.ini',
+  'gpu1vram4ram16models.ini',
+  'gpu1vram4ram32models.ini',
+  'gpu1vram6ram16models.ini',
+  'gpu1vram6ram32models.ini',
+  'gpu1vram8ram32models.ini'
+]
+[DETECT] Selected INI: gpu1vram16ram32models.ini (score: 100)
+[DETECT] Final result: GPU=NVIDIA GeForce RTX 5080 Laptop GPU, VRAM=15.9208984375GB, INI=gpu1vram16ram32models.ini
+[DETECT] Found INI files: [
+  'gpu1vram10ram32models.ini',
+  'gpu1vram12ram32models.ini',
+  'gpu1vram16ram32models.ini',
+  'gpu1vram24ram32models.ini',
+  'gpu1vram32ram32models.ini',
+  'gpu1vram4ram16models.ini',
+  'gpu1vram4ram32models.ini',
+  'gpu1vram6ram16models.ini',
+  'gpu1vram6ram32models.ini',
+  'gpu1vram8ram32models.ini'
+]
+[DETECT] Selected INI: gpu1vram16ram32models.ini (score: 100)
+[DETECT] Final result: GPU=NVIDIA GeForce RTX 5080 Laptop GPU, VRAM=15.9208984375GB, INI=gpu1vram16ram32models.ini
+[NOTIFICATION INFO]: Success - Startup options saved.
+[DETECT] Found INI files: [
+  'gpu1vram10ram32models.ini',
+  'gpu1vram12ram32models.ini',
+  'gpu1vram16ram32models.ini',
+  'gpu1vram24ram32models.ini',
+  'gpu1vram32ram32models.ini',
+  'gpu1vram4ram16models.ini',
+  'gpu1vram4ram32models.ini',
+  'gpu1vram6ram16models.ini',
+  'gpu1vram6ram32models.ini',
+  'gpu1vram8ram32models.ini'
+]
+[DETECT] Selected INI: gpu1vram16ram32models.ini (score: 100)
+[DETECT] Final result: GPU=NVIDIA GeForce RTX 5080 Laptop GPU, VRAM=15.9208984375GB, INI=gpu1vram16ram32models.ini
+[SPAWN] cmd=D:\Programlar\LLM-Runner-AIO\venv\Scripts\python.exe, args=[-c, import sys; sys.path.insert(0, r'D:\Programlar\LLM-Runner-AIO\openwebui\backend'); import uvicorn; uvicorn.run('open_webui.main:app', host='0.0.0.0', port=3000, forwarded_allow_ips='*', ws='auto')], cwd=D:\Programlar\LLM-Runner-AIO\openwebui, shell=false
+[SPAWN] Child PID: 9468
+[STATE] strata → RUNNING (port: 1235)
+[NOTIFICATION INFO]: Success - strata started on port 1235
+[CLEAN] .next directory cleaned (Turbopack junction fix)
+[START] Node.js found: C:\Program Files\nodejs\node.exe
+[VANE] Config: Local Network mode (all origins)
+[VANE] next.config.mjs updated for host: 0.0.0.0
+[SPAWN] cmd=npm, args=[run, dev, --, -p, 3001], cwd=D:\Programlar\LLM-Runner-AIO\Vane, shell=true
+[SPAWN] Child PID: 19724
+[VANE] > vane@1.12.2 dev
+> next dev -p 3001
+
+▲ Next.js 16.2.2 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.1.185:3001
+✓ Ready in 436ms
+[OPENWEBUI ERROR] INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade d4c1a8e37b62 -> a7d3e9f2b641, add MFA state and account session stamps
+INFO  [alembic.runtime.migration] Running upgrade a7d3e9f2b641 -> b8e4f0a3c752, Add single-parent group hierarchy.
+INFO  [alembic.runtime.migration] Running upgrade b8e4f0a3c752 -> d6a8c3f912ab, Add immutable multi-file skill snapshots, preserving existing instruction bytes.
+INFO  [alembic.runtime.migration] Running upgrade d6a8c3f912ab -> e7b9d4a023bc, Add model configuration history and initialize Production versions.
+[STATE] vane → RUNNING (port: 3001)
+[NOTIFICATION INFO]: Success - vane started on port 3001
+[OPENWEBUI ERROR] INFO  [alembic.runtime.migration] Running upgrade e7b9d4a023bc -> f8c0e5b134cd, Add Tool and Function history without executing or rewriting plugin source.
+[OPENWEBUI ERROR] INFO  [alembic.runtime.migration] Running upgrade f8c0e5b134cd -> b8f2c6d91a04, Add a PostgreSQL index for pending knowledge files.
+[VANE] Running database migrations...
+[VANE] Skipping already-applied migration: 0000_fuzzy_randall.sql
+[VANE] Skipping already-applied migration: 0001_wise_rockslide.sql
+[VANE] Skipping already-applied migration: 0002_daffy_wrecker.sql
+Database migrations completed successfully
+[VANE]
+[OPENWEBUI ERROR] WARNI [open_webui.env]
+
+WARNING: CORS_ALLOW_ORIGIN IS SET TO '*' - NOT RECOMMENDED FOR PRODUCTION DEPLOYMENTS.
+[OPENWEBUI ERROR] D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\pydub\utils.py:170: RuntimeWarning: Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work
+  warn("Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work", RuntimeWarning)
+[OPENWEBUI ERROR] Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\main.py", line 606, in run
+[OPENWEBUI ERROR] server.run()
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\server.py", line 75, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\_compat.py", line 30, in asyncio_run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\nafio\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nafio\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 654, in run_until_complete
+[OPENWEBUI ERROR] return future.result()
+           ^^^^^^^^^^^^^^^
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\server.py", line 79, in serve
+    await self._serve(sockets)
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\server.py", line 86, in _serve
+    config.load()
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\config.py", line 441, in load
+[OPENWEBUI ERROR] self.loaded_app = import_from_string(self.app)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\importer.py", line 22, in import_from_string
+[OPENWEBUI ERROR] raise exc from None
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nafio\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py", line 126, in import_module
+[OPENWEBUI ERROR] return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "D:\Programlar\LLM-Runner-AIO\openwebui\backend\open_webui\main.py", line 152, in <module>
+[OPENWEBUI ERROR] from open_webui.routers import (
+  File "D:\Programlar\LLM-Runner-AIO\openwebui\backend\open_webui\routers\auths.py", line 63, in <module>
+[OPENWEBUI ERROR] from open_webui.routers.mfa import MfaRoute
+  File "D:\Programlar\LLM-Runner-AIO\openwebui\backend\open_webui\routers\mfa.py", line 24, in <module>
+    from open_webui.utils import mfa
+[OPENWEBUI ERROR] File "D:\Programlar\LLM-Runner-AIO\openwebui\backend\open_webui\utils\mfa.py", line 14, in <module>
+    import pyotp
+ModuleNotFoundError: No module named 'pyotp'
+[openwebui] Exited with code 1, signal null
+[STATE] openwebui → STOPPED (port: 3000)
+[STATE] openwebui → STOPPED (port: 3000)
+[openwebui] Start failed: openwebui hazir olmadi (60 sn icinde port 3000 dinlemeye gecmedi).
+Son hata ciktilari:
+e
+    await self._serve(sockets)
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\server.py", line 86, in _serve
+    config.load()
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\config.py", line 441, in load
+    self.loaded_app = import_from_string(self.app)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\importer.py", line 22, in import_from_string
+    raise exc from None
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nafio\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "D:\Programlar\LLM-Runner-AIO\openwebui\backend\open_webui\main.py", line 152, in <module>
+    from open_webui.routers import (
+  File "D:\Programlar\LLM-Runner-AIO\openwebui\backend\open_webui\routers\auths.py", line 63, in <module>
+    from open_webui.routers.mfa import MfaRoute
+  File "D:\Programlar\LLM-Runner-AIO\openwebui\backend\open_webui\routers\mfa.py", line 24, in <module>
+    from open_webui.utils import mfa
+  File "D:\Programlar\LLM-Runner-AIO\openwebui\backend\open_webui\utils\mfa.py", line 14, in <module>
+    import pyotp
+ModuleNotFoundError: No module named 'pyotp'
+[NOTIFICATION INFO]: Error - Could not start openwebui: openwebui hazir olmadi (60 sn icinde port 3000 dinlemeye gecmedi).
+Son hata ciktilari:
+e
+    await self._serve(sockets)
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\server.py", line 86, in _serve
+    config.load()
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\config.py", line 441, in load
+    self.loaded_app = import_from_string(self.app)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\importer.py", line 22, in import_from_string
+    raise exc from None
+  File "D:\Programlar\LLM-Runner-AIO\venv\Lib\site-packages\uvicorn\importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nafio\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "D:\Programlar\LLM-Runner-AIO\openwebui\backend\open_webui\main.py", line 152, in <module>
+    from open_webui.routers import (
+  File "D:\Programlar\LLM-Runner-AIO\openwebui\backend\open_webui\routers\auths.py", line 63, in <module>
+    from open_webui.routers.mfa import MfaRoute
+  File "D:\Programlar\LLM-Runner-AIO\openwebui\backend\open_webui\routers\mfa.py", line 24, in <module>
+    from open_webui.utils import mfa
+  File "D:\Programlar\LLM-Runner-AIO\openwebui\backend\open_webui\utils\mfa.py", line 14, in <module>
+    import pyotp
+ModuleNotFoundError: No module named 'pyotp'
+[STATE] strata → STOPPED (port: 1235)
+[STATE] strata → STOPPED (port: 1235)
+[NOTIFICATION INFO]: Success - Strata config guncellendi. Context/vision degistiysen 🎯 Calibrate calistir, sonra Start.
+[DETECT] Found INI files: [
+  'gpu1vram10ram32models.ini',
+  'gpu1vram12ram32models.ini',
+  'gpu1vram16ram32models.ini',
+  'gpu1vram24ram32models.ini',
+  'gpu1vram32ram32models.ini',
+  'gpu1vram4ram16models.ini',
+  'gpu1vram4ram32models.ini',
+  'gpu1vram6ram16models.ini',
+  'gpu1vram6ram32models.ini',
+  'gpu1vram8ram32models.ini'
+]
+[DETECT] Selected INI: gpu1vram16ram32models.ini (score: 100)
+[DETECT] Final result: GPU=NVIDIA GeForce RTX 5080 Laptop GPU, VRAM=15.9208984375GB, INI=gpu1vram16ram32models.ini
+[NOTIFICATION INFO]: Success - Strata config guncellendi. Context/vision degistiysen 🎯 Calibrate calistir, sonra Start.
+[DETECT] Found INI files: [
+  'gpu1vram10ram32models.ini',
+  'gpu1vram12ram32models.ini',
+  'gpu1vram16ram32models.ini',
+  'gpu1vram24ram32models.ini',
+  'gpu1vram32ram32models.ini',
+  'gpu1vram4ram16models.ini',
+  'gpu1vram4ram32models.ini',
+  'gpu1vram6ram16models.ini',
+  'gpu1vram6ram32models.ini',
+  'gpu1vram8ram32models.ini'
+]
+[DETECT] Selected INI: gpu1vram16ram32models.ini (score: 100)
+[DETECT] Final result: GPU=NVIDIA GeForce RTX 5080 Laptop GPU, VRAM=15.9208984375GB, INI=gpu1vram16ram32models.ini
+[NOTIFICATION INFO]: Success - Strata config guncellendi. Context/vision degistiysen 🎯 Calibrate calistir, sonra Start.
+[DETECT] Found INI files: [
+  'gpu1vram10ram32models.ini',
+  'gpu1vram12ram32models.ini',
+  'gpu1vram16ram32models.ini',
+  'gpu1vram24ram32models.ini',
+  'gpu1vram32ram32models.ini',
+  'gpu1vram4ram16models.ini',
+  'gpu1vram4ram32models.ini',
+  'gpu1vram6ram16models.ini',
+  'gpu1vram6ram32models.ini',
+  'gpu1vram8ram32models.ini'
+]
+[DETECT] Selected INI: gpu1vram16ram32models.ini (score: 100)
+[DETECT] Final result: GPU=NVIDIA GeForce RTX 5080 Laptop GPU, VRAM=15.9208984375GB, INI=gpu1vram16ram32models.ini

@@ -2259,6 +2259,69 @@ function runWan2gpCapture(commandArgs) {
 // "The following untracked working tree files would be overwritten by merge".
 // Engelleyen kopyalar .tmp/untracked_backup_<ts>/ altina tasinir; pull temiz ilerler.
 // ============================================
+// OW veritabani kurtarma: yarim kalan Update, openwebui.db'yi .temp_backup'a tasir ve
+// geri yukleme adimi calismadan kalabilir; OW sonra bos yeni DB uretir (onboarding!).
+// Bu yardimci startServer(openwebui) oncesinde devreye girer.
+function rescueOpenwebuiDatabase(log) {
+    try {
+        const openwebuiDir = path.join(PROJECT_DIR, 'openwebui');
+        const dbPath = path.join(openwebuiDir, 'openwebui.db');
+        const tempDir = path.join(PROJECT_DIR, '.temp_backup');
+        if (!fs.existsSync(tempDir)) return;
+        const backups = fs.readdirSync(tempDir)
+            .filter(f => f.startsWith('openwebui.db.') && f.endsWith('.bak'))
+            .map(f => ({ f, t: fs.statSync(path.join(tempDir, f)).mtimeMs }))
+            .sort((a, b) => b.t - a.t);
+        if (!backups.length) return;
+        const latest = path.join(tempDir, backups[0].f);
+
+        const countUsers = (dbFile) => {
+            // better-sqlite3 paketli ortamda varsa onu, degilse Node 22.5+ node:sqlite modülünü dener.
+            try {
+                const Database = require('better-sqlite3');
+                const db = new Database(dbFile, { readonly: true });
+                try { return db.prepare('SELECT COUNT(*) AS n FROM user').get().n; }
+                finally { db.close(); }
+            } catch (e) {}
+            try {
+                const { DatabaseSync } = require('node:sqlite');
+                const db = new DatabaseSync(dbFile, { readOnly: true });
+                try { return db.prepare('SELECT COUNT(*) AS n FROM user').get().n; }
+                finally { db.close(); }
+            } catch (e) { return null; }
+        };
+
+        if (!fs.existsSync(dbPath)) {
+            fs.copyFileSync(latest, dbPath);
+            log(`🛡️ Database kurtarıldı: .temp_backup/${backups[0].f} -> openwebui/openwebui.db`);
+            return;
+        }
+
+        // Yeni (bos) DB ile yedek karsilastirmasi: kullanici sayisi 0 olan yeni DB, icinde
+        // kullanici olan yedek lehine degistirilir (yenisi kaybolmaz, .empty-<ts>.db olarak kalir).
+        // Karar verisi: kullanici sayilari (sqlite erisebilirse) + boyut sezgisi (erisilemezse).
+        const cur = countUsers(dbPath);
+        const bak = countUsers(latest);
+        const curSize = fs.statSync(dbPath).size;
+        const bakSize = fs.statSync(latest).size;
+        // Boyut sezgisi (yalnizca sqlite hic okunamiyorsa - Electron 33 semasi): yeni olusan
+        // bos DB sabit sema ile ~1-5 MB'dir; gercek veri tabani kullanicilar/sohbetlerle
+        // buyuktur. Karar belirsizse aktif DB asla silinmez, 'replaced-' adıyla saklanır.
+        const swap = (cur === 0 && bak !== null && bak > 0) ||
+                     (cur === null && bak === null && curSize < 5 * 1024 * 1024 && bakSize > 3 * curSize);
+        if (swap) {
+            const kept = path.join(openwebuiDir, `openwebui.replaced-${Date.now()}.db`);
+            fs.renameSync(dbPath, kept);
+            fs.copyFileSync(latest, dbPath);
+            log(`🛡️ Database kurtarıldı: yeni DB yerine .temp_backup/${backups[0].f} geri yuklendi (yedek: ${bak !== null ? bak + ' kullanici' : Math.round(bakSize / 1024) + ' KB'}, degistirilen DB '${path.basename(kept)}' olarak saklandı)`);
+        } else {
+            log(`ℹ️ .temp_backup/${backups[0].f} duruyor. Geri donmek isterseniz: OW'u durdurun, bu dosyayi openwebui/openwebui.db olarak kopyalayin, OW'u baslatin.`);
+        }
+    } catch (e) {
+        log(`⚠️ Database rescue hatası: ${e.message}`);
+    }
+}
+
 function quarantineUntrackedOverwriteBlockers(dir, log) {
     try {
         const fetchRes = spawnSync('git', ['fetch'], { cwd: dir, encoding: 'utf8', timeout: 120000 });
@@ -2403,7 +2466,11 @@ async function startServer(serverType, options = {}) {
                 return { success: false, error: `venv\\Scripts\\python.exe bulunamadı: ${venvPython}` };
             }
             
-            // WEBUI_SECRET_KEY oluştur
+            // WEBUI_SECRET_KEY olustur
+            rescueOpenwebuiDatabase((m) => {
+                console.log(m);
+                try { safeSend('server-log', { type: 'openwebui', message: m }); } catch (e) {}
+            });
             const secretKeyPath = path.join(PROJECT_DIR, '.webui_secret_key');
             let secretKey = '';
             if (!fs.existsSync(secretKeyPath)) {
@@ -3552,15 +3619,16 @@ ipcMain.handle('server-update', async (_event, serverType) => {
                     fs.copyFileSync(dbBackupPath, dbOriginalPath);
                     log(`🛡️ Database restored: openwebui.db (${fs.statSync(dbBackupPath).size} bytes)`);
                     
-                    // Temp backup'ı temizle
+                    // Temp backup'i temizle - EN SON yedigi bir sigorta olarak sakla
                     const tempDir = path.dirname(dbBackupPath);
-                    fs.readdirSync(tempDir).forEach(file => {
-                        if (file.startsWith('openwebui.db.')) {
-                            const oldBackup = path.join(tempDir, file);
-                            fs.unlinkSync(oldBackup);
-                        }
+                    const oldBackups = fs.readdirSync(tempDir)
+                        .filter(file => file.startsWith('openwebui.db.') && file.endsWith('.bak'))
+                        .map(f => ({ f, t: fs.statSync(path.join(tempDir, f)).mtimeMs }))
+                        .sort((a, b) => b.t - a.t);
+                    oldBackups.slice(1).forEach(({ f }) => {
+                        try { fs.unlinkSync(path.join(tempDir, f)); } catch (e) {}
                     });
-                    log(`🧹 Old backups cleaned up.`);
+                    if (oldBackups.length) log(`🧹 Eski backup'lar temizlendi (son yedek .temp_backup/${oldBackups[0].f} olarak korundu).`);
                 } catch (e) {
                     log(`⚠️ Failed to restore database: ${e.message}`);
                 }

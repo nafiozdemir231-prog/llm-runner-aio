@@ -1,5 +1,6 @@
-current_step: 9
-status: in_progress
-last_action: tasks/ klasoru guncellendi: project.md (Strata akisi + strata-layer/ + electron/strata.js + yeni satir sayilari), todo.md (v2 adimleri kapatildi; v3 bolumu eklendi, madde 9 = hedef PC elle kabul bekliyor), changes.md (tum oturum kayitli). Son kod commitleri: dd15bb3 (update rebase dayanikli), 3da0630 (kalibrasyon UX + API key + query auth), 7b2d21d, a7497a1.
-next_action: Madde 9 - hedef PCde elle kabul testleri (Update -> Start -> Open in Browser key'li -> OW sohbet -> idle unload -> auto-start); istenirse CHOICES'e UD-IQ4_XS/UD-Q4_K_XL ekleme
-blocked: false (kullanici testi bekliyor)
+current_step: done
+status: complete
+verdict: PASS
+last_action: HAT-42 kapatildi (commit 932a582) - strata-layer/gateway.py ctx_from_cfg; ark yuklu degilken de /v1/models gercek ctx bildiriyor; .tmp/gwtest canli test PASS (unloaded -> n_ctx 131072)
+next_action: Hedef PC: gateway dosyasini kopyala/Update yap, pi'yi yeniden baslat (/model listesinde ctx artik dogru); ayrica bekleyen: Providers gorme-testi, OSC 7501 (Faz 15)
+blocked: false

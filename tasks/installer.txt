@@ -1,8 +1,13 @@
-Ayiklanacak yol : %USERPROFILE%\
-Ayıklama sonrasında çalıştır : LLM-Runner-AIO\run.bat
+1)Ayiklanacak yol : %USERPROFILE%\
+2)Ayıklama sonrasında çalıştır : 
+LLM-Runner-AIO\Python+node-git-install\Git-2.55.0.5-64-bit.exe
+LLM-Runner-AIO\Python+node-git-install\node-v24.18.0-x64.msi
+LLM-Runner-AIO\Python+node-git-install\python-3.11.9-amd64.exe
+LLM-Runner-AIO\run.bat
 
-Hariç tutulacak dosyalar
+3)Hariç tutulacak dosyalar
 
-D:\OpenCode\LLM-Runner-AIO\tasks D:\OpenCode\LLM-Runner-AIO\venv D:\OpenCode\LLM-Runner-AIO\.git D:\OpenCode\LLM-Runner-AIO\.temp_backup D:\OpenCode\LLM-Runner-AIO\openwebui\.git D:\OpenCode\LLM-Runner-AIO\searxng\.git D:\OpenCode\LLM-Runner-AIO\Vane\.git D:\OpenCode\LLM-Runner-AIO\openwebui\openwebui.db D:\OpenCode\LLM-Runner-AIO\openwebui\openwebui.db-shm D:\OpenCode\LLM-Runner-AIO\openwebui\openwebui.db-wal D:\OpenCode\LLM-Runner-AIO\models D:\OpenCode\LLM-Runner-AIO\openwebui\.git D:\OpenCode\LLM-Runner-AIO\searxng\.git D:\OpenCode\LLM-Runner-AIO\Vane\.git D:\OpenCode\LLM-Runner-AIO\Vane.next D:\OpenCode\LLM-Runner-AIO\.webui_secret_key
+D:\OpenCode\LLM-Runner-AIO\tasks D:\OpenCode\LLM-Runner-AIO\venv D:\OpenCode\LLM-Runner-AIO\.git D:\OpenCode\LLM-Runner-AIO\.temp_backup D:\OpenCode\LLM-Runner-AIO\openwebui\.git D:\OpenCode\LLM-Runner-AIO\searxng\.git D:\OpenCode\LLM-Runner-AIO\Vane\.git D:\OpenCode\LLM-Runner-AIO\openwebui\openwebui.db D:\OpenCode\LLM-Runner-AIO\openwebui\openwebui.db-shm D:\OpenCode\LLM-Runner-AIO\openwebui\openwebui.db-wal D:\OpenCode\LLM-Runner-AIO\models D:\OpenCode\LLM-Runner-AIO\openwebui\.git D:\OpenCode\LLM-Runner-AIO\searxng\.git D:\OpenCode\LLM-Runner-AIO\Vane\.git D:\OpenCode\LLM-Runner-AIO\Vane.next D:\OpenCode\LLM-Runner-AIO\.webui_secret_key D:\OpenCode\LLM-Runner-AIO\venvs D:\OpenCode\LLM-Runner-AIO\models_gpu1vram6ram32.ini D:\OpenCode\LLM-Runner-AIO\launcher\config.json D:\OpenCode\LLM-Runner-AIO\.tmp D:\OpenCode\LLM-Runner-AIO\.temp_backup D:\OpenCode\LLM-Runner-AIO\.patch_tmp D:\OpenCode\LLM-Runner-AIO\.temp_backup
 
-LLM Runner AIO - Automatic Installation
+4)LLM Runner AIO - Automatic Installation
+5)D:\OpenCode\LLM-Runner-AIO\assets\icon.ico
