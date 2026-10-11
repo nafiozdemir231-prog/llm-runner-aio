@@ -362,6 +362,8 @@ fieldset legend {
     align-items: center;
     gap: 12px;
     margin-bottom: 12px;
+    flex-wrap: wrap;   /* dar kolonlarda butonlar fieldset disina tasmasin
+                         (Models Config: Load/Open INI gorunmez oluyordu) */
 }
 
 .form-row label {
