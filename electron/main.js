@@ -204,6 +204,25 @@ function createMainWindow() {
         mainWindow.webContents.openDevTools();
     }
 
+    // Menu.setApplicationMenu(null) tum Chromium kisayollarini da siliyor (frame:false
+    // yuzunden menu akseleratori yok) -> DevTools fiziksel tuslarla elle baglanir:
+    // Ctrl+Shift+I / F12 ac-kapa; Ctrl+Shift+C konsol+denetimi dogrudan secili acar.
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+        if (input.type !== 'keyDown') return;
+        const key = (input.key || '').toLowerCase();
+        const comboI = (input.control && input.shift && key === 'i');
+        const comboJ = (input.control && input.shift && key === 'j');
+        const f12 = key === 'f12';
+        if (comboI || f12) {
+            mainWindow.webContents.toggleDevTools();
+            event.preventDefault();
+        } else if (comboJ) {
+            if (!mainWindow.webContents.isDevToolsOpened()) mainWindow.webContents.openDevTools({ mode: 'detach' });
+            mainWindow.webContents.inspectElement(10, 10);
+            event.preventDefault();
+        }
+    });
+
     // Pencere görünür olduğunda göster
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
