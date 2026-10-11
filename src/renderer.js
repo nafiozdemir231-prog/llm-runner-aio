@@ -3355,9 +3355,9 @@ console.log('[RENDERER] All event listeners attached');
             }
 
             const parts = [];
-            if (typeof s.gpuUtilPct === 'number') parts.push('GPU yükü %' + s.gpuUtilPct);
+            if (typeof s.gpuUtilPct === 'number') parts.push('GPU Load %' + s.gpuUtilPct);
             if (typeof s.gpuWatt === 'number' && !isNaN(s.gpuWatt)) parts.push(s.gpuWatt + ' W');
-            meters.textContent = parts.join('  ·  ') || 'GPU ölçüm yok';
+            meters.textContent = parts.join('  ·  ') || 'No GPU metrics';
         } catch (e) { /* IPC hazir degil */ }
     }
     setInterval(pollMeters, 4000);
