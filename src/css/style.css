@@ -1755,3 +1755,26 @@ details.logbox .log-area {
     font-size: 11px;
     color: var(--text-secondary);
 }
+
+/* ============================================ */
+/* UI GOCU — Faz 10: Strata hiz rekorlari + Prompt okuma cubugu */
+/* ============================================ */
+.strata-stats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 2px 0 10px;
+}
+
+.stat-pill {
+    border: 1px solid var(--border);
+    background: var(--card-deep-bg);
+    border-radius: 99px;
+    padding: 4px 12px;
+    font-family: Consolas, 'Cascadia Code', monospace;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.res-bar.prompt > i { background: linear-gradient(90deg, #0ea5e9, #34d399, #a7f3d0); }

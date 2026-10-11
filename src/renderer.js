@@ -1568,6 +1568,9 @@ function setupServerControls() {
     
     // IPC Event Listeners (Server logs)
     window.electronAPI.events.on('server-log', (data) => {
+        // Faz 10: Strata ilerleme/hiz satirlari once widget isleyiciye sorulur;
+        // tuketlenen satir log alani spam etmez.
+        if (data.type === 'strata' && typeof window.handleStrataProgress === 'function' && window.handleStrataProgress(data.message)) return;
         appendToLog(data.type, data.message);
     });
 
@@ -3362,4 +3365,89 @@ console.log('[RENDERER] All event listeners attached');
     }
     setInterval(pollMeters, 4000);
     setTimeout(pollMeters, 800);
+})();
+
+// ============================================
+// UI GOCU Faz 10 — Strata hiz rekorlari (oturum bazli) + canli pp yuzdesi
+// Gateway satirlari: "[strata] reading the prompt: A of B tokens, N s so far",
+// "[strata] thinking|answering: G of max M tokens, R tok/s, E s",
+// "request prompt ... prefill X tok/s decode Y tok/s", "done: ... (Z tok/s)"
+// Rekorlar bellekte tutulur -> her uygulama acilisinda sifirlanir (oturum bazli).
+// ============================================
+(function setupStrataSpeedStats() {
+    let bestTg = 0, bestPp = 0, ppHideTimer = null;
+
+    const elBestTg = () => document.getElementById('st-best-tg');
+    const elBestPp = () => document.getElementById('st-best-pp');
+    const barPp = () => document.getElementById('bar-pp');
+    const valPp = () => document.getElementById('res-pp-val');
+
+    function num(s) { return parseFloat(String(s).replace(/,/g, '')); }
+
+    function paint() {
+        const a = elBestTg(), b = elBestPp();
+        if (a) a.textContent = '🏆 Best TG ' + (bestTg ? bestTg.toFixed(1) + ' tok/s' : '—');
+        if (b) b.textContent = '⚡ Best PP ' + (bestPp ? bestPp.toFixed(1) + ' tok/s' : '—');
+    }
+
+    function setPromptBar(pct, done) {
+        const bar = barPp(), val = valPp();
+        if (!bar || !val) return;
+        if (done) {
+            bar.style.width = '100%';
+            val.textContent = '100%';
+            clearTimeout(ppHideTimer);
+            ppHideTimer = setTimeout(() => {
+                bar.style.transition = 'width .8s ease, opacity .8s ease';
+                bar.style.opacity = '.35';
+            }, 2500);
+            return;
+        }
+        bar.style.opacity = '1';
+        clearTimeout(ppHideTimer);
+        bar.style.width = Math.max(2, Math.min(100, pct)) + '%';
+        val.textContent = pct.toFixed(0) + '%';
+    }
+
+    window.handleStrataProgress = function (message) {
+        const text = String(message || '');
+        let consumed = false;
+
+        for (const line of text.split('\n')) {
+            // Canli pp: "reading the prompt: 48,000 of 262,144 tokens, 12 s so far"
+            const m = line.match(/reading the prompt:\s*([\d,]+)\s+of\s+([\d,]+)\s+tokens/);
+            if (m) {
+                const read = num(m[1]), total = num(m[2]);
+                if (total > 0) setPromptBar(read / total * 100, false);
+                consumed = true;   // log alani spam olmaz -> yut
+                continue;
+            }
+            // Canli tg: "thinking: 512 of max 2048 tokens, 83.9 tok/s, 7 s"
+            const g = line.match(/\] (?:thinking|answering):\s*[\d,]+\s+of\s+.+?([\d.]+)\s+tok\/s/);
+            if (g) {
+                const rate = num(g[1]);
+                if (rate > bestTg && rate < 5000) { bestTg = rate; paint(); }
+                consumed = true;
+                continue;
+            }
+            // Ozet satiri: "... prefill 114.5 tok/s decode 83.8 tok/s" -> rekorlar, satir logda kalir
+            const r = line.match(/prefill ([\d.]+) tok\/s decode ([\d.]+) tok\/s/);
+            if (r) {
+                const pp = num(r[1]), tg = num(r[2]);
+                if (pp > bestPp && pp < 5000) bestPp = pp;
+                if (tg > bestTg && tg < 5000) bestTg = tg;
+                paint();
+                setPromptBar(100, true);   // prompt okuma bitti
+                continue;
+            }
+            const d = line.match(/done: .*?\(([\d.]+) tok\/s\)/);
+            if (d) {
+                const tg = num(d[1]);
+                if (tg > bestTg && tg < 5000) { bestTg = tg; paint(); }
+            }
+        }
+        return consumed;
+    };
+
+    paint();
 })();

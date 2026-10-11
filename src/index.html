@@ -79,6 +79,8 @@
                     <div class="res-bar ram"><i id="bar-ram"></i></div>
                     <div class="res-row"><span class="res-label">VRAM</span><span class="res-val" id="res-vram-val">— / — GB</span></div>
                     <div class="res-bar vram"><i id="bar-vram"></i></div>
+                    <div class="res-row"><span class="res-label">Prompt</span><span class="res-val" id="res-pp-val">—</span></div>
+                    <div class="res-bar prompt"><i id="bar-pp"></i></div>
                     <div class="res-meta" id="side-meters">GPU %— · — W</div>
                 </div>
             </div>
@@ -505,6 +507,12 @@
 
                             <div class="server-info">
                                 <span class="info-desc" data-i18n="desc_strata">OpenAI/Anthropic API on one port: two model names share a single engine; only sampling differs. Model unloads when idle.</span>
+                            </div>
+
+                            <!-- Faz 10: oturum bazli hiz rekorlari + canli prompt okuma yuzdesi -->
+                            <div class="strata-stats">
+                                <span id="st-best-tg" class="stat-pill">🏆 Best TG —</span>
+                                <span id="st-best-pp" class="stat-pill">⚡ Best PP —</span>
                             </div>
 
                             <div class="server-controls">
