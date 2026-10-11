@@ -232,7 +232,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     }
-    
+
+    // Faz 12: uygulama son kapatilan menude acilir (kalici son sekme + sunucu alt gorunumu)
+    try {
+        const savedTab = localStorage.getItem('last-tab');
+        const valid = ['home', 'system', 'servers', 'picoding', 'models', 'settings'];
+        if (savedTab && valid.includes(savedTab)) {
+            window.switchTab(savedTab);
+            if (savedTab === 'servers') {
+                const savedSrv = localStorage.getItem('last-srv');
+                if (savedSrv && savedSrv !== 'back' && typeof window.serversShowServer === 'function') {
+                    window.serversShowServer(savedSrv);
+                }
+            }
+            console.log('[INIT] Restored last view: ' + savedTab + (savedTab === 'servers' ? '/' + (localStorage.getItem('last-srv') || 'launcher') : ''));
+        }
+    } catch (e) { /* localStorage erisilemedi */ }
+
     
 });
 
@@ -811,6 +827,7 @@ function applyFontSize(size) {
 const HOME_SITE_URL = 'https://www.aihublocal.com/llm-runner-aio';
 
 function switchTab(tabName) {
+    try { localStorage.setItem('last-tab', tabName); } catch (e) { /* storage */ }
     // Hide all panels
     document.querySelectorAll('.tab-panel').forEach(panel => {
         panel.classList.remove('active');
@@ -3262,18 +3279,20 @@ window.switchTab = switchTab;
 
     // Faz 11: alt menu akordeon — Servers'a ilk giriste acik; ayni sekmede tekrar
     // tiklama daraltir/genisletir. Chevron donerek durumu belli eder.
-    let expanded = true, onServersPrev = false, enteringStamp = 0;
+    let expanded = (localStorage.getItem('srv-nav-expanded') || '1') === '1';
+    let onServersPrev = false, enteringStamp = 0;
     const chev = document.getElementById('srv-chev');
     function setExpanded(v) {
         expanded = v;
         nav.classList.toggle('collapsed', !v);
         if (chev) chev.classList.toggle('closed', !v);
+        try { localStorage.setItem('srv-nav-expanded', v ? '1' : '0'); } catch (e) { /* storage */ }
     }
 
     window.serversViewReset = function (tabName) {
         const onServers = (tabName || state.currentTab) === 'servers';
         nav.classList.toggle('hidden', !onServers);
-        if (onServers && !onServersPrev) { expanded = true; enteringStamp = Date.now(); }
+        if (onServers) enteringStamp = Date.now();
         nav.classList.toggle('collapsed', !expanded);
         if (chev) chev.classList.toggle('closed', !expanded);
         if (onServers) showLauncher();
@@ -3291,8 +3310,12 @@ window.switchTab = switchTab;
         const btn = e.target.closest('.srv-nav-btn');
         if (!btn) return;
         const srv = btn.getAttribute('data-srv');
+        try { localStorage.setItem('last-srv', srv); } catch (err) { /* storage */ }
         if (srv === 'back') showLauncher(); else showServerOnly(srv);
     });
+
+    // Faz 12: init'te kayitli alt gorunumu geri yuklemek icin disariya acik
+    window.serversShowServer = showServerOnly;
 
     // Launcher'daki "Save" -> mevcut birlesik kaydediciyi kullanir (modal Uygula ile ayni fonksiyon)
     const saveBtn = document.getElementById('apply-startup');
