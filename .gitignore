@@ -137,3 +137,4 @@ old_model_urls.json
 # Wan2GP (runtime clone + separate venv)
 Wan2GP/
 venvs/
+tasks/telegram.sh
