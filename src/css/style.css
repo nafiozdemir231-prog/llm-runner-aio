@@ -1437,3 +1437,77 @@ input[type="checkbox"] {
 }
 
 .panel-header h2 { letter-spacing: .2px; }
+
+/* ============================================ */
+/* UI GOCU — Faz 5: mock04 teması (Mock #4'ün paleti ve bileşen ruhu) */
+/* Dark tema için :root override; light tema [data-theme="light"] kendi degiskenlerini korur. */
+/* ============================================ */
+:root {
+    --bg-primary: #101317;
+    --bg-secondary: #161b22;
+    --bg-tertiary: #0b0d10;
+    --accent: #3f6ad8;
+    --accent-hover: #4c7ae0;
+    --accent-active: #35599f;
+    --success: #4ade80;
+    --danger: #ef4444;
+    --warning: #facc15;
+    --text-primary: #dde3ea;
+    --text-secondary: #8a95a5;
+    --border: rgba(255, 255, 255, .07);
+    --log-bg: #0c0f13;
+    --log-text: #95a3b3;
+    --shadow: 0 10px 30px rgba(0, 0, 0, .45);
+}
+
+#toolbar { background: #0b0d10; border-bottom: 1px solid var(--border); }
+#app-title { color: #fff; }
+
+#sidebar .side-btn.active,
+.srv-nav-btn.active { background: #1d2430; box-shadow: none; }
+
+.tab-panel > .panel-body fieldset,
+#server-panel .server-section fieldset,
+#srv-launcher .startup-card {
+    background: #161b22;
+    border: 1px solid var(--border);
+}
+
+.tab-panel > .panel-body fieldset legend,
+#server-panel .server-section fieldset legend {
+    background: #1d2430;
+    color: #dde3ea;
+}
+
+.primary-btn { background: var(--accent); }
+.primary-btn:hover { background: var(--accent-hover); }
+.secondary-btn { background: #1d2430; border: 1px solid rgba(255, 255, 255, .09); color: #dde3ea; }
+.secondary-btn:hover { filter: brightness(1.15); }
+.start-btn { background: #14532d; }
+.start-btn:hover { filter: brightness(1.2); }
+.stop-btn, .danger-btn { background: #7f1d1d; }
+.stop-btn:hover, .danger-btn:hover { filter: brightness(1.2); }
+.tool-btn { background: #1d2430; border: 1px solid rgba(255, 255, 255, .09); }
+
+/* mock04'teki büyük launcher butonları */
+.launcher-actions .primary-btn { background: linear-gradient(135deg, #059669, #10b981); }
+.launcher-actions .danger-btn  { background: linear-gradient(135deg, #b91c1c, #ef4444); }
+
+.server-config { background: #0f1318; border-color: var(--border); }
+
+.tab-panel input[type="text"],
+.tab-panel input[type="number"],
+.tab-panel input[type="password"],
+.tab-panel select {
+    background: #0f1318;
+    border: 1px solid rgba(255, 255, 255, .09);
+    color: #dde3ea;
+}
+
+.log-area { background: var(--log-bg); color: var(--log-text); border: 1px solid var(--border); font-family: Consolas, 'Cascadia Code', monospace; }
+
+.status-indicator.running { color: #4ade80; background: rgba(74, 222, 128, .12); }
+.status-indicator.stopped { color: #5b6672; background: rgba(91, 102, 114, .12); }
+.status-indicator.error   { color: #f87171; background: rgba(248, 113, 113, .12); }
+
+#sidebar-foot { border-top-color: var(--border); }
