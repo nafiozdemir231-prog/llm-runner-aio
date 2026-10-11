@@ -1377,3 +1377,63 @@ input[type="checkbox"] {
 .settings-actions {
     margin-top: 8px;
 }
+
+/* ============================================ */
+/* UI GOCU — Faz 4: kart estetik cilasi (salt CSS; id/yapi ayni) */
+/* ============================================ */
+.tab-panel > .panel-body fieldset,
+#server-panel .server-section fieldset {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+}
+
+.tab-panel > .panel-body fieldset legend,
+#server-panel .server-section fieldset legend {
+    font-weight: 600;
+    padding: 2px 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    font-size: 13px;
+}
+
+#server-panel .server-section {
+    margin-bottom: 4px;
+    padding: 0;
+}
+
+/* Calisan servis kartina yesil sol bant (durum indicatorune gore) */
+#server-panel .server-section:has(.status-indicator.running) fieldset { border-left: 3px solid var(--success); }
+#server-panel .server-section:has(.status-indicator.error) fieldset   { border-left: 3px solid var(--danger); }
+
+.status-indicator {
+    border-radius: 99px;
+    padding: 3px 10px;
+    font-size: 11.5px;
+}
+
+.server-config {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
+.log-toggle {
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: transparent;
+}
+
+#srv-launcher .startup-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+}
+
+.panel-header h2 { letter-spacing: .2px; }
