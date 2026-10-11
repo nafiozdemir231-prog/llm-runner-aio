@@ -3290,12 +3290,14 @@ window.switchTab = switchTab;
         expanded = v;
         nav.classList.toggle('collapsed', !v);
         if (chev) chev.classList.toggle('closed', !v);
+        if (v) { nav.classList.add('expanding'); setTimeout(() => nav.classList.remove('expanding'), 320); }
         try { localStorage.setItem('srv-nav-expanded', v ? '1' : '0'); } catch (e) { /* storage */ }
     }
 
     window.serversViewReset = function (tabName) {
         const onServers = (tabName || state.currentTab) === 'servers';
         nav.classList.toggle('hidden', !onServers);
+        if (onServers && expanded) { nav.classList.add('expanding'); setTimeout(() => nav.classList.remove('expanding'), 320); }
         if (onServers) enteringStamp = Date.now();
         nav.classList.toggle('collapsed', !expanded);
         if (chev) chev.classList.toggle('closed', !expanded);

@@ -187,7 +187,10 @@ function createMainWindow() {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
             nodeIntegration: false,
-            sandbox: true
+            sandbox: true,
+            // Canli olcer/log/animasyon uygulamasi: pencere arka plandayken Chromium
+            // kare/zamanlama kisitlamasi animasyonlari ve led guncellemelerini donduruyordu.
+            backgroundThrottling: false
         },
         icon: path.join(PROJECT_DIR, 'assets', 'icon.ico'),
         show: false

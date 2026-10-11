@@ -1796,15 +1796,15 @@ details.logbox .log-area {
     display: flex;
     flex-direction: column;
     gap: 3px;
-    max-height: 720px;   /* buyuk font olceklerinde tasma payi */
     opacity: 1;
-    overflow: hidden;
-    transition: max-height .28s ease, opacity .22s ease, margin .28s ease;
 }
-#srv-subnav.collapsed {
-    max-height: 0;
-    opacity: 0;
-    margin-top: -4px;   /* sidebar gap'ini telafi eder */
+#srv-subnav.collapsed { display: none; }
+/* Acilis animasyonu layout'tan bagimsiz (opacity/transform) -> pencere odak disiyken
+   kare kisitlamasi olsan bile ogeler ASLA kirpilmaz (Screenshot_4 kok nedeni). */
+#srv-subnav.expanding { animation: subnavReveal .25s ease; }
+@keyframes subnavReveal {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: none; }
 }
 
 /* Sidebar ic kaydirma — dar ekranda Kaynaklar karti kesilmesin */
