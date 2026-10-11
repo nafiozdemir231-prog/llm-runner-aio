@@ -1687,3 +1687,12 @@ details.logbox .log-area {
 [data-theme="light"] .srv-led.run { background: #059669; box-shadow: 0 0 6px rgba(5, 150, 105, .45); }
 [data-theme="light"] .srv-led.err { background: #dc2626; box-shadow: 0 0 6px rgba(220, 38, 38, .45); }
 [data-theme="light"] #app-title { color: #1e293b; }
+
+/* Sidebar canli olcer satiri (GPU/VRAM/W/RAM) */
+#side-meters {
+    margin-top: 6px;
+    font-family: Consolas, 'Cascadia Code', monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: .02em;
+}

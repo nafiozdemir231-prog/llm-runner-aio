@@ -62,7 +62,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
          * Donanım bilgilerini tespit et (GPU, VRAM, RAM, CPU)
          * PyQt6'da: SystemDetectionTab.detect_hardware()
          */
-        detect: () => ipcRenderer.invoke('detect-hardware')
+        detect: () => ipcRenderer.invoke('detect-hardware'),
+        stats: () => ipcRenderer.invoke('get-system-stats')
     },
 
     // ============================================

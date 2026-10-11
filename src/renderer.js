@@ -3330,4 +3330,21 @@ console.log('[RENDERER] All event listeners attached');
     if (cancel) cancel.addEventListener('click', () => {
         try { populateSettingsForm(); } catch (e) { console.warn('[FAZ7] geri yukleme:', e); }
     });
+
+    // Canli olcerler: GPU yuku / VRAM / watt / RAM — sidebar altbilgisi
+    const meters = document.getElementById('side-meters');
+    async function pollMeters() {
+        if (!meters || document.hidden) return;
+        try {
+            const s = await window.electronAPI.hardware.stats();
+            const parts = [];
+            if (typeof s.gpuUtilPct === 'number') parts.push('GPU %' + s.gpuUtilPct);
+            if (typeof s.gpuMemUsedGb === 'number') parts.push(s.gpuMemUsedGb + '/' + s.gpuMemTotalGb + ' GB VRAM');
+            if (typeof s.gpuWatt === 'number' && !isNaN(s.gpuWatt)) parts.push(s.gpuWatt + ' W');
+            if (typeof s.ramUsedPct === 'number') parts.push('RAM %' + s.ramUsedPct);
+            meters.textContent = parts.join('  ·  ');
+        } catch (e) { /* IPC hazir degil */ }
+    }
+    setInterval(pollMeters, 4000);
+    setTimeout(pollMeters, 800);
 })();

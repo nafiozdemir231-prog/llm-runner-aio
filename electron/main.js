@@ -662,6 +662,35 @@ Write-Host 'Autostart disabled successfully'
         return detectHardware();
     });
 
+    // Canli sistem olcerleri (sidebar altbilgisi: GPU kullanimi/VRAM/watt + RAM)
+    let sysStatsCache = { ts: 0, data: null };
+    ipcMain.handle('get-system-stats', async () => {
+        const now = Date.now();
+        if (sysStatsCache.data && now - sysStatsCache.ts < 1500) return sysStatsCache.data;
+        const stats = {};
+        try {
+            const os = require('os');
+            const total = os.totalmem(), free = os.freemem();
+            stats.ramTotalGb = Math.round(total / 1073741824 * 10) / 10;
+            stats.ramUsedPct = Math.round((1 - free / total) * 100);
+        } catch (e) { /* os okunamadi */ }
+        try {
+            const out = execSync('nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total,power.draw --format=csv,noheader,nounits', {
+                encoding: 'utf8',
+                timeout: 2000
+            }).trim().split('\n')[0];
+            const p = out.split(',').map(s => s.trim());
+            if (p.length >= 4) {
+                stats.gpuUtilPct = parseInt(p[0]);
+                stats.gpuMemUsedGb = Math.round(parseInt(p[1]) / 102.4) / 10;
+                stats.gpuMemTotalGb = Math.round(parseInt(p[2]) / 102.4) / 10;
+                stats.gpuWatt = Math.round(parseFloat(p[3]));
+            }
+        } catch (e) { /* nvidia-smi yok veya timeout */ }
+        sysStatsCache = { ts: now, data: stats };
+        return stats;
+    });
+
     // Server start/stop
     ipcMain.handle('server-start', async (event, serverType, options) => {
         return startServer(serverType, options);
