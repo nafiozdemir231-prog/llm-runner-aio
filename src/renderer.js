@@ -3331,18 +3331,33 @@ console.log('[RENDERER] All event listeners attached');
         try { populateSettingsForm(); } catch (e) { console.warn('[FAZ7] geri yukleme:', e); }
     });
 
-    // Canli olcerler: GPU yuku / VRAM / watt / RAM — sidebar altbilgisi
+    // Canli olcerler: RAM/VRAM cubuklari + GPU yuku/watt (sidebar altbilgisi)
     const meters = document.getElementById('side-meters');
+    const barRam = document.getElementById('bar-ram');
+    const barVram = document.getElementById('bar-vram');
+    const valRam = document.getElementById('res-ram-val');
+    const valVram = document.getElementById('res-vram-val');
+
     async function pollMeters() {
         if (!meters || document.hidden) return;
         try {
             const s = await window.electronAPI.hardware.stats();
+
+            if (typeof s.ramUsedPct === 'number' && s.ramTotalGb) {
+                const used = Math.round(s.ramTotalGb * s.ramUsedPct) / 100;
+                valRam.textContent = used.toFixed(1) + ' / ' + s.ramTotalGb + ' GB';
+                barRam.style.width = Math.max(2, Math.min(100, s.ramUsedPct)) + '%';
+            }
+            if (typeof s.gpuMemUsedGb === 'number' && s.gpuMemTotalGb) {
+                const pct = Math.round(s.gpuMemUsedGb / s.gpuMemTotalGb * 100);
+                valVram.textContent = s.gpuMemUsedGb.toFixed(1) + ' / ' + s.gpuMemTotalGb + ' GB';
+                barVram.style.width = Math.max(2, Math.min(100, pct)) + '%';
+            }
+
             const parts = [];
-            if (typeof s.gpuUtilPct === 'number') parts.push('GPU %' + s.gpuUtilPct);
-            if (typeof s.gpuMemUsedGb === 'number') parts.push(s.gpuMemUsedGb + '/' + s.gpuMemTotalGb + ' GB VRAM');
+            if (typeof s.gpuUtilPct === 'number') parts.push('GPU yükü %' + s.gpuUtilPct);
             if (typeof s.gpuWatt === 'number' && !isNaN(s.gpuWatt)) parts.push(s.gpuWatt + ' W');
-            if (typeof s.ramUsedPct === 'number') parts.push('RAM %' + s.ramUsedPct);
-            meters.textContent = parts.join('  ·  ');
+            meters.textContent = parts.join('  ·  ') || 'GPU ölçüm yok';
         } catch (e) { /* IPC hazir degil */ }
     }
     setInterval(pollMeters, 4000);

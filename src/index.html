@@ -74,7 +74,13 @@
                 <b id="side-hw-line">Donanım algılanmadı — Donanım Algıla sekmesinden çalıştırın</b><br>
                 <span id="side-hw-sub"></span><br>
                 v2.0 · py3.11 · node24
-                <div id="side-meters">GPU %— · — GB VRAM · — W · RAM %—</div>
+                <div id="side-res">
+                    <div class="res-row"><span class="res-label">RAM</span><span class="res-val" id="res-ram-val">— / — GB</span></div>
+                    <div class="res-bar ram"><i id="bar-ram"></i></div>
+                    <div class="res-row"><span class="res-label">VRAM</span><span class="res-val" id="res-vram-val">— / — GB</span></div>
+                    <div class="res-bar vram"><i id="bar-vram"></i></div>
+                    <div class="res-meta" id="side-meters">GPU %— · — W</div>
+                </div>
             </div>
         </aside>
         <!-- Tab Panels — PyQt6 QTabWidget panel'leri -->

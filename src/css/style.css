@@ -1696,3 +1696,62 @@ details.logbox .log-area {
     color: var(--text-secondary);
     letter-spacing: .02em;
 }
+
+/* ============================================ */
+/* UI GOCU — Faz 9: sidebar "Kaynaklar" cubuklari (RAM/VRAM) */
+/* ============================================ */
+#side-res {
+    margin-top: 10px;
+    background: var(--card-deep-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 10px 8px;
+}
+
+.res-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.res-label {
+    font-size: 10.5px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.res-val {
+    font-family: Consolas, 'Cascadia Code', monospace;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.res-bar {
+    height: 7px;
+    border-radius: 99px;
+    background: var(--border);
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.res-bar > i {
+    display: block;
+    height: 100%;
+    width: 2%;
+    border-radius: 99px;
+    transition: width .5s ease;
+}
+
+.res-bar.ram > i  { background: linear-gradient(90deg, #6366f1, #3b82f6, #22d3ee); }
+.res-bar.vram > i { background: linear-gradient(90deg, #fbbf24, #f97316, #ef4444); }
+
+.res-meta {
+    margin-top: 7px;
+    font-family: Consolas, 'Cascadia Code', monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
