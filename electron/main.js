@@ -1372,37 +1372,6 @@ Write-Host 'Autostart disabled successfully'
     });
 
     // ============================================
-    // Untracked Merge Engelleyici Karantinası (HAT-41):
-    // Yarim kalmis guncellemelerden arta kalan dosyalar calisma agacinda "untracked" durur.
-    // Ust akis bu dosyalari tracked olarak eklediginde `git pull` iptal olur:
-    // "The following untracked working tree files would be overwritten by merge".
-    // Engelleyen kopyalar .tmp/untracked_backup_<ts>/ altina tasinir; pull temiz ilerler.
-    // ============================================
-    function quarantineUntrackedOverwriteBlockers(dir, log) {
-        try {
-            const fetchRes = spawnSync('git', ['fetch'], { cwd: dir, encoding: 'utf8', timeout: 120000 });
-            if (fetchRes.status !== 0) return; // offline vb.: normal pull akisi karar verir
-            const incoming = spawnSync('git', ['diff', '--name-only', 'HEAD..FETCH_HEAD'], { cwd: dir, encoding: 'utf8' })
-                .stdout.split(/\r?\n/).filter(Boolean);
-            if (!incoming.length) return;
-            const untracked = new Set(spawnSync('git', ['ls-files', '--others', '--exclude-standard'], { cwd: dir, encoding: 'utf8' })
-                .stdout.split(/\r?\n/).filter(Boolean).map(p => p.replace(/\\/g, '/')));
-            const clashes = incoming.filter(p => untracked.has(p));
-            if (!clashes.length) return;
-            const backupDir = path.join(PROJECT_DIR, '.tmp', 'untracked_backup_' + Date.now());
-            for (const rel of clashes) {
-                const src = path.join(dir, rel);
-                const dst = path.join(backupDir, rel.split('/').join(path.sep));
-                fs.mkdirSync(path.dirname(dst), { recursive: true });
-                fs.renameSync(src, dst);
-            }
-            log(`🧹 Merge'i engelleyen ${clashes.length} untracked dosya .tmp\\${path.basename(backupDir)} altina tasindi.`);
-        } catch (err) {
-            log(`⚠️ Karantina adimi atlandi: ${err.message}`);
-        }
-    }
-
-    // ============================================
     // PiCoding Update Handler (Git Pull)
     // ============================================
     ipcMain.handle('picoding-update', async () => {
@@ -2280,6 +2249,38 @@ function runWan2gpCapture(commandArgs) {
         child.on('error', (err) => resolve({ code: 1, out: err.message }));
         child.on('exit', (code) => resolve({ code, out: (out + errOut).trim() }));
     });
+}
+
+// ============================================
+// Untracked Merge Engelleyici Karantinası (HAT-41) — MODÜL SEVİYESİ:
+// hem setupIPC icindeki picoding-update hem modul seviyesindeki server-update gorur.
+// Yarim kalmis guncellemelerden arta kalan dosyalar calisma agacinda "untracked" durur;
+// ust akis bu dosyalari tracked olarak eklediginde `git pull` iptal olur:
+// "The following untracked working tree files would be overwritten by merge".
+// Engelleyen kopyalar .tmp/untracked_backup_<ts>/ altina tasinir; pull temiz ilerler.
+// ============================================
+function quarantineUntrackedOverwriteBlockers(dir, log) {
+    try {
+        const fetchRes = spawnSync('git', ['fetch'], { cwd: dir, encoding: 'utf8', timeout: 120000 });
+        if (fetchRes.status !== 0) return; // offline vb.: normal pull akisi karar verir
+        const incoming = spawnSync('git', ['diff', '--name-only', 'HEAD..FETCH_HEAD'], { cwd: dir, encoding: 'utf8' })
+            .stdout.split(/\r?\n/).filter(Boolean);
+        if (!incoming.length) return;
+        const untracked = new Set(spawnSync('git', ['ls-files', '--others', '--exclude-standard'], { cwd: dir, encoding: 'utf8' })
+            .stdout.split(/\r?\n/).filter(Boolean).map(p => p.replace(/\\/g, '/')));
+        const clashes = incoming.filter(p => untracked.has(p));
+        if (!clashes.length) return;
+        const backupDir = path.join(PROJECT_DIR, '.tmp', 'untracked_backup_' + Date.now());
+        for (const rel of clashes) {
+            const src = path.join(dir, rel);
+            const dst = path.join(backupDir, rel.split('/').join(path.sep));
+            fs.mkdirSync(path.dirname(dst), { recursive: true });
+            fs.renameSync(src, dst);
+        }
+        log(`🧹 Merge'i engelleyen ${clashes.length} untracked dosya .tmp\\${path.basename(backupDir)} altina tasindi.`);
+    } catch (err) {
+        log(`⚠️ Karantina adimi atlandi: ${err.message}`);
+    }
 }
 
 async function startServer(serverType, options = {}) {
