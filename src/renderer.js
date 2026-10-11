@@ -835,6 +835,9 @@ function switchTab(tabName) {
     
     state.currentTab = tabName;
     
+    // Faz 2 (UI gocu): Sunucular'a giriste Launcher perdesi acilir, alt menu gorunur olur
+    if (typeof window.serversViewReset === 'function') window.serversViewReset(tabName);
+    
     console.log('[TAB] Switched to:', tabName);
 }
 
@@ -3208,6 +3211,54 @@ async function showNotification(title, message, type = 'info') {
 // Utility Functions
 // ============================================
 window.switchTab = switchTab;
+
+// ============================================
+// UI GOCU Faz 2 — Sunucular launcher + sunucu bazli alt menu
+// (mevcut id'ler ve btn-start-all/stop-all baglantiklari aynen calisir)
+// ============================================
+(function setupServerSubnav() {
+    const nav = document.getElementById('srv-subnav');
+    const panel = document.getElementById('server-panel');
+    const launcher = document.getElementById('srv-launcher');
+    if (!nav || !panel || !launcher) return;
+
+    function showLauncher() {
+        launcher.classList.remove('hidden');
+        panel.classList.add('hidden');
+        nav.querySelectorAll('.srv-nav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-srv') === 'back'));
+    }
+
+    function showServerOnly(srv) {
+        launcher.classList.add('hidden');
+        panel.classList.remove('hidden');
+        panel.querySelectorAll('.server-section').forEach(sec => {
+            sec.classList.toggle('hidden', sec.getAttribute('data-srv') !== srv);
+        });
+        nav.querySelectorAll('.srv-nav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-srv') === srv));
+    }
+
+    window.serversViewReset = function (tabName) {
+        const onServers = (tabName || state.currentTab) === 'servers';
+        nav.classList.toggle('hidden', !onServers);
+        if (onServers) showLauncher();
+    };
+
+    nav.addEventListener('click', e => {
+        const btn = e.target.closest('.srv-nav-btn');
+        if (!btn) return;
+        const srv = btn.getAttribute('data-srv');
+        if (srv === 'back') showLauncher(); else showServerOnly(srv);
+    });
+
+    // Launcher'daki "Save" -> mevcut birlesik kaydediciyi kullanir (modal Uygula ile ayni fonksiyon)
+    const saveBtn = document.getElementById('apply-startup');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+            await saveAllSettings();
+            showNotification('Success', 'Startup options saved.');
+        });
+    }
+})();
 window.selectModel = selectModel;
 
 console.log('[RENDERER] All event listeners attached');

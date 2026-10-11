@@ -52,6 +52,16 @@
             <button data-tab="servers" class="tab-btn side-btn" title="Start/Stop Servers">
                 🖥️ <span data-i18n="tab_servers">Servers</span>
             </button>
+            <!-- Faz 2 (UI gocu): sunucu alt menuyu — sunucuya tiklaninca sadece o panel acilir -->
+            <div id="srv-subnav" class="hidden">
+                <button class="srv-nav-btn active" data-srv="back">↩ Launcher</button>
+                <button class="srv-nav-btn" data-srv="vane">🌐 <span data-i18n="section_vane">Vane - AI Answer Engine</span></button>
+                <button class="srv-nav-btn" data-srv="searxng">🔎 <span data-i18n="section_searxng">SearXNG - Private Search</span></button>
+                <button class="srv-nav-btn" data-srv="openwebui">💬 <span data-i18n="section_openwebui">Open WebUI - Chat Interface</span></button>
+                <button class="srv-nav-btn" data-srv="llamacpp">🦙 <span data-i18n="section_llamacpp">llama.cpp - AI Engine</span></button>
+                <button class="srv-nav-btn" data-srv="wan2gp">🎬 <span data-i18n="section_wan2gp">Wan2GP - Video Generation</span></button>
+                <button class="srv-nav-btn" data-srv="strata">🧠 <span data-i18n="section_strata">Strata - Multi-Model Gateway</span></button>
+            </div>
             <button data-tab="picoding" class="tab-btn side-btn" title="PiCoding IDE">
                 💻 <span data-i18n="tab_picoding">PiCoding</span>
             </button>
@@ -196,9 +206,32 @@
                     <h2 data-i18n="panel_server_management">Server Management</h2>
                 </div>
                 
-                <div class="panel-body" id="server-panel">
-                    <!-- Vane Section -->
-                    <div class="server-section">
+                <div id="srv-launcher">
+                    <div class="launcher-actions">
+                        <button id="btn-start-all" class="primary-btn big-btn">▶ Start All Servers</button>
+                        <button id="btn-stop-all" class="danger-btn big-btn">⏹ Stop All Servers</button>
+                    </div>
+                    <fieldset class="startup-card">
+                        <legend data-i18n="startup_options_label">Startup Options</legend>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" id="cb-start-windows"><span id="lbl-start-windows" data-i18n="cb_start_windows">Start with Windows</span></label>
+                            <label><input type="checkbox" id="cb-auto-server-autostart"><span id="lbl-auto-servers" data-i18n="cb_auto_servers">Auto-start Servers on Launch</span></label>
+                        </div>
+                        <label class="startup-sub" data-i18n="auto_start_servers_label">Auto-start Individual Servers</label>
+                        <div class="checkbox-group server-checkboxes">
+                            <label><input type="checkbox" id="cb-auto-searxng" class="server-autostart-cb"><span data-i18n="section_searxng">SearXNG - Private Search</span></label>
+                            <label><input type="checkbox" id="cb-auto-openwebui" class="server-autostart-cb"><span data-i18n="section_openwebui">Open WebUI - Chat Interface</span></label>
+                            <label><input type="checkbox" id="cb-auto-vane" class="server-autostart-cb"><span data-i18n="section_vane">Vane - AI Answer Engine</span></label>
+                            <label><input type="checkbox" id="cb-auto-llamacpp" class="server-autostart-cb"><span data-i18n="section_llamacpp">llama.cpp - AI Engine</span></label>
+                            <label><input type="checkbox" id="cb-auto-wan2gp" class="server-autostart-cb"><span data-i18n="section_wan2gp">Wan2GP - Video Generation</span></label>
+                            <label><input type="checkbox" id="cb-auto-strata" class="server-autostart-cb"><span data-i18n="section_strata">Strata - Multi-Model Gateway</span></label>
+                        </div>
+                        <button id="apply-startup" class="primary-btn small-btn" data-i18n="btn_save">💾 Save</button>
+                    </fieldset>
+                    <p class="launcher-hint">Open a server panel from the sidebar sub-menu (Strata, Open WebUI, Vane, SearXNG, llama.cpp, Wan2GP).</p>
+                </div>
+                <div class="panel-body hidden" id="server-panel">
+                    <div class="server-section" data-srv="vane">
                         <fieldset>
                             <legend data-i18n="legend_vane">🌐 Vane - AI Answer Engine</legend>
                             
@@ -244,8 +277,7 @@
                         </fieldset>
                     </div>
 
-                    <!-- SearXNG Section -->
-                    <div class="server-section">
+                    <div class="server-section" data-srv="searxng">
                         <fieldset>
                             <legend>🔎 SearXNG - Private Search</legend>
                             
@@ -291,8 +323,7 @@
                         </fieldset>
                     </div>
                     
-                    <!-- OpenWebUI Section -->
-                    <div class="server-section">
+                    <div class="server-section" data-srv="openwebui">
                         <fieldset>
                             <legend data-i18n="legend_openwebui">💬 Open WebUI - Chat Interface</legend>
                             
@@ -351,8 +382,7 @@
                         </fieldset>
                     </div>
                     
-                    <!-- llama.cpp Section -->
-                    <div class="server-section">
+                    <div class="server-section" data-srv="llamacpp">
                         <fieldset>
                             <legend>🦙 llama.cpp - AI Engine</legend>
                             
@@ -415,7 +445,7 @@
                         </fieldset>
                     </div>
 
-                    <div class="server-section">
+                    <div class="server-section" data-srv="wan2gp">
                         <fieldset>
                             <legend>🎬 Wan2GP - Video Generation</legend>
 
@@ -476,7 +506,7 @@
                         </fieldset>
                     </div>
 
-                    <div class="server-section">
+                    <div class="server-section" data-srv="strata">
                         <fieldset id="strata-server-fieldset" class="hidden">
                             <legend data-i18n="legend_strata">🧠 Strata — Qwen3.8-Flash-Next (multi-model gateway)</legend>
 
@@ -561,12 +591,6 @@
                             </div>
                         </fieldset>
                     </div>
-                </div>
-                
-                <!-- Global Actions -->
-                <div class="global-actions">
-                    <button id="btn-start-all" class="primary-btn">▶ Start All Servers</button>
-                    <button id="btn-stop-all" class="danger-btn">⏹ Stop All Servers</button>
                 </div>
             </div>
 
@@ -798,52 +822,6 @@ Pi Coding Agent - Setup and Usage Instructions:
                         <option value="ja">日本語</option>
                     </select>
                 </div>
-                
-                <!-- Startup Options -->
-                <div class="setting-group">
-                    <label data-i18n="startup_options_label">Startup Options</label>
-                    <div class="checkbox-group">
-                        <label>
-                            <input type="checkbox" id="cb-start-windows"><span id="lbl-start-windows" data-i18n="cb_start_windows">Start with Windows</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" id="cb-auto-server-autostart"><span id="lbl-auto-servers" data-i18n="cb_auto_servers">Auto-start Servers on Launch</span>
-                        </label>
-                    </div>
-                </div>
-                
-                <!-- Auto-start Individual Servers -->
-                <div class="setting-group">
-                    <label data-i18n="auto_start_servers_label">Auto-start Individual Servers</label>
-                    <div class="checkbox-group server-checkboxes">
-                        <label>
-                            <input type="checkbox" id="cb-auto-searxng" class="server-autostart-cb">
-                            <span data-i18n="section_searxng">SearXNG - Private Search</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" id="cb-auto-openwebui" class="server-autostart-cb">
-                            <span data-i18n="section_openwebui">Open WebUI - Chat Interface</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" id="cb-auto-vane" class="server-autostart-cb">
-                            <span data-i18n="section_vane">Vane - AI Answer Engine</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" id="cb-auto-llamacpp" class="server-autostart-cb">
-                            <span data-i18n="section_llamacpp">llama.cpp - AI Engine</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" id="cb-auto-wan2gp" class="server-autostart-cb">
-                            <span data-i18n="section_wan2gp">Wan2GP - Video Generation</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" id="cb-auto-strata" class="server-autostart-cb">
-                            <span data-i18n="section_strata">Strata - Multi-Model Gateway</span>
-                        </label>
-                    </div>
-                </div>
-                
-
             </div>
             
             <div class="modal-footer">
