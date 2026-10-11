@@ -391,7 +391,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/health":
             return self._json(200, {"status": "ok", "gateway_port": self.gw.s["port"],
                                     "models": sorted(self.gw.models), "arks": [a.state() for a in self.gw.arks]})
-        if path in ("/props", "/slots", "/v1/status"):
+        if path in ("/props", "/slots", "/v1/status", "/metrics"):
             return self._proxy_get(path)
         if path == "/":
             return self._json(200, {"app": "Strata multi-model gateway (our layer)",
