@@ -53,6 +53,24 @@ def is_loopback(host):
     return host in ("127.0.0.1", "localhost", "::1")
 
 
+def ctx_from_cfg(cfg):
+    """Ark henuz kaldirilmamissa bile config'den gercek context'i bildirir.
+    Pi /v1/models'i ark uyurken yakalamazsa meta gelmiyor ve extension varsayilan
+    128000'i gosteriyor; oysa --max-context (Strata) / --ctx-size degeri cfg.args'ta."""
+    try:
+        args = [str(a).strip() for a in ((cfg or {}).get("args") or [])]
+        for flag in ("--max-context", "--ctx-size"):
+            if flag in args:
+                i = args.index(flag)
+                if i + 1 < len(args):
+                    v = int(str(args[i + 1]).strip())
+                    if v > 0:
+                        return v
+    except (ValueError, TypeError):
+        pass
+    return 0
+
+
 class Job:
     """Windows job object: every ark process dies when the gateway closes its handle."""
 
@@ -386,6 +404,15 @@ class Handler(BaseHTTPRequestHandler):
                     entry["meta"].setdefault("vision", bool(_vis))
                 except Exception:
                     pass
+                # Context beyani: ark yuklu degilse backend meta gelmez; config'den telafi et.
+                # Backend canliyken gelen meta.n_ctx one cikar (setdefault) - calisma
+                # anindaki gercek ctx hangisi ise odur.
+                _ctx = ctx_from_cfg(ark.cfg if isinstance(ark.cfg, dict) else None)
+                if _ctx:
+                    if not isinstance(entry.get("meta"), dict):
+                        entry["meta"] = {}
+                    entry["meta"].setdefault("n_ctx", _ctx)
+                    entry.setdefault("context_length", _ctx)
                 data.append(entry)
             return self._json(200, {"object": "list", "data": data})
         if path == "/health":
