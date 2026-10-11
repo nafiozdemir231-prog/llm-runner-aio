@@ -620,49 +620,14 @@
                         </fieldset>
                     </div>
 
-                    <!-- Faz 14: Provider Yonetimi (providers.json -> auto-model-discovery) -->
-                    <div class="section-group">
-                        <fieldset>
-                            <legend>🔌 Providers (pi model sunucuları)</legend>
-
-                            <div class="help-text" style="margin-bottom: 8px; font-size: 0.8rem;">
-                                Buraya eklediğin sunucular pi açılırken <code>/model</code> listesine otomatik girer.
-                                Kayıtlar <code>picoding/providers.json</code>'a yazılır ve her açılışta pi'ye senkronlanır.
-                            </div>
-
-                            <div id="providers-list" class="provider-list"></div>
-
-                            <div class="form-row">
-                                <span class="form-label">Provider ID:</span>
-                                <input type="text" id="provider-id" placeholder="ornek: strata-185, openrouter, ollama-ev">
-                            </div>
-                            <div class="form-row">
-                                <span class="form-label">Base URL:</span>
-                                <input type="text" id="provider-url" placeholder="http://192.168.1.185:1235 veya https://api.openai.com/v1">
-                            </div>
-                            <div class="form-row">
-                                <span class="form-label">API Key:</span>
-                                <input type="password" id="provider-key" placeholder="bos birak = ansikiz (yerel sunucular)">
-                            </div>
-
-                            <div id="provider-test-status" class="help-text" style="font-size: 0.8rem; margin-top: 4px;"></div>
-
-                            <div class="btn-group">
-                                <button id="btn-provider-add" class="primary-btn">➕ Add Provider</button>
-                                <button id="btn-provider-test" class="secondary-btn">🧪 Test URL</button>
-                                <button id="btn-provider-cancel-edit" class="secondary-btn hidden">✖ Cancel Edit</button>
-                            </div>
-                        </fieldset>
-                    </div>
-                    
                     <!-- Instructions Section -->
                     <div class="section-group">
                         <fieldset>
                             <legend data-i18n="instructions_legend">Instructions</legend>
                             
-                            <button id="toggle-instructions" class="secondary-btn" data-i18n="show_instructions_btn">📖 Show Instructions</button>
+                            <button id="toggle-instructions" class="secondary-btn" data-i18n="hide_instructions_btn">📖 Hide Instructions</button>
                             
-                            <div id="instructions-content" class="log-area small hidden" style="margin-top: 10px;" data-i18n="pi_instructions">
+                            <div id="instructions-content" class="log-area small" style="margin-top: 10px;" data-i18n="pi_instructions">
 Pi Coding Agent - Setup and Usage Instructions:
 
 1) Click 'Detect Project' button, then click 'Add to PATH' button.
@@ -673,6 +638,41 @@ Pi Coding Agent - Setup and Usage Instructions:
 - A terminal will open in that location
 
 3) In the opened terminal, type 'pi' to start the application.
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <!-- Faz 14: Provider Yonetimi (providers.json -> auto-model-discovery) -->
+                    <div class="section-group">
+                        <fieldset>
+                            <legend data-i18n="providers_legend">🔌 Providers (pi model servers)</legend>
+
+                            <div class="help-text" style="margin-bottom: 8px; font-size: 0.8rem;" data-i18n="providers_help">
+                                Servers added here are loaded into pi's <code>/model</code> list automatically on startup.
+                                Entries are saved to <code>picoding/providers.json</code> and synced to pi on every launch.
+                            </div>
+
+                            <div id="providers-list" class="provider-list"></div>
+
+                            <div class="form-row">
+                                <span class="form-label" data-i18n="provider_id_label">Provider ID:</span>
+                                <input type="text" id="provider-id" placeholder="e.g. strata-185, openrouter, ollama-home">
+                            </div>
+                            <div class="form-row">
+                                <span class="form-label" data-i18n="provider_url_label">Base URL:</span>
+                                <input type="text" id="provider-url" placeholder="http://192.168.1.185:1235 or https://api.openai.com/v1">
+                            </div>
+                            <div class="form-row">
+                                <span class="form-label" data-i18n="provider_key_label">API Key:</span>
+                                <input type="password" id="provider-key" placeholder="leave blank for local servers (no key)">
+                            </div>
+
+                            <div id="provider-test-status" class="help-text" style="font-size: 0.8rem; margin-top: 4px;"></div>
+
+                            <div class="btn-group">
+                                <button id="btn-provider-add" class="primary-btn" data-i18n="btn_provider_add">➕ Add Provider</button>
+                                <button id="btn-provider-test" class="secondary-btn" data-i18n="btn_provider_test">🧪 Test URL</button>
+                                <button id="btn-provider-cancel-edit" class="secondary-btn hidden" data-i18n="btn_provider_cancel">✖ Cancel Edit</button>
                             </div>
                         </fieldset>
                     </div>

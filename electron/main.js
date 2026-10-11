@@ -1162,7 +1162,7 @@ Write-Host 'Autostart disabled successfully'
     ];
 
     function validateProviders(list) {
-        if (!Array.isArray(list)) return { ok: false, error: 'Provider listesi dizi olmalı' };
+        if (!Array.isArray(list)) return { ok: false, error: 'Provider list must be an array' };
         const seen = new Set();
         const clean = [];
         for (const p of list) {
@@ -1170,9 +1170,9 @@ Write-Host 'Autostart disabled successfully'
             let baseUrl = String((p && p.baseUrl) || '').trim();
             // Kullanıcı /v1/models gibi endpoint yazdıysa sade base'e indirge
             baseUrl = baseUrl.replace(/\/v1\/(chat\/completions|models).*$/, '').replace(/\/v1\/$/, '').replace(/\/models\/$/, '').replace(/\/+$/, '');
-            if (!/^[A-Za-z0-9._-]{1,40}$/.test(id)) return { ok: false, error: 'Provider adı geçersiz (harf/rakam/-/_): ' + id };
-            if (!/^https?:\/\//i.test(baseUrl)) return { ok: false, error: 'Base URL http:// veya https:// ile başlamalı: ' + baseUrl };
-            if (seen.has(id.toLowerCase())) return { ok: false, error: 'Aynı addan birden fazla provider: ' + id };
+            if (!/^[A-Za-z0-9._-]{1,40}$/.test(id)) return { ok: false, error: 'Invalid provider name (letters/digits/-/_ only): ' + id };
+            if (!/^https?:\/\//i.test(baseUrl)) return { ok: false, error: 'Base URL must start with http:// or https://: ' + baseUrl };
+            if (seen.has(id.toLowerCase())) return { ok: false, error: 'Duplicate provider name: ' + id };
             seen.add(id.toLowerCase());
             clean.push({ id, baseUrl, apiKey: String((p && p.apiKey) || '').trim(), enabled: p.enabled !== false });
         }

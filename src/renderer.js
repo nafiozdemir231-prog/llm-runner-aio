@@ -3578,14 +3578,14 @@ console.log('[RENDERER] All event listeners attached');
             providers = (res && res.providers) || [];
             render();
         } catch (err) {
-            setStatus('Provider listesi okunamadi: ' + err.message, '#e08080');
+            setStatus('Failed to read provider list: ' + err.message, '#e08080');
         }
     }
 
     function render() {
         listEl.innerHTML = '';
         if (!providers.length) {
-            listEl.innerHTML = '<div class="help-text" style="font-size:0.8rem;">Henuz provider yok — asagidan ekleyin.</div>';
+            listEl.innerHTML = '<div class="help-text" style="font-size:0.8rem;">No providers yet — add one below.</div>';
             return;
         }
         for (const p of providers) {
@@ -3604,12 +3604,12 @@ console.log('[RENDERER] All event listeners attached');
                 else setStatus(res.error, '#e08080');
             });
             enabled.appendChild(cb);
-            enabled.appendChild(document.createTextNode(' Aktif'));
+            enabled.appendChild(document.createTextNode(' Active'));
 
             const info = document.createElement('div');
             info.className = 'provider-info';
             info.innerHTML = '<strong>' + escapeHtml(p.id) + '</strong> <span class="provider-url">' + escapeHtml(p.baseUrl) + '</span> ' +
-                (p.apiKey ? '<span class="provider-key">🔒 key</span>' : '<span class="provider-key">ansikiz</span>');
+                (p.apiKey ? '<span class="provider-key">🔒 keyed</span>' : '<span class="provider-key">no key</span>');
 
             const tools = document.createElement('div');
             tools.className = 'provider-tools';
@@ -3617,13 +3617,13 @@ console.log('[RENDERER] All event listeners attached');
             const testRowBtn = document.createElement('button');
             testRowBtn.className = 'secondary-btn tiny';
             testRowBtn.textContent = '🧪';
-            testRowBtn.title = 'Bu adresi test et';
+            testRowBtn.title = 'Test this URL';
             testRowBtn.addEventListener('click', () => testUrl(p.baseUrl, p.apiKey));
 
             const editBtn = document.createElement('button');
             editBtn.className = 'secondary-btn tiny';
             editBtn.textContent = '✏️';
-            editBtn.title = 'Duzenle (formu doldurur)';
+            editBtn.title = 'Edit (fills the form)';
             editBtn.addEventListener('click', () => {
                 editingOriginalId = p.id;
                 idInput.value = p.id;
@@ -3631,15 +3631,15 @@ console.log('[RENDERER] All event listeners attached');
                 keyInput.value = p.apiKey || '';
                 addBtn.textContent = '💾 Update Provider';
                 cancelEditBtn.classList.remove('hidden');
-                setStatus('Duzenleniyor: ' + p.id + ' — degisikligi "Update" ile kaydedin.', '#9ab');
+                setStatus('Editing: ' + p.id + ' — save with "Update".', '#9ab');
             });
 
             const delBtn = document.createElement('button');
             delBtn.className = 'secondary-btn tiny danger';
             delBtn.textContent = '🗑';
-            delBtn.title = 'Sil';
+            delBtn.title = 'Delete';
             delBtn.addEventListener('click', async () => {
-                if (!confirm('Provider silinsin mi: ' + p.id + '?')) return;
+                if (!confirm('Delete provider: ' + p.id + '?')) return;
                 const next = providers.filter(x => x.id !== p.id);
                 const res = await window.electronAPI.picoding.saveProviders(next);
                 if (res.success) { providers = res.providers; render(); }
@@ -3658,20 +3658,20 @@ console.log('[RENDERER] All event listeners attached');
     }
 
     async function testUrl(url, key) {
-        if (!url) { setStatus('Once bir Base URL girin.', '#e08080'); return; }
-        setStatus('Test ediliyor: ' + url + ' ...', '#9ab');
+        if (!url) { setStatus('Enter a Base URL first.', '#e08080'); return; }
+        setStatus('Testing: ' + url + ' ...', '#9ab');
         try {
             const res = await window.electronAPI.picoding.fetchModels(url, key || '', 'auto');
             if (res.success && Array.isArray(res.models) && res.models.length) {
                 const shown = res.models.slice(0, 6).join(', ') + (res.models.length > 6 ? '...' : '');
-                setStatus('✅ ' + res.models.length + ' model goruldu: ' + shown, '#7fbf7f');
+                setStatus('✅ ' + res.models.length + ' models found: ' + shown, '#7fbf7f');
             } else if (res.success) {
-                setStatus('⚠️ Sunucu cevap verdi ama model listesi bos.', '#d8b45a');
+                setStatus('⚠️ Server replied but the model list is empty.', '#d8b45a');
             } else {
-                setStatus('❌ ' + (res.error || 'test basarisiz'), '#e08080');
+                setStatus('❌ ' + (res.error || 'test failed'), '#e08080');
             }
         } catch (err) {
-            setStatus('❌ Test hatasi: ' + err.message, '#e08080');
+            setStatus('❌ Test error: ' + err.message, '#e08080');
         }
     }
 
@@ -3693,7 +3693,7 @@ console.log('[RENDERER] All event listeners attached');
         const id = idInput.value.trim();
         const baseUrl = urlInput.value.trim();
         const apiKey = keyInput.value.trim();
-        if (!id || !baseUrl) { setStatus('Provider ID ve Base URL zorunlu.', '#e08080'); return; }
+        if (!id || !baseUrl) { setStatus('Provider ID and Base URL are required.', '#e08080'); return; }
 
         let next;
         if (editingOriginalId) {
@@ -3701,14 +3701,14 @@ console.log('[RENDERER] All event listeners attached');
             const idChanged = id !== editingOriginalId;
             next = providers.filter(x => x.id !== editingOriginalId);
             if (idChanged && next.some(x => x.id.toLowerCase() === id.toLowerCase())) {
-                setStatus('Bu adda bir provider zaten var: ' + id, '#e08080'); return;
+                setStatus('A provider with this name already exists: ' + id, '#e08080'); return;
             }
             const idx = providers.findIndex(x => x.id === editingOriginalId);
             const entry = { id, baseUrl, apiKey, enabled: idx >= 0 ? providers[idx].enabled !== false : true };
             if (idx >= 0) next.splice(idx, 0, entry); else next.push(entry);
         } else {
             if (providers.some(x => x.id.toLowerCase() === id.toLowerCase())) {
-                setStatus('Bu adda bir provider zaten var: ' + id, '#e08080'); return;
+                setStatus('A provider with this name already exists: ' + id, '#e08080'); return;
             }
             next = providers.concat([{ id, baseUrl, apiKey, enabled: true }]);
         }
@@ -3718,9 +3718,9 @@ console.log('[RENDERER] All event listeners attached');
             providers = res.providers;
             resetForm();
             render();
-            setStatus('✅ Kaydedildi — pi’yi yeniden baslattiginda provider’lar /model listesine girer.', '#7fbf7f');
+            setStatus('✅ Saved — providers appear in /model after restarting pi.', '#7fbf7f');
         } else {
-            setStatus('❌ ' + (res.error || 'kaydedilemedi'), '#e08080');
+            setStatus('❌ ' + (res.error || 'save failed'), '#e08080');
         }
     });
 
