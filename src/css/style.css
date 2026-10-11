@@ -1812,3 +1812,22 @@ details.logbox .log-area {
 /* Sidebar ic kaydirma — dar ekranda Kaynaklar karti kesilmesin */
 #sidebar::-webkit-scrollbar { width: 6px; }
 #sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ============================================
+   UI gozu Faz 14: Provider yonetimi (PiCoding)
+   ============================================ */
+.provider-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.provider-row {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 8px 10px; border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.provider-row.disabled { opacity: 0.45; }
+.provider-enabled { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; white-space: nowrap; cursor: pointer; }
+.provider-info { flex: 1; min-width: 220px; font-size: 0.85rem; }
+.provider-url { color: #9ab; margin-left: 8px; word-break: break-all; }
+.provider-key { color: #d8b45a; margin-left: 8px; font-size: 0.75rem; }
+.provider-tools { display: flex; gap: 6px; }
+.secondary-btn.tiny { padding: 4px 8px; font-size: 0.8rem; min-width: auto; }
+.secondary-btn.tiny.danger:hover { background: rgba(191, 28, 28, 0.25); border-color: #b91c1c; }

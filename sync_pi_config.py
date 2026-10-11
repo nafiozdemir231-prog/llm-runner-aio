@@ -173,6 +173,28 @@ def sync_extensions_auto_model_discovery(base_dir: str, pi_agent_dir: str) -> bo
         return False
 
 
+def sync_providers_json(base_dir: str, pi_agent_dir: str) -> bool:
+    """
+    Faz 14: picoding/providers.json → %USERPROFILE%\.pi\agent\providers.json sync
+    (auto-model-discovery.ts provider listesini buradan okur)
+    """
+    src = os.path.join(base_dir, "picoding", "providers.json")
+    dst = os.path.join(pi_agent_dir, "providers.json")
+
+    if not os.path.exists(src):
+        print(f"[WARN] providers.json bulunamadi: {src} (atlandi)")
+        return True  # kritik olmayan dosya: yoksa senkron basarisiz sayilmaz
+
+    try:
+        os.makedirs(pi_agent_dir, exist_ok=True)
+        shutil.copy2(src, dst)
+        print(f"[OK] providers.json synced → {dst}")
+        return True
+    except Exception as e:
+        print(f"[ERROR] providers.json sync failed: {e}")
+        return False
+
+
 def main():
     base_dir = get_base_dir()
     pi_agent_dir = os.path.join(
@@ -190,8 +212,9 @@ def main():
     settings_ok = sync_settings_json(base_dir, pi_agent_dir)
     agents_ok = sync_agents_md(base_dir, pi_agent_dir)
     ext_ok = sync_extensions_auto_model_discovery(base_dir, pi_agent_dir)
-    
-    if mcp_ok and settings_ok and agents_ok and ext_ok:
+    prov_ok = sync_providers_json(base_dir, pi_agent_dir)
+
+    if mcp_ok and settings_ok and agents_ok and ext_ok and prov_ok:
         print("-" * 60)
         print("[SUCCESS] All config files synced!")
         print("=" * 60)

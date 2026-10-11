@@ -3541,3 +3541,188 @@ console.log('[RENDERER] All event listeners attached');
 
     paint();
 })();
+
+// ============================================
+// UI GOCU Faz 14 — Provider yonetimi (PiCoding > providers.json)
+// Ekle/test/duzenle/sil/etkinlestir; kayitlar main.js üzerinden
+// picoding/providers.json + ~/.pi/agent/providers.json'a yazilir.
+// ============================================
+(function setupProvidersSection() {
+    const listEl = document.getElementById('providers-list');
+    if (!listEl) return;
+
+    let providers = [];
+    let editingOriginalId = null;
+
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    const idInput = document.getElementById('provider-id');
+    const urlInput = document.getElementById('provider-url');
+    const keyInput = document.getElementById('provider-key');
+    const statusEl = document.getElementById('provider-test-status');
+    const addBtn = document.getElementById('btn-provider-add');
+    const testBtn = document.getElementById('btn-provider-test');
+    const cancelEditBtn = document.getElementById('btn-provider-cancel-edit');
+
+    function setStatus(text, color) {
+        if (!statusEl) return;
+        statusEl.textContent = text || '';
+        statusEl.style.color = color || '';
+    }
+
+    async function load() {
+        try {
+            const res = await window.electronAPI.picoding.getProviders();
+            providers = (res && res.providers) || [];
+            render();
+        } catch (err) {
+            setStatus('Provider listesi okunamadi: ' + err.message, '#e08080');
+        }
+    }
+
+    function render() {
+        listEl.innerHTML = '';
+        if (!providers.length) {
+            listEl.innerHTML = '<div class="help-text" style="font-size:0.8rem;">Henuz provider yok — asagidan ekleyin.</div>';
+            return;
+        }
+        for (const p of providers) {
+            const row = document.createElement('div');
+            row.className = 'provider-row' + (p.enabled === false ? ' disabled' : '');
+
+            const enabled = document.createElement('label');
+            enabled.className = 'provider-enabled';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = p.enabled !== false;
+            cb.addEventListener('change', async () => {
+                const next = providers.map(x => x.id === p.id ? Object.assign({}, x, { enabled: cb.checked }) : x);
+                const res = await window.electronAPI.picoding.saveProviders(next);
+                if (res.success) { providers = res.providers; render(); }
+                else setStatus(res.error, '#e08080');
+            });
+            enabled.appendChild(cb);
+            enabled.appendChild(document.createTextNode(' Aktif'));
+
+            const info = document.createElement('div');
+            info.className = 'provider-info';
+            info.innerHTML = '<strong>' + escapeHtml(p.id) + '</strong> <span class="provider-url">' + escapeHtml(p.baseUrl) + '</span> ' +
+                (p.apiKey ? '<span class="provider-key">🔒 key</span>' : '<span class="provider-key">ansikiz</span>');
+
+            const tools = document.createElement('div');
+            tools.className = 'provider-tools';
+
+            const testRowBtn = document.createElement('button');
+            testRowBtn.className = 'secondary-btn tiny';
+            testRowBtn.textContent = '🧪';
+            testRowBtn.title = 'Bu adresi test et';
+            testRowBtn.addEventListener('click', () => testUrl(p.baseUrl, p.apiKey));
+
+            const editBtn = document.createElement('button');
+            editBtn.className = 'secondary-btn tiny';
+            editBtn.textContent = '✏️';
+            editBtn.title = 'Duzenle (formu doldurur)';
+            editBtn.addEventListener('click', () => {
+                editingOriginalId = p.id;
+                idInput.value = p.id;
+                urlInput.value = p.baseUrl;
+                keyInput.value = p.apiKey || '';
+                addBtn.textContent = '💾 Update Provider';
+                cancelEditBtn.classList.remove('hidden');
+                setStatus('Duzenleniyor: ' + p.id + ' — degisikligi "Update" ile kaydedin.', '#9ab');
+            });
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'secondary-btn tiny danger';
+            delBtn.textContent = '🗑';
+            delBtn.title = 'Sil';
+            delBtn.addEventListener('click', async () => {
+                if (!confirm('Provider silinsin mi: ' + p.id + '?')) return;
+                const next = providers.filter(x => x.id !== p.id);
+                const res = await window.electronAPI.picoding.saveProviders(next);
+                if (res.success) { providers = res.providers; render(); }
+                else setStatus(res.error, '#e08080');
+            });
+
+            tools.appendChild(testRowBtn);
+            tools.appendChild(editBtn);
+            tools.appendChild(delBtn);
+
+            row.appendChild(enabled);
+            row.appendChild(info);
+            row.appendChild(tools);
+            listEl.appendChild(row);
+        }
+    }
+
+    async function testUrl(url, key) {
+        if (!url) { setStatus('Once bir Base URL girin.', '#e08080'); return; }
+        setStatus('Test ediliyor: ' + url + ' ...', '#9ab');
+        try {
+            const res = await window.electronAPI.picoding.fetchModels(url, key || '', 'auto');
+            if (res.success && Array.isArray(res.models) && res.models.length) {
+                const shown = res.models.slice(0, 6).join(', ') + (res.models.length > 6 ? '...' : '');
+                setStatus('✅ ' + res.models.length + ' model goruldu: ' + shown, '#7fbf7f');
+            } else if (res.success) {
+                setStatus('⚠️ Sunucu cevap verdi ama model listesi bos.', '#d8b45a');
+            } else {
+                setStatus('❌ ' + (res.error || 'test basarisiz'), '#e08080');
+            }
+        } catch (err) {
+            setStatus('❌ Test hatasi: ' + err.message, '#e08080');
+        }
+    }
+
+    if (testBtn) testBtn.addEventListener('click', () => testUrl(urlInput.value.trim(), keyInput.value.trim()));
+
+    if (cancelEditBtn) cancelEditBtn.addEventListener('click', resetForm);
+
+    function resetForm() {
+        editingOriginalId = null;
+        idInput.value = '';
+        urlInput.value = '';
+        keyInput.value = '';
+        addBtn.textContent = '➕ Add Provider';
+        cancelEditBtn.classList.add('hidden');
+        setStatus('', '');
+    }
+
+    if (addBtn) addBtn.addEventListener('click', async () => {
+        const id = idInput.value.trim();
+        const baseUrl = urlInput.value.trim();
+        const apiKey = keyInput.value.trim();
+        if (!id || !baseUrl) { setStatus('Provider ID ve Base URL zorunlu.', '#e08080'); return; }
+
+        let next;
+        if (editingOriginalId) {
+            // Duzenleme: id degistiyse eski adin ustune yeni kayit gecir.
+            const idChanged = id !== editingOriginalId;
+            next = providers.filter(x => x.id !== editingOriginalId);
+            if (idChanged && next.some(x => x.id.toLowerCase() === id.toLowerCase())) {
+                setStatus('Bu adda bir provider zaten var: ' + id, '#e08080'); return;
+            }
+            const idx = providers.findIndex(x => x.id === editingOriginalId);
+            const entry = { id, baseUrl, apiKey, enabled: idx >= 0 ? providers[idx].enabled !== false : true };
+            if (idx >= 0) next.splice(idx, 0, entry); else next.push(entry);
+        } else {
+            if (providers.some(x => x.id.toLowerCase() === id.toLowerCase())) {
+                setStatus('Bu adda bir provider zaten var: ' + id, '#e08080'); return;
+            }
+            next = providers.concat([{ id, baseUrl, apiKey, enabled: true }]);
+        }
+
+        const res = await window.electronAPI.picoding.saveProviders(next);
+        if (res.success) {
+            providers = res.providers;
+            resetForm();
+            render();
+            setStatus('✅ Kaydedildi — pi’yi yeniden baslattiginda provider’lar /model listesine girer.', '#7fbf7f');
+        } else {
+            setStatus('❌ ' + (res.error || 'kaydedilemedi'), '#e08080');
+        }
+    });
+
+    load();
+})();

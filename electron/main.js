@@ -1151,6 +1151,71 @@ Write-Host 'Autostart disabled successfully'
         };
     });
 
+    // Picoding - Providers (Faz 14): picoding/providers.json tek doğruluk kaynağı.
+    // Kaydetme anında %USERPROFILE%\.pi\agent\providers.json'e de yansıtılır
+    // (auto-model-discovery.ts buradan okur; run.bat senkronu zaten aynısını yapar).
+    const PROVIDERS_JSON = path.join(PROJECT_DIR, 'picoding', 'providers.json');
+    const DEFAULT_PROVIDERS = [
+        { id: 'llama-cpp-185', baseUrl: 'http://192.168.1.185:1234', apiKey: '', enabled: true },
+        { id: 'strata-185', baseUrl: 'http://192.168.1.185:1235', apiKey: '', enabled: true },
+        { id: 'llama-cpp-177', baseUrl: 'http://192.168.1.177:1234', apiKey: '', enabled: true }
+    ];
+
+    function validateProviders(list) {
+        if (!Array.isArray(list)) return { ok: false, error: 'Provider listesi dizi olmalı' };
+        const seen = new Set();
+        const clean = [];
+        for (const p of list) {
+            const id = String((p && p.id) || '').trim().replace(/\s+/g, '-');
+            let baseUrl = String((p && p.baseUrl) || '').trim();
+            // Kullanıcı /v1/models gibi endpoint yazdıysa sade base'e indirge
+            baseUrl = baseUrl.replace(/\/v1\/(chat\/completions|models).*$/, '').replace(/\/v1\/$/, '').replace(/\/models\/$/, '').replace(/\/+$/, '');
+            if (!/^[A-Za-z0-9._-]{1,40}$/.test(id)) return { ok: false, error: 'Provider adı geçersiz (harf/rakam/-/_): ' + id };
+            if (!/^https?:\/\//i.test(baseUrl)) return { ok: false, error: 'Base URL http:// veya https:// ile başlamalı: ' + baseUrl };
+            if (seen.has(id.toLowerCase())) return { ok: false, error: 'Aynı addan birden fazla provider: ' + id };
+            seen.add(id.toLowerCase());
+            clean.push({ id, baseUrl, apiKey: String((p && p.apiKey) || '').trim(), enabled: p.enabled !== false });
+        }
+        return { ok: true, providers: clean };
+    }
+
+    function writeProvidersFile(list) {
+        fs.writeFileSync(PROVIDERS_JSON, JSON.stringify({ providers: list }, null, 2), 'utf8');
+        // Onaylı senkron hedefi: ~/.pi/agent/providers.json
+        try {
+            const agentDir = path.join(require('os').homedir(), '.pi', 'agent');
+            fs.mkdirSync(agentDir, { recursive: true });
+            fs.writeFileSync(path.join(agentDir, 'providers.json'), JSON.stringify({ providers: list }, null, 2), 'utf8');
+        } catch (e) {
+            console.error('[IPC] providers.json ayna kopyası yazılamadı:', e.message);
+        }
+    }
+
+    ipcMain.handle('picoding-get-providers', async () => {
+        try {
+            if (fs.existsSync(PROVIDERS_JSON)) {
+                const raw = JSON.parse(fs.readFileSync(PROVIDERS_JSON, 'utf8'));
+                return { success: true, providers: Array.isArray(raw.providers) ? raw.providers : DEFAULT_PROVIDERS };
+            }
+        } catch (e) {
+            console.error('[IPC] Failed to read providers.json:', e.message);
+        }
+        // İlk kullanım: varsayılanları tohumla
+        try { writeProvidersFile(DEFAULT_PROVIDERS); } catch (e) { /* sonraki denemede tekrar denenir */ }
+        return { success: true, providers: DEFAULT_PROVIDERS };
+    });
+
+    ipcMain.handle('picoding-save-providers', async (event, list) => {
+        const v = validateProviders(list);
+        if (!v.ok) return { success: false, error: v.error };
+        try {
+            writeProvidersFile(v.providers);
+            return { success: true, providers: v.providers };
+        } catch (e) {
+            return { success: false, error: e.message };
+        }
+    });
+
     // Picoding - Fetch Available Models from API (Universal Provider Support)
     ipcMain.handle('picoding-fetch-models', async (event, apiUrl, apiKey, providerType) => {
         if (!apiUrl) {

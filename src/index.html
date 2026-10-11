@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; frame-src https://www.aihublocal.com;">
-    <title>LLM Runner AIO v2.0</title>
+    <title>LLM Runner AIO v2.1</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
     <div id="toolbar" class="drag-region">
         <div class="toolbar-left">
             <img src="../assets/icon.ico" alt="Icon" class="toolbar-icon">
-            <h1 id="app-title">LLM Runner AIO v2.0</h1>
+            <h1 id="app-title">LLM Runner AIO v2.1</h1>
         </div>
         
         <div class="toolbar-center">
@@ -73,7 +73,7 @@
             <div id="sidebar-foot">
                 <b id="side-hw-line">Donanım algılanmadı — Donanım Algıla sekmesinden çalıştırın</b><br>
                 <span id="side-hw-sub"></span><br>
-                v2.0 · py3.11 · node24
+                v2.1 · py3.11 · node24
                 <div id="side-res">
                     <div class="res-row"><span class="res-label">RAM</span><span class="res-val" id="res-ram-val">— / — GB</span></div>
                     <div class="res-bar ram"><i id="bar-ram"></i></div>
@@ -616,6 +616,41 @@
                                 <button id="btn-detect-project" class="secondary-btn">🔍 Detect Project</button>
                                 <button id="btn-add-to-path" class="secondary-btn">➕ Add to PATH</button>
                                 <button id="btn-update-picoding" class="secondary-btn" data-i18n="btn_update_picoding">🔄 Update PiCoding</button>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <!-- Faz 14: Provider Yonetimi (providers.json -> auto-model-discovery) -->
+                    <div class="section-group">
+                        <fieldset>
+                            <legend>🔌 Providers (pi model sunucuları)</legend>
+
+                            <div class="help-text" style="margin-bottom: 8px; font-size: 0.8rem;">
+                                Buraya eklediğin sunucular pi açılırken <code>/model</code> listesine otomatik girer.
+                                Kayıtlar <code>picoding/providers.json</code>'a yazılır ve her açılışta pi'ye senkronlanır.
+                            </div>
+
+                            <div id="providers-list" class="provider-list"></div>
+
+                            <div class="form-row">
+                                <span class="form-label">Provider ID:</span>
+                                <input type="text" id="provider-id" placeholder="ornek: strata-185, openrouter, ollama-ev">
+                            </div>
+                            <div class="form-row">
+                                <span class="form-label">Base URL:</span>
+                                <input type="text" id="provider-url" placeholder="http://192.168.1.185:1235 veya https://api.openai.com/v1">
+                            </div>
+                            <div class="form-row">
+                                <span class="form-label">API Key:</span>
+                                <input type="password" id="provider-key" placeholder="bos birak = ansikiz (yerel sunucular)">
+                            </div>
+
+                            <div id="provider-test-status" class="help-text" style="font-size: 0.8rem; margin-top: 4px;"></div>
+
+                            <div class="btn-group">
+                                <button id="btn-provider-add" class="primary-btn">➕ Add Provider</button>
+                                <button id="btn-provider-test" class="secondary-btn">🧪 Test URL</button>
+                                <button id="btn-provider-cancel-edit" class="secondary-btn hidden">✖ Cancel Edit</button>
                             </div>
                         </fieldset>
                     </div>

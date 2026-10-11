@@ -323,6 +323,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
         fetchModels: (apiUrl, apiKey, providerType) => ipcRenderer.invoke('picoding-fetch-models', apiUrl, apiKey, providerType),
 
         /**
+         * Faz 14: Provider listesi (providers.json) — oku / kaydet
+         */
+        getProviders: () => ipcRenderer.invoke('picoding-get-providers'),
+        saveProviders: (list) => ipcRenderer.invoke('picoding-save-providers', list),
+
+        /**
          * PiCoding repository'ini guncelle (git pull)
          */
         update: () => ipcRenderer.invoke('picoding-update')

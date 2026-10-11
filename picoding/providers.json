@@ -1,0 +1,7 @@
+{
+  "providers": [
+    { "id": "llama-cpp-185", "baseUrl": "http://192.168.1.185:1234", "apiKey": "", "enabled": true },
+    { "id": "strata-185", "baseUrl": "http://192.168.1.185:1235", "apiKey": "", "enabled": true },
+    { "id": "llama-cpp-177", "baseUrl": "http://192.168.1.177:1234", "apiKey": "", "enabled": true }
+  ]
+}
