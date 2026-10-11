@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; frame-src https://www.aihublocal.com;">
-    <title>LLM Runner AIO v1.9</title>
+    <title>LLM Runner AIO v2.0</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -14,28 +14,11 @@
     <div id="toolbar" class="drag-region">
         <div class="toolbar-left">
             <img src="../assets/icon.ico" alt="Icon" class="toolbar-icon">
-            <h1 id="app-title">LLM Runner AIO v1.9</h1>
+            <h1 id="app-title">LLM Runner AIO v2.0</h1>
         </div>
         
         <div class="toolbar-center">
-            <!-- Tab Navigation — PyQt6 QTabWidget karşılığı -->
-            <div id="tab-bar">
-                <button data-tab="home" class="tab-btn" title="aihublocal.com — Community LLM Configurations">
-                    🌐 <span data-i18n="tab_home">aihublocal</span>
-                </button>
-                <button data-tab="system" class="tab-btn active" title="System Detection & Configuration">
-                    🔍 <span data-i18n="tab_system">System Detection</span>
-                </button>
-                <button data-tab="servers" class="tab-btn" title="Start/Stop Servers">
-                    🖥️ <span data-i18n="tab_servers">Servers</span>
-                </button>
-                <button data-tab="picoding" class="tab-btn" title="PiCoding IDE">
-                    💻 <span data-i18n="tab_picoding">PiCoding</span>
-                </button>
-                <button data-tab="models" class="tab-btn" title="Model Management">
-                    📦 <span data-i18n="tab_models">Models</span>
-                </button>
-            </div>
+            <!-- Faz 1 (UI gocu): sekme navigasyonu sol sidebar'a tasindi (bkz. #sidebar) -->
         </div>
         
         <div class="toolbar-right">
@@ -58,6 +41,29 @@
     <!-- Main Content Area — PyQt6 central widget karşılığı -->
     <!-- ============================================ -->
     <div id="main-container">
+        <!-- Faz 1 (UI gocu): sol sidebar — ayni .tab-btn / data-tab yuzeyi, renderer.js degismedi -->
+        <aside id="sidebar" class="no-drag">
+            <button data-tab="home" class="tab-btn side-btn" title="aihublocal.com — Community LLM Configurations">
+                🌐 <span data-i18n="tab_home">aihublocal</span>
+            </button>
+            <button data-tab="system" class="tab-btn side-btn active" title="System Detection & Configuration">
+                🔍 <span data-i18n="tab_system">System Detection</span>
+            </button>
+            <button data-tab="servers" class="tab-btn side-btn" title="Start/Stop Servers">
+                🖥️ <span data-i18n="tab_servers">Servers</span>
+            </button>
+            <button data-tab="picoding" class="tab-btn side-btn" title="PiCoding IDE">
+                💻 <span data-i18n="tab_picoding">PiCoding</span>
+            </button>
+            <button data-tab="models" class="tab-btn side-btn" title="Model Management">
+                📦 <span data-i18n="tab_models">Models</span>
+            </button>
+            <div id="sidebar-foot">
+                <b>LLM Runner AIO v2.0</b><br>
+                py3.11 · node24<br>
+                Strata · OW UI · Vane · SearXNG · llama.cpp · Wan2GP
+            </div>
+        </aside>
         <!-- Tab Panels — PyQt6 QTabWidget panel'leri -->
         <div id="tabs-content">
             <!-- Tab 0: aihublocal (embedded website) -->

@@ -1216,3 +1216,74 @@ input[type="checkbox"] {
         grid-template-columns: 1fr;
     }
 }
+
+/* ============================================ */
+/* UI GOCU — Faz 1: Sol sidebar (tab-bar -> aside) */
+/* renderer.js ayni .tab-btn/data-tab yuzeyini kullanir; sadece yerlesim degisti. */
+/* ============================================ */
+#main-container {
+    flex-direction: row;
+}
+
+#sidebar {
+    width: 218px;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: var(--bg-tertiary);
+    border-right: 1px solid var(--border);
+    padding: 16px 12px 12px;
+}
+
+#sidebar .side-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    border: 0;
+    border-radius: 10px;
+    padding: 11px 13px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+}
+
+#sidebar .side-btn:hover {
+    background: rgba(255, 255, 255, .06);
+    color: var(--text-primary);
+}
+
+#sidebar .side-btn.active {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    box-shadow: inset 3px 0 0 var(--accent);
+}
+
+#sidebar-foot {
+    margin-top: auto;
+    font-size: 11px;
+    line-height: 1.85;
+    color: var(--text-secondary);
+    border-top: 1px solid var(--border);
+    padding: 10px 6px 2px;
+}
+
+#sidebar-foot b {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+[data-theme="light"] #sidebar .side-btn:hover {
+    background: rgba(0, 0, 0, .05);
+}
+
+@media (max-width: 860px) {
+    #sidebar { width: 64px; }
+    #sidebar .side-btn span { display: none; }
+    #sidebar .side-btn { justify-content: center; font-size: 17px; }
+    #sidebar-foot { display: none; }
+}
