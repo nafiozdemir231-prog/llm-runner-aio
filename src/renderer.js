@@ -923,7 +923,12 @@ function setupEventListeners() {
     if (stCfgSave) stCfgSave.addEventListener('click', () => saveStrataConfig());
     const stConnOwui = document.getElementById('btn-strata-connect-owui');
     if (stConnOwui) stConnOwui.addEventListener('click', () => connectStrataToOwui());
-    window.electronAPI.strata.onSetupLog((data) => appendToLog('strata', data.message));
+    window.electronAPI.strata.onSetupLog((data) => {
+        // Faz 10: gateway satirlari 'strata-setup-log' kanalindan akıyor — ilerleme/hiz
+        // satirlari once widget isleyiciye sorulur, tuketlenenler log alani spam etmez.
+        if (typeof window.handleStrataProgress === 'function' && window.handleStrataProgress(data.message)) return;
+        appendToLog('strata', data.message);
+    });
     
     // Model management
     setupModelControls();
