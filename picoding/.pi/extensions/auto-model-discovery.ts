@@ -54,6 +54,9 @@ interface RawModel {
     n_ctx?: number;
     vision?: boolean;
   };
+  architecture?: {
+    input_modalities?: string[];
+  };
   status?: {
     value?: string;
     args?: string[];
@@ -66,6 +69,9 @@ interface RawModel {
  */
 function extractVision(model: RawModel): boolean {
   if (typeof model.meta?.vision === "boolean") return model.meta.vision;
+  if (Array.isArray(model.architecture?.input_modalities)) {
+    return model.architecture.input_modalities.includes("image");
+  }
   const args = model.status?.args;
   if (Array.isArray(args)) {
     if (args.includes("--mmproj")) return true;
