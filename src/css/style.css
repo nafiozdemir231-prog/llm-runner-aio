@@ -1796,7 +1796,7 @@ details.logbox .log-area {
     display: flex;
     flex-direction: column;
     gap: 3px;
-    max-height: 420px;
+    max-height: 720px;   /* buyuk font olceklerinde tasma payi */
     opacity: 1;
     overflow: hidden;
     transition: max-height .28s ease, opacity .22s ease, margin .28s ease;

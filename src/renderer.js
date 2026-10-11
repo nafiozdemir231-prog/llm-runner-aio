@@ -644,7 +644,11 @@ function updateUIText() {
     // 5) [data-i18n] attributes — global translation
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (s[key]) el.textContent = s[key];
+        if (!s[key]) return;
+        // Yerlesik dosyalardan gelen guvenli HTML (<br> vb.) etiket olarak uygulanir;
+        // aksi halde <br> kelime olarak gorunuyordu (launcher ipucu hatasi).
+        if (/<\/?(br|b|i)>/.test(s[key])) el.innerHTML = s[key];
+        else el.textContent = s[key];
     });
     
     // 6) Select options
@@ -3301,10 +3305,12 @@ window.switchTab = switchTab;
 
     const srvBtn = document.querySelector('#sidebar [data-tab="servers"]');
     if (srvBtn) srvBtn.addEventListener('click', () => {
-        // switchTab dinleyicisi bundan once calisir: yeni giris damgali -> menu acik kalir;
-        // ayni sekmede tekrar tiklama akordeonu cevirir.
-        if (state.currentTab === 'servers' && Date.now() - enteringStamp > 400) setExpanded(!expanded);
-    });
+        // CAPTURE dinleyici: switchTab'dan ONCE calisir; state.currentTab daha guncellenmemis.
+        // Servers'a disaridan giris -> menu hep ACIK gelir. Ayni sekmede tekrar tiklama -> akordeon.
+        const wasOnServers = state.currentTab === 'servers';
+        if (!wasOnServers) setExpanded(true);
+        else setExpanded(!expanded);
+    }, true);
 
     nav.addEventListener('click', e => {
         const btn = e.target.closest('.srv-nav-btn');
