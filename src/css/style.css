@@ -71,24 +71,42 @@ html, body {
     background-color: var(--bg-primary);
 }
 
-/* Scrollbar Stilleri */
+/* Scrollbar Stilleri — modern: ince, kaydirma izi görünmez, içe çekik yuvarlak başparmak */
 ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-primary);
-    border-radius: 5px;
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 4px;
+    background: rgba(148, 163, 184, 0.28);
+    border-radius: 8px;
+    border: 2px solid transparent;            /* başparmağı track içinde inceltir */
+    background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.5);
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:active {
     background: var(--accent);
+    background-clip: content-box;
+}
+
+/* Köşedeki kare ok butonları ve boş köşe tamamen kaldırılır */
+::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
 }
 
 /* ============================================ */

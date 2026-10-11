@@ -3293,6 +3293,11 @@ if (!singleInstanceLockAcquired) {
     });
 }
 
+// Modern kaydirma cubuklari (Chromium OverlayScrollbar): kalin gri klasik bar yerine
+// ince, yuvarlak, opak-olmayan cubuklar — aihublocal iframe gibi cross-origin iceriklerde
+// de etkili (iframe icine CSS enjekte edilemedigi icin tek guvenli yol bu).
+app.commandLine.appendSwitch('enable-features', 'OverlayScrollbar,OverlayScrollbarFlashWhenMouseEnter');
+
 app.whenReady().then(() => {
     if (!singleInstanceLockAcquired) return;
     // Orphan process temizligi
