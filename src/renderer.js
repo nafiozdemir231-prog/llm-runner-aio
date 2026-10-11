@@ -1592,6 +1592,8 @@ function setupServerControls() {
         // Faz 10: Strata ilerleme/hiz satirlari once widget isleyiciye sorulur;
         // tuketlenen satir log alani spam etmez.
         if (data.type === 'strata' && typeof window.handleStrataProgress === 'function' && window.handleStrataProgress(data.message)) return;
+        // Faz 13: llama.cpp hiz rekorlari (print_timing satirlari) — loga dokunmadan islenir.
+        if (data.type === 'llamacpp' && typeof window.handleLlamacppTiming === 'function') window.handleLlamacppTiming(data.message);
         appendToLog(data.type, data.message);
     });
 
@@ -3499,6 +3501,42 @@ console.log('[RENDERER] All event listeners attached');
             }
         }
         return consumed;
+    };
+
+    paint();
+})();
+
+// ============================================
+// UI GOCU Faz 13 — llama.cpp hiz rekorlari (oturum bazli)
+// llama-server timing satirlari:
+//   "prompt eval time = 1234.5 ms / 8000 tokens (... , 6476.96 tokens per second)"
+//   "eval time = 4567.8 ms / 300 tokens (... , 65.86 tokens per second)"
+// Eski/new varyantlar için iki regex deseni daha: "pp ... tok/s" / "tg ... tok/s".
+// Not: llama-server canli pp YUZDESI basmaz (yalniz istek sonu timing) -> bar yok,
+// rekor pill'lari doldurulur.
+// ============================================
+(function setupLlamacppSpeedStats() {
+    let bestTg = 0, bestPp = 0;
+
+    function paint() {
+        const a = document.getElementById('llamacpp-best-tg');
+        const b = document.getElementById('llamacpp-best-pp');
+        if (a) a.textContent = '🏆 Best TG ' + (bestTg ? bestTg.toFixed(1) + ' tok/s' : '—');
+        if (b) b.textContent = '⚡ Best PP ' + (bestPp ? bestPp.toFixed(1) + ' tok/s' : '—');
+    }
+
+    window.handleLlamacppTiming = function (message) {
+        const text = String(message || '');
+        for (const line of text.split('\n')) {
+            let m = line.match(/prompt eval time = [\d.,]+ ms \/ \d+ tokens \([^)]*?([\d.]+) tokens per second/);
+            if (m) { const v = parseFloat(m[1]); if (v > bestPp && v < 200000) { bestPp = v; paint(); } continue; }
+            m = line.match(/eval time = [\d.,]+ ms \/ \d+ tokens \([^)]*?([\d.]+) tokens per second/);
+            if (m) { const v = parseFloat(m[1]); if (v > bestTg && v < 20000) { bestTg = v; paint(); } continue; }
+            m = line.match(/\bpp ([\d.]+) tok\/s/);
+            if (m) { const v = parseFloat(m[1]); if (v > bestPp && v < 200000) { bestPp = v; paint(); } continue; }
+            m = line.match(/\btg ([\d.]+) tok\/s/);
+            if (m) { const v = parseFloat(m[1]); if (v > bestTg && v < 20000) { bestTg = v; paint(); } }
+        }
     };
 
     paint();
