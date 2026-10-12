@@ -1,7 +1,7 @@
 # ============================================================
 # Wan2GP - RX 6XXX (RDNA 2, gfx1030/1031/1032/1034) / Windows 10-11 / Python 3.12
 # PyTorch 2.13.0+rocm10.0.0 (TheRock stable index)
-# Kaynak: deepbeepmeep/Wan2GP commit b8b18f81 (docs/AMD-INSTALLATION.md)
+# Kaynak: deepbeepmeep/Wan2GP commit 57d57dc7 (v18) (docs/AMD-INSTALLATION.md)
 # Uretildi: 2026-10-04
 # ONEMLI: Eski preset'lerdeki rocm.nightlies.amd.com/v2(-staging)/gfx... index'leri ARTIK KULLANILMIYOR;
 # eski ROCm ortamlari (rocm65 dahil) yenisiyle DEGISTIRILMELI. torch KASITLI olarak burada degil,
@@ -13,7 +13,11 @@
 # ============================================================
 
 --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/ort-cuda-13-nightly/pypi/simple/
-mmgp==3.8.2
+# mmgp artik Wan2GP reposu ile birlikte geliyor (mmgp/ klasoru); baimli paketi kurulmaz
+optimum-quanto==0.2.7
+safetensors
+psutil
+filelock
 comfy-kitchen==0.2.35
 # Core AI stack
 diffusers==0.36.0
@@ -117,8 +121,6 @@ ftfy
 piexif
 nvidia-ml-py 
 misaki
-phonemizer-fork
-espeakng-loader
 gitdb==4.0.12 
 gitpython==3.1.45
 stringzilla==4.0.14
@@ -143,3 +145,9 @@ hf_xet>=1.5.2  # Required for cancellable Xet downloads
 # sageattention==1.0.6
 # FlashAttention-2 (aiter/Triton backend) kaynak derlemesi gerektirir - KURULUM.md'ye bakin.
 # ============================================================
+
+# ---- Wan2GP v18 ekleri ----
+xatlas>=0.0.11
+fast-simplification>=0.2.0
+scikit-image>=0.26.0
+resvg-py==0.5.0

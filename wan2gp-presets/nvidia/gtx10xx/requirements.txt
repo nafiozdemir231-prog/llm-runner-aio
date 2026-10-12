@@ -1,6 +1,6 @@
 # ============================================================
 # Wan2GP - GTX 10XX (Pascal) / Windows 10-11 / Python 3.10.9 / PyTorch 2.7.1 + cu128
-# Kaynak: deepbeepmeep/Wan2GP commit b8b18f81 (docs/INSTALLATION.md)
+# Kaynak: deepbeepmeep/Wan2GP commit 57d57dc7 (v18) (docs/INSTALLATION.md)
 # Uretildi: 2026-10-04
 # ONEMLI: Bu nesil AYRI bir yazilim yigininda calisir (eski Python/PyTorch/CUDA).
 # ============================================================
@@ -16,7 +16,11 @@ torchvision==0.22.1
 torchaudio==2.7.1
 
 --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/ort-cuda-13-nightly/pypi/simple/
-mmgp==3.8.2
+# mmgp artik Wan2GP reposu ile birlikte geliyor (mmgp/ klasoru); baimli paketi kurulmaz
+optimum-quanto==0.2.7
+safetensors
+psutil
+filelock
 comfy-kitchen==0.2.35
 # Core AI stack
 diffusers==0.36.0
@@ -120,8 +124,6 @@ ftfy
 piexif
 nvidia-ml-py 
 misaki
-phonemizer-fork
-espeakng-loader
 gitdb==4.0.12 
 gitpython==3.1.45
 stringzilla==4.0.14
@@ -161,3 +163,9 @@ https://github.com/deepbeepmeep/kernels/releases/download/gguf-v1.0.25/llamacpp_
 
 # Nunchaku INT4 (PyTorch 2.7 / Cuda 12.8 build)
 https://github.com/deepbeepmeep/kernels/releases/download/v1.2.0_Nunchaku/nunchaku-1.2.0+torch2.7-cp310-cp310-win_amd64.whl
+
+# ---- Wan2GP v18 ekleri ----
+xatlas>=0.0.11
+fast-simplification>=0.2.0
+scikit-image>=0.26.0
+resvg-py==0.5.0
