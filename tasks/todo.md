@@ -73,3 +73,19 @@
 - [x] 2. ctx_from_cfg() eklendi: cfg.args icinde --max-context (Strata) / --ctx-size ara
 - [x] 3. do_GET models bloguna baglandi: meta.n_ctx + context_length setdefault (canli backend gercek ctx one cikar)
 - [x] 4. Uctan uca test: .tmp/gwtest sahte gateway, ark UNLOADED → /v1/models meta.n_ctx=131072 PASS
+
+# Task: Open WebUI veritabani kaybi + kurtarma (HAT-43) [2026-10-12]
+
+## Steps
+- [x] 1. Neden: yarim kalan Update sirasinda openwebui.db .temp_backup'a tasinmisti; restore adimi calismadi → OW bos yeni DB ile acildi (onboarding:true)
+- [x] 2. Yedek konumu tespit edildi: <proje>\.temp_backup\openwebui.db.<unix_ms>.bak (+ eski: openwebui\openwebui.db.backup, Load Database ozelligi)
+- [x] 3. rescueOpenwebuiDatabase() eklendi (startServer acilisi): DB yoksa .bak'i geri koyar; aktif DB bos/0-kullanici ise yedegi geri yukler (aktif DB 'openwebui.replaced-<ts>.db' olarak korunur); sqlite erisilemezse boyut sezgisi (<5MB yeni vs >3x buyuk yedek)
+- [x] 4. restoreDatabase() cleanup sertlestirildi: en son .bak artik silinmez
+- [x] 5. Birim test 4 senaryo PASS (.tmp/hat43/test.js; node:sqlite ile)
+
+# Task: Ahmet'in extension kopyasini yenile (vision + ctx) [2026-10-12]
+
+## Steps
+- [x] 1. tasks/ahmet/auto-model-discovery.ts eski cikti: input:["text"] ve contextWindow:128000 SABIT, ustelik hardcoded API key -> yeni veri-odakli surumle tamamen degistirildi (providers.json + OPENWEBUI_* env geri donusu, vision/ctx cikarma)
+- [x] 2. picoding extension'a architecture.input_modalities vision kontrolu eklendi (her iki dosya tsc --strict PASS)
+- [x] 3. tasks/ahmet/providers.json.ornek olusturuldu (ngrok -> gateway onerisi + OW uyarisi)

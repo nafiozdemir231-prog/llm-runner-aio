@@ -139,3 +139,7 @@ Wan2GP/
 venvs/
 tasks/telegram.sh
 Strata/
+
+# yama/gecici calisma dizinleri
+.patch_tmp/
+Python+node-git-install/

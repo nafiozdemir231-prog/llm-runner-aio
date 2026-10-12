@@ -1,6 +1,8 @@
 current_step: done
 status: complete
 verdict: PASS
-last_action: HAT-42 kapatildi (commit 932a582) - strata-layer/gateway.py ctx_from_cfg; ark yuklu degilken de /v1/models gercek ctx bildiriyor; .tmp/gwtest canli test PASS (unloaded -> n_ctx 131072)
-next_action: Hedef PC: gateway dosyasini kopyala/Update yap, pi'yi yeniden baslat (/model listesinde ctx artik dogru); ayrica bekleyen: Providers gorme-testi, OSC 7501 (Faz 15)
+last_action: HAT-43 kapatildi (commit 200996e) - rescueOpenwebuiDatabase + restoreDatabase backup koruması; 4 senaryo test PASS. Hedef PC manuel geri yukleme tarif edildi (.temp_backup\openwebui.db.<ts>.bak -> openwebui\openwebui.db, OW durdurulmus vaziyette)
+next_action: Hedef PC'de: OW durdur -> .temp_backup'ten en yeni .bak'i openwebui\openwebui.db olarak kopyala -> OW baslat (eski hesap/sohbetler geri gelir). Sonra guvenli repoyla Update yap.
 blocked: false
+
+last_action(ek): Ahmet kopyasi yenilendi (tasks/ahmet/...ts + providers.json.ornek); extension vision tespiti genisletildi (commit 6f87cc7). Not: OW uzerinden vision/ctx metadata dusuruluyor; ngrok dogrudan gateway'e noktalansa tam calisir.

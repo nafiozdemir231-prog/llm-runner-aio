@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "web-reader": {
+      "command": "venv/Scripts/python.exe",
+      "args": [
+        "picoding/mcp/mcp_web_reader.py"
+      ]
+    }
+  }
+}

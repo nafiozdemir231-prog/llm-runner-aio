@@ -39,7 +39,7 @@
     "qwen3.8-27b-vision": {
       "model": "https://huggingface.co/vincespeed/Qwen3.8-27B-No-MTP-GGUF-Dflash2/resolve/main/Qwen3.8-27B-IQ3_S-noMTP-.gguf",
       "mmproj": "https://huggingface.co/vincespeed/Qwen3.8-27B-No-MTP-GGUF-Dflash2/resolve/main/mmproj-F16.gguf",
-      "modelDraft": "https://huggingface.co/vincespeed/Qwen3.8-27B-No-MTP-GGUF-Dflash2/resolve/main/Qwen3.8-27B-DFlash2-Q2K_L.gguf"
+      "modelDraft": "https://huggingface.co/vincespeed/Qwen3.8-27B-No-MTP-GGUF-Dflash2/resolve/main/Qwen3.8-27B-mmproj-BF16.gguf"
     }
   },
   "vram24ram32models.ini": {
@@ -48,18 +48,21 @@
       "mmproj": "https://huggingface.co/google/gemma-4-26B-A4B-it-qat-q4_0-gguf/resolve/main/gemma-4-26B-it-mmproj.gguf"
     },
     "qwen3.8-vision": {
-      "model": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-UD-Q4_K_XL.gguf",
-      "mmproj": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/mmproj-BF16.gguf"
+      "model": "https://huggingface.co/vincespeed/Qwen3.8-27B-No-MTP-GGUF-Dflash2/resolve/main/Qwen3.8-27B-Q4_K_M-noMTP.gguf",
+      "mmproj": "https://huggingface.co/vincespeed/Qwen3.8-27B-No-MTP-GGUF-Dflash2/resolve/main/Qwen3.8-27B-mmproj-BF16.gguf",
+      "modelDraft": "https://huggingface.co/vincespeed/Qwen3.8-27B-No-MTP-GGUF-Dflash2/resolve/main/Qwen3.8-27B-DFlash2-Q2K_L.gguf"
     }
   },
   "vram32ram32models.ini": {
     "gemma-4-vision": {
       "model": "https://huggingface.co/google/gemma-4-31B-it-qat-q4_0-gguf/resolve/main/gemma-4-31B_q4_0-it.gguf",
-      "mmproj": "https://huggingface.co/google/gemma-4-31B-it-qat-q4_0-gguf/resolve/main/gemma-4-31B-it-mmproj.gguf"
+      "mmproj": "https://huggingface.co/google/gemma-4-31B-it-qat-q4_0-gguf/resolve/main/gemma-4-31B-it-mmproj.gguf",
+      "modelDraft": "https://huggingface.co/Anbeeld/gemma-4-31B-it-DFlash-GGUF/resolve/main/gemma4-31b-it-dflash-Q4_K_M.gguf"
     },
     "qwen3.8-vision": {
-      "model": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-UD-Q6_K_XL.gguf",
-      "mmproj": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/mmproj-BF16.gguf"
+      "model": "https://huggingface.co/vincespeed/Qwen3.8-27B-No-MTP-GGUF-Dflash2/resolve/main/Qwen3.8-27B-Q6_K-noMTP.gguf",
+      "mmproj": "https://huggingface.co/vincespeed/Qwen3.8-27B-No-MTP-GGUF-Dflash2/resolve/main/Qwen3.8-27B-mmproj-BF16.gguf",
+      "modelDraft": "https://huggingface.co/vincespeed/Qwen3.8-27B-No-MTP-GGUF-Dflash2/resolve/main/Qwen3.8-27B-DFlash2-Q4_K_M.gguf"
     }
   },
   "vram4ram16models.ini": {

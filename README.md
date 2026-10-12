@@ -30,7 +30,7 @@ tags:
 - strata
 ---
 
-# LLM Runner AIO v1.9
+# LLM Runner AIO v2.1
 
 🌐 Links
 
