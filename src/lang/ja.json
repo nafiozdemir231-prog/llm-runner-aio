@@ -72,6 +72,8 @@
   "label_download_progress": "ダウンロードの進捗",
   "label_model_name": "モデル",
   "label_model_size": "モデルサイズ：",
+  "label_strata_family": "モデルファミリー:",
+  "strata_q36_note": "Qwen3.6-35B-A3B: ハイブリッドモード(エキスパートはVRAM、残りはCPU); NVIDIA/AMDのみ — Intel Arc非対応; ビジョン未対応; キャリブレーション不要。",
   "label_model_url": "URL",
   "label_download_btn": "ダウンロード",
   "label_start_auto": "起動設定",

@@ -14,6 +14,21 @@ const CHOICES = [
     { size: 'IQ3_S', label: 'IQ3_S — en iyi kalite, en yavas', downloadGb: 83.6, minRamGb: 64 }
 ];
 
+// Qwen3.6-35B-A3B (upstream OWN_PATH_FAMILIES: qwen35moe, Unsloth MTP GGUF'leri): hibrit mod — expert'ler
+// olabildiğince VRAM'de, sığmayanlar CPU'da; sabit VRAM min yok. NVIDIA/AMD zorunlu (Intel Arc motoru reddeder).
+// Vision henüz bağlı değil (setup.py "vision": False) ve kalibrasyon Flash-Next ölçümleridir -> q36'da uygulanmaz.
+const FAMILY_CHOICES = {
+    flashnext: CHOICES,
+    qwen36: [
+        { size: 'UD-Q4_K_XL', label: 'Q4_K_XL — Unsloth Dynamic, en küçük', downloadGb: 22.9, minRamGb: 32 },
+        { size: 'UD-Q6_K_XL', label: 'Q6_K_XL — Unsloth Dynamic, tam modele yakın', downloadGb: 32.6, minRamGb: 44 },
+        { size: 'Q8_0', label: 'Q8_0 — tam modele en yakın', downloadGb: 37.8, minRamGb: 52 },
+    ],
+};
+// models.json kapı adları aileye göre (gateway bu adları servis eder; q36 upstream adı kullanır).
+const GATE_NAMES = { flashnext: ['Qwen3.8-Flash-Next', 'coder-Qwen3.8-Flash-Next'], qwen36: ['qwen3.6-35b-a3b', 'coder-qwen3.6-35b-a3b'] };
+const isQwen36Config = (cfg) => !!cfg && (cfg.arch === 'qwen35moe' || (Array.isArray(cfg.args) && cfg.args.some((a) => /Qwen3\.6/i.test(String(a)))));
+
 const PARK = { '--conversation-cache-mib': '4096', '--conversation-cache-slots': '2', '--conversation-cache-min-free-mib': '4096' };
 const SAMPLING = (temp) => ({ temperature: temp, top_k: 20, top_p: 0.95, min_p: 0.0, presence_penalty: 0.0, repetition_penalty: 1.08 });
 
@@ -133,6 +148,7 @@ function register(deps) {
         if (fs.existsSync(DIR)) ensureLayer();
         const s = readJson(MODELS_JSON);
         const general = readJson(path.join(DIR, 'strata-general.json'));
+        const family = isQwen36Config(general) ? 'qwen36' : 'flashnext';
         let maxContext = null;
         let vision = null;
         let modelSize = null;
@@ -140,6 +156,15 @@ function register(deps) {
         if (general && Array.isArray(general.args)) {
             const i = general.args.indexOf('--max-context');
             if (i >= 0) maxContext = Number(general.args[i + 1]);
+            if (family === 'qwen36') {
+                // q36: --native <...Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf> — quant suffixi boyut etiketi; vision motor tarafından yok.
+                vision = 'no';
+                const n = general.args.indexOf('--native');
+                if (n >= 0) {
+                    const m = String(general.args[n + 1]).match(/-(UD-[A-Z0-9_]+|Q8_0)(?:\.gguf)?$/i);
+                    if (m) modelSize = m[1].toUpperCase();
+                }
+            } else {
             const v = general.args.indexOf('--vision');
             // Vision durumu args'tan DEGIL config'in "vision" bolumunden okunur (upstream: args'ta --vision
             // bayragindan hemen sonra --vram-reserve-mib gelir; gpu/cpu ayrimi cfg["vision"] = {gpu: bool}'da).
@@ -150,12 +175,16 @@ function register(deps) {
             // Uretilen args'te boyut '--pack <.../packs/iq3_xxs>' olarak geciyor -> basename = CHOICES.size (kucuk harf).
             const pk = general.args.indexOf('--pack');
             if (pk >= 0) modelSize = String(general.args[pk + 1]).replace(/[\\/]+$/, '').split(/[\\/]/).pop().toUpperCase();
+            }
         }
         // #465: "parallel": N config anahtari (serve bunu --batch N'ye cevirir; 1 = sirayla).
         if (general && Number.isInteger(general.parallel) && general.parallel >= 2) parallel = general.parallel;
+        // q36 uygunluğu: RAM >= 32 (en küçük quant eşiği) ve NVIDIA/AMD kart — Intel Arc motoru q36'yı reddeder.
+        const eligibleQwen36 = hw.ramGb >= 32 && /nvidia|geforce|rtx|gtx|amd|radeon/i.test(String(hw.gpuName || ''));
         return {
             // STRATA_DEV=1: test makinesinde karti RAM esigi altinda da gorunur kilar (varsayilan davranis degismez).
             eligible: (hw.ramGb >= 48 && (hw.vramGb || 0) >= 12) || process.env.STRATA_DEV === '1',
+            eligibleQwen36,
             ramGb: hw.ramGb, vramGb: hw.vramGb || 0, gpuName: hw.gpuName || '',
             repoCloned: fs.existsSync(path.join(DIR, 'setup.py')),
             installed: fs.existsSync(VENV_PY),
@@ -172,29 +201,37 @@ function register(deps) {
             vision,
             modelSize,
             parallel,
+            family,
+            families: {
+                flashnext: FAMILY_CHOICES.flashnext.map((c) => ({ ...c, fits: hw.ramGb >= c.minRamGb })),
+                qwen36: FAMILY_CHOICES.qwen36.map((c) => ({ ...c, fits: eligibleQwen36 && hw.ramGb >= c.minRamGb })),
+            },
             choices: CHOICES.map((c) => ({ ...c, fits: hw.ramGb >= c.minRamGb }))
         };
     });
 
     ipcMain.handle('strata-setup', async (event, options = {}) => {
         if (setupRunning) return { success: false, error: 'Setup already in progress.' };
-        const choice = CHOICES.find((c) => c.size === options.size);
+        const fam = options.family === 'qwen36' ? 'qwen36' : 'flashnext';
+        const choice = (FAMILY_CHOICES[fam] || []).find((c) => c.size === options.size);
         if (!choice) return { success: false, error: 'Unknown model size: ' + options.size };
         setupRunning = true;
         const send = (m) => safeSend('strata-setup-log', { message: m });
         try {
             if (!fs.existsSync(path.join(DIR, 'setup.py'))) throw new Error('Strata klasoru bulunamadi — once klon gerekli.');
             ensureLayer();
-            const vision = ['gpu', 'cpu'].includes(options.vision) ? options.vision : 'no';
+            // q36'da vision motor tarafindan yok sayilir ("vision": False) -> her durumda 'no'.
+            const vision = fam === 'qwen36' ? 'no' : (['gpu', 'cpu'].includes(options.vision) ? options.vision : 'no');
             // #465 paralel istek (opt-in): setup.py --parallel N -> config'e "parallel": N yazilir (2-8).
             const parallelN = Number(options.parallel);
             const useParallel = Number.isInteger(parallelN) && parallelN >= 2 ? Math.min(parallelN, 8) : null;
-            send('[SETUP] Model ' + choice.size + ' indiriliyor (~' + choice.downloadGb + ' GB) -> models\ ...' + (vision !== 'no' ? ' + vision (' + vision + ')' : '') + (useParallel ? ' + parallel ' + useParallel : ''));
+            send('[SETUP] Model ' + (fam === 'qwen36' ? 'Qwen3.6-35B-A3B ' : '') + choice.size + ' indiriliyor (~' + choice.downloadGb + ' GB) -> models\ ...' + (vision !== 'no' ? ' + vision (' + vision + ')' : '') + (useParallel ? ' + parallel ' + useParallel : ''));
             const setupArgs = ['cmd', '/c', path.join(DIR, 'START-HERE.bat'),
                 '--yes', '--model', choice.size, '--vision', vision,
                 '--models-dir', path.join(PROJECT_DIR, 'models'),
                 '--data-dir', path.join(PROJECT_DIR, 'models', 'strata'),
                 '--no-start'];
+            if (fam === 'qwen36') setupArgs.push('--family', 'qwen36');
             if (useParallel) setupArgs.push('--parallel', String(useParallel));
             await runStreaming(setupArgs, send);
 
@@ -224,6 +261,17 @@ function register(deps) {
             // models.json garanti; API key artik ZORUNLU DEGIL ve otomatik uretilmez — bos birakilirsa ansikiz calisir.
             if (!fs.existsSync(MODELS_JSON)) fs.copyFileSync(path.join(LAYER, 'models.json'), MODELS_JSON);
             const s = readJson(MODELS_JSON) || {};
+            // Kapı adlari aileyi takip eder: gateway bu adlari servis eder (q36 -> upstream kanonik adlar).
+            if (Array.isArray(s.models)) {
+                const gateNames = GATE_NAMES[fam];
+                let renamed = false;
+                for (const m of s.models) {
+                    if (!m) continue;
+                    if (m.config === 'strata-general.json' && m.name !== gateNames[0]) { m.name = gateNames[0]; renamed = true; }
+                    if (m.config === 'strata-coder.json' && m.name !== gateNames[1]) { m.name = gateNames[1]; renamed = true; }
+                }
+                if (renamed) { writeBackup(MODELS_JSON, s, backupDir); send('[SETUP] models.json kapı adlari guncellendi: ' + gateNames.join(', ')); }
+            }
             const chk = await checkargsReport(send);
             if (chk && chk.code !== 0) send('[SETUP] UYARI: checkargs sert sorun buldu (yukarida liste).');
             send('[SETUP] Kurulum tamamlandi. Sunucular sekmesinden baslatabilirsin.');
@@ -243,6 +291,13 @@ function register(deps) {
         setupRunning = true;
         const send = (m) => safeSend('strata-setup-log', { message: m });
         try {
+            // q36 tek kapilarsa kalibrasyon anlamsiz: upstream olcumleri Flash-Next motor ayarlarina ait
+            // (calibration_targets OWN_PATH ailelerini atlar) -> here erken cik, hata uretme.
+            const gCfg = readJson(path.join(DIR, 'strata-general.json'));
+            if (isQwen36Config(gCfg)) {
+                send('[CALIBRATE] Atlandi: Qwen3.6-35B-A3B hibrit motor kalibrasyon gerektirmez (olcumler Flash-Next ayarlaridir).');
+                return { success: true, skipped: true };
+            }
             send('[CALIBRATE] Donanim olcumu basladi (~5-10 dk). --no-start: model gateway uzerinden calisacak.');
             const t0 = Date.now();
             const beat = setInterval(() => send('[CALIBRATE] Olcum suruyor... ' + Math.round((Date.now() - t0) / 60000) + ' dk - bittiginde loga Tamamlandi yazacak, lutfen bekleyin.'), 45000);

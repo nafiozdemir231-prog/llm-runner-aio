@@ -72,6 +72,8 @@
   "label_download_progress": "下载进度",
   "label_model_name": "模型",
   "label_model_size": "模型大小：",
+  "label_strata_family": "模型系列：",
+  "strata_q36_note": "Qwen3.6-35B-A3B：混合模式（专家权重在VRAM，其余在CPU）；仅支持NVIDIA/AMD — 不支持Intel Arc；暂不支持vision；无需校准。",
   "label_model_url": "URL",
   "label_download_btn": "下载",
   "label_start_auto": "启动配置",

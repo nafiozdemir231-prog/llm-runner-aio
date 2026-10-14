@@ -187,6 +187,14 @@
                             <legend data-i18n="strata_install_legend">🧠 Strata — Qwen3.8-Flash-Next (125B MoE, local)</legend>
                             <div class="help-text" data-i18n="strata_install_help">This PC qualifies for Strata (RAM ≥ 48 GB, VRAM ≥ 12 GB). The model downloads ~58–84 GB into models\. After setup, start it from the Servers tab.</div>
                             <div class="form-row">
+                                <label for="strata-family" data-i18n="label_strata_family">Model family:</label>
+                                <select id="strata-family">
+                                    <option value="flashnext" selected>Qwen3.8-Flash-Next (125B MoE)</option>
+                                    <option value="qwen36">Qwen3.6-35B-A3B (Unsloth MTP)</option>
+                                </select>
+                            </div>
+                            <div id="strata-q36-note" class="help-text hidden" data-i18n="strata_q36_note">Qwen3.6-35B-A3B: hybrid mode (experts in VRAM, the rest on CPU); NVIDIA/AMD only — Intel Arc is refused; vision not available yet; calibration does not apply.</div>
+                            <div class="form-row">
                                 <label for="strata-model-select" data-i18n="label_model_size">Model size:</label>
                                 <select id="strata-model-select"></select>
                             </div>
@@ -543,7 +551,7 @@
                                             <option value="262144">256K (training limit)</option>
                                         </select>
                                     </div>
-                                    <div class="form-row">
+                                    <div class="form-row" id="strata-config-vision-row">
                                         <label data-i18n="label_vision">Image reading (vision):</label>
                                         <select id="strata-config-vision">
                                             <option value="no" data-i18n="opt_vision_off">Off — text only (recommended)</option>

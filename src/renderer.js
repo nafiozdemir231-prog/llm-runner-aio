@@ -931,6 +931,13 @@ function setupEventListeners() {
     refreshStrataStatus();
     const stInstallBtn = document.getElementById('btn-strata-install');
     if (stInstallBtn) stInstallBtn.addEventListener('click', () => runStrataSetup());
+    // Aile secimi: boyut listesi yeni ailenin seçenekleriyle yeniden kurulur (dataset bosaltilir, status rebuild eder).
+    const stFamilySel = document.getElementById('strata-family');
+    if (stFamilySel) stFamilySel.addEventListener('change', () => {
+        const ms = document.getElementById('strata-model-select');
+        if (ms) ms.dataset.family = '';
+        refreshStrataStatus().catch(() => {});
+    });
     const stCalBtn = document.getElementById('btn-strata-calibrate');
     if (stCalBtn) stCalBtn.addEventListener('click', () => runStrataCalibrate());
     const stUpdBtn = document.getElementById('btn-strata-update');
@@ -1344,15 +1351,24 @@ async function refreshStrataStatus() {
         state.servers.strata.modelSize = st.modelSize || null;
 
         // Install bolumu kurulumdan sonra da gorunur kalir (model boyutu / vision degistirilebilir).
+        // q36 ayri esik: RAM >= 32 + NVIDIA/AMD kart (eligibleQwen36) — Flash-Next eşiği tutmasa bile kurulum görünür.
+        const famSel = document.getElementById('strata-family');
+        const family = st.family || (famSel ? famSel.value : 'flashnext') || 'flashnext';
+        state.servers.strata.family = family;
+        if (famSel && [...famSel.options].some(o => o.value === family)) famSel.value = family;
+        const anyEligible = st.eligible || st.eligibleQwen36;
         const installSec = document.getElementById('strata-install-section');
-        if (installSec) installSec.classList.toggle('hidden', !st.eligible);
+        if (installSec) installSec.classList.toggle('hidden', !anyEligible);
         const serverFs = document.getElementById('strata-server-fieldset');
-        if (serverFs) serverFs.classList.toggle('hidden', !(st.eligible && st.repoCloned));
+        if (serverFs) serverFs.classList.toggle('hidden', !(anyEligible && st.repoCloned));
+        const q36Note = document.getElementById('strata-q36-note');
+        if (q36Note) q36Note.classList.toggle('hidden', family !== 'q36');
 
         const sel = document.getElementById('strata-model-select');
-        if (sel && !sel.options.length && Array.isArray(st.choices)) {
+        const choices = (st.families && st.families[family]) || st.choices;
+        if (sel && sel.dataset.family !== family && Array.isArray(choices)) {
             sel.innerHTML = '';
-            for (const c of st.choices) {
+            for (const c of choices) {
                 const opt = document.createElement('option');
                 opt.value = c.size;
                 // Strata zaten calismayacak modeli kurulumda kendisi eler; burada secenek pasif birakilmaz,
@@ -1360,10 +1376,17 @@ async function refreshStrataStatus() {
                 opt.textContent = c.label + ' — ~' + c.downloadGb + ' GB' + (c.fits ? '' : ' (≈' + c.minRamGb + ' GB RAM)');
                 sel.appendChild(opt);
             }
-            const defChoice = st.choices.find(c => c.fits) || st.choices[0];
+            const defChoice = choices.find(c => c.fits) || choices[0];
             if (defChoice) sel.value = defChoice.size;
+            sel.dataset.family = family;
         }
         if (sel && st.modelSize && [...sel.options].some(o => o.value === st.modelSize)) sel.value = st.modelSize;
+
+        // q36'da vision motor tarafindan yok sayilir -> dropdown satirlari gizlenir (config karismaz).
+        const vrInstall = document.getElementById('strata-vision')?.closest('.form-row');
+        if (vrInstall) vrInstall.classList.toggle('hidden', family === 'q36');
+        const vrConfig = document.getElementById('strata-config-vision-row');
+        if (vrConfig) vrConfig.classList.toggle('hidden', st.family === 'q36');
 
         // Vision dropdownlarini kurulu degerle senkronla (System Detection + Servers config paneli)
         const mappedVision = ['gpu', 'cpu'].includes(st.vision) ? st.vision : 'no';
@@ -1386,7 +1409,8 @@ async function refreshStrataStatus() {
         const stopBtn = document.getElementById('btn-stop-strata');
         if (stopBtn) stopBtn.disabled = !st.running;
         const calBtn = document.getElementById('btn-strata-calibrate');
-        if (calBtn) calBtn.disabled = !st.configured || st.setupRunning;
+        // q36 hibrit motor: kalibrasyon Flash-Next olcumleridir -> buton pasif (handler da erken cikar).
+        if (calBtn) calBtn.disabled = !st.configured || st.setupRunning || st.family === 'q36';
         const updBtn = document.getElementById('btn-strata-update');
         if (updBtn) updBtn.disabled = !st.repoCloned || st.running || st.setupRunning;
 
@@ -1421,17 +1445,21 @@ async function runStrataSetup() {
     const sel = document.getElementById('strata-model-select');
     const size = sel ? sel.value : null;
     if (!size) { showNotification('Warning', 'Model boyutu secilmedi.', 'warning'); return; }
+    const family = (document.getElementById('strata-family')?.value === 'qwen36') ? 'qwen36' : 'flashnext';
+    const confirmText = family === 'qwen36'
+        ? '"Qwen3.6-35B-A3B ' + size + '" indirilsin mi?\n\n~23-38 GB indirme yapilir (models\\ klasoru). Hibrit mod: expertler mumkun oldugunca VRAM tarafinda, sigmayanlar CPU\'da; vision ve kalibrasyon bu ailede yok. Kesilirse ayni buton devam eder.'
+        : '"' + size + '" modeli indirilsin mi?\n\n~58-84 GB indirme yapilir (models\\ klasoru), kurulum 1 saati asabilir ve internet hizina baglidir. Ilerleme Sunucular > Strata > Logs altindan izlenir; kesilirse ayni buton devam eder.';
     const confirmed = await window.electronAPI.notification.confirm(
         'Strata Kurulumu',
-        '"' + size + '" modeli indirilsin mi?\n\n~58-84 GB indirme yapilir (models\\ klasoru), kurulum 1 saati asabilir ve internet hizina baglidir. Ilerleme Sunucular > Strata > Logs altindan izlenir; kesilirse ayni buton devam eder.'
+        confirmText
     );
     if (!confirmed) return;
     strataBusyInFlight = true;
     const instBtn = document.getElementById('btn-strata-install');
     const instOld = instBtn ? instBtn.textContent : '';
     if (instBtn) { instBtn.disabled = true; instBtn.textContent = '\u23f3 Installing...'; }
-    appendToLog('strata', '[SETUP] Basliyor (' + size + ')...');
-    const result = await window.electronAPI.strata.setup({ size, vision: document.getElementById('strata-vision')?.value || 'no' }).catch(e => ({ success: false, error: e.message }));
+    appendToLog('strata', '[SETUP] Basliyor (' + (family === 'qwen36' ? 'Qwen3.6-35B-A3B ' : '') + size + ')...');
+    const result = await window.electronAPI.strata.setup({ size, vision: family === 'qwen36' ? 'no' : (document.getElementById('strata-vision')?.value || 'no'), family }).catch(e => ({ success: false, error: e.message }));
     strataBusyInFlight = false;
     if (instBtn) instBtn.textContent = instOld;
     if (result.success) {

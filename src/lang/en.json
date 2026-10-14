@@ -72,6 +72,8 @@
   "label_download_progress": "Download Progress",
   "label_model_name": "Model",
   "label_model_size": "Model size:",
+  "label_strata_family": "Model family:",
+  "strata_q36_note": "Qwen3.6-35B-A3B: hybrid mode (experts in VRAM, the rest on CPU); NVIDIA/AMD only — Intel Arc is refused; vision not available yet; calibration does not apply.",
   "label_model_url": "URL",
   "label_download_btn": "Download",
   "label_start_auto": "Start Configuration",

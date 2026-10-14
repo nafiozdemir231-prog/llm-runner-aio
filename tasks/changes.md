@@ -401,3 +401,13 @@ Not: extension canli duman testi gecti (strata-185 2 model ctx=262144 vision; ll
 | strata-layer -> Strata katman kopyalari | ensureLayer eslenimi: bes dosya da BYTE-BYTE AYNI cikti, dokunulmadi; gateway.py'de ctx_from_cfg (HAT-42 fixi) yerinde | Ayarlar ve bizim katman korunuyor |
 
 Not: Bu makinede Strata/.venv yok -> setup.py --update atlandi; hedef PC'lerde uygulama Update butonu engine'i de kendisi yeniliyor.
+
+## 2026-10-13 — Strata q36 entegrasyonu (Qwen3.6-35B-A3B uygulamada)
+| File | Change | Reason |
+|------|--------|--------|
+| electron/strata.js | FAMILY_CHOICES (qwen36: UD-Q4_K_XL 22.9/32, UD-Q6_K_XL 32.6/44, Q8_0 37.8/52), GATE_NAMES, isQwen36Config; status: family/families/eligibleQwen36 + q36 modelSize (--native quant) ve vision='no'; setup: --family qwen36 bayragi + models.json kapı adları aileye göre; calibrate: q36'da erken çık (skipped) | Upstream v0.1.44 OWN_PATH ailesi; kalibrasyon Flash-Next ölçümü; Arc reddi |
+| src/renderer.js | Aile select (#strata-family) + boyut listesi aile bazlı rebuild (dataset.family), q36'da vision satırları gizli, calibrate pasif, kurulum onay metni aile bazlı, setup'a family param | UI entegrasyonu |
+| src/index.html | #strata-family select + #strata-q36-note; config vision satırına #strata-config-vision-row id | q36 seçenek/note altyapısı |
+| src/lang/*.json (8 dosya) | label_strata_family + strata_q36_note çevirileri | i18n |
+
+Test: node --check PASS x2; mantık duman testi (q36 algılama, UD-Q4_K_XL çıkarımı, Arc reddi=false->reddediliyor doğru) PASS.

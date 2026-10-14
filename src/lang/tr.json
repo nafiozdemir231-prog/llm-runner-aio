@@ -72,6 +72,8 @@
   "label_download_progress": "İndirme İlerlemesi",
   "label_model_name": "Model",
   "label_model_size": "Model boyutu:",
+  "label_strata_family": "Model ailesi:",
+  "strata_q36_note": "Qwen3.6-35B-A3B: hibrit mod (expert’ler VRAM’de, sığmayanlar CPU’da); yalnız NVIDIA/AMD — Intel Arc desteklemez; vision henüz yok; kalibrasyon gerekmez.",
   "label_model_url": "URL",
   "label_download_btn": "İndir",
   "label_start_auto": "Başlangıç Yapılandırması",
