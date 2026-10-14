@@ -179,8 +179,10 @@ function register(deps) {
         }
         // #465: "parallel": N config anahtari (serve bunu --batch N'ye cevirir; 1 = sirayla).
         if (general && Number.isInteger(general.parallel) && general.parallel >= 2) parallel = general.parallel;
-        // q36 uygunluğu: RAM >= 32 (en küçük quant eşiği) ve NVIDIA/AMD kart — Intel Arc motoru q36'yı reddeder.
-        const eligibleQwen36 = hw.ramGb >= 32 && /nvidia|geforce|rtx|gtx|amd|radeon/i.test(String(hw.gpuName || ''));
+        // q36 uygunluğu: NVIDIA/AMD kart zorunlu (Intel Arc motoru q36'yu reddeder). RAM eşiği 30: "32 GB" PC'ler
+        // iGPU rezervasyonu nedeniyle 31.x raporlar; upstream de Q4_K_XL'i 32 ister ama --model ile riske onay verir
+        // (confirm_risk) — burada paneli tamamen gizlemek yerine kuant etiketi RAM uyarisini zaten gösteriyor.
+        const eligibleQwen36 = hw.ramGb >= 30 && /nvidia|geforce|rtx|gtx|amd|radeon/i.test(String(hw.gpuName || ''));
         return {
             // STRATA_DEV=1: test makinesinde karti RAM esigi altinda da gorunur kilar (varsayilan davranis degismez).
             eligible: (hw.ramGb >= 48 && (hw.vramGb || 0) >= 12) || process.env.STRATA_DEV === '1',
