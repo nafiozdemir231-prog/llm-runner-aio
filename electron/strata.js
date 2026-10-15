@@ -375,6 +375,15 @@ function register(deps) {
                 const c = Number(options.context);
                 const allowed = [32768, 65536, 131072, 262144];
                 if (!allowed.includes(c)) throw new Error('Context secenekleri: ' + allowed.join(', '));
+                // q36 own-path motoru: KV cache VRAM'e sigmali (upstream own_path_context: <=16.5 GB -> 32K,
+                // <=24.5 -> 64K, ustu -> 128K). Ustunde motor "0.00 GiB of VRAM free / no host memory for the
+                // experts" ile ark'i cokartiyor (canli vak'a: 6 GB kartta 131072 denendi, exit 1).
+                const gCfgQ36 = readJson(path.join(DIR, 'strata-general.json'));
+                if (isQwen36Config(gCfgQ36)) {
+                    const hwQ = await detectHardware();
+                    const maxCtxQ36 = hwQ.vramGb <= 16.5 ? 32768 : hwQ.vramGb <= 24.5 ? 65536 : 131072;
+                    if (c > maxCtxQ36) throw new Error('Qwen3.6-35B-A3B icin bu kartta en fazla ' + maxCtxQ36 + ' context (VRAM ' + Math.round(hwQ.vramGb) + ' GB). Motor ustunde "no host memory for the experts" ile coker; daha dusuk secin.');
+                }
                 for (const name of ['strata-general.json', 'strata-coder.json']) {
                     const p = path.join(DIR, name);
                     const g = readJson(p);
