@@ -1367,7 +1367,7 @@ async function refreshStrataStatus() {
         const serverFs = document.getElementById('strata-server-fieldset');
         if (serverFs) serverFs.classList.toggle('hidden', !(anyEligible && st.repoCloned));
         const q36Note = document.getElementById('strata-q36-note');
-        if (q36Note) q36Note.classList.toggle('hidden', family !== 'q36');
+        if (q36Note) q36Note.classList.toggle('hidden', family !== 'qwen36');
 
         const sel = document.getElementById('strata-model-select');
         const choices = (st.families && st.families[family]) || st.choices;
@@ -1389,9 +1389,9 @@ async function refreshStrataStatus() {
 
         // q36'da vision motor tarafindan yok sayilir -> dropdown satirlari gizlenir (config karismaz).
         const vrInstall = document.getElementById('strata-vision')?.closest('.form-row');
-        if (vrInstall) vrInstall.classList.toggle('hidden', family === 'q36');
+        if (vrInstall) vrInstall.classList.toggle('hidden', family === 'qwen36');
         const vrConfig = document.getElementById('strata-config-vision-row');
-        if (vrConfig) vrConfig.classList.toggle('hidden', st.family === 'q36');
+        if (vrConfig) vrConfig.classList.toggle('hidden', st.family === 'qwen36');
 
         // Vision dropdownlarini kurulu degerle senkronla (System Detection + Servers config paneli)
         const mappedVision = ['gpu', 'cpu'].includes(st.vision) ? st.vision : 'no';
@@ -1406,7 +1406,7 @@ async function refreshStrataStatus() {
 
         const installBtn = document.getElementById('btn-strata-install');
         // Buton uygunlugu secilen aileye bagli: q36 -> eligibleQwen36 (RAM>=30 + NVIDIA/AMD), flashnext -> eligible.
-        if (installBtn) installBtn.disabled = !!st.setupRunning || !(family === 'q36' ? st.eligibleQwen36 : st.eligible);
+        if (installBtn) installBtn.disabled = !!st.setupRunning || !(family === 'qwen36' ? st.eligibleQwen36 : st.eligible);
         const stateSpan = document.getElementById('strata-install-state');
         if (stateSpan) stateSpan.textContent = st.configured ? '\u2713 Model installed' : (st.installed ? '\u23f3 Environment ready, model pending' : 'Not installed');
 
@@ -1416,7 +1416,7 @@ async function refreshStrataStatus() {
         if (stopBtn) stopBtn.disabled = !st.running;
         const calBtn = document.getElementById('btn-strata-calibrate');
         // q36 hibrit motor: kalibrasyon Flash-Next olcumleridir -> buton pasif (handler da erken cikar).
-        if (calBtn) calBtn.disabled = !st.configured || st.setupRunning || st.family === 'q36';
+        if (calBtn) calBtn.disabled = !st.configured || st.setupRunning || st.family === 'qwen36';
         const updBtn = document.getElementById('btn-strata-update');
         if (updBtn) updBtn.disabled = !st.repoCloned || st.running || st.setupRunning;
 
