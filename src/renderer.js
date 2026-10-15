@@ -1405,7 +1405,8 @@ async function refreshStrataStatus() {
         if (parSel) parSel.value = String(state.servers.strata.parallel);
 
         const installBtn = document.getElementById('btn-strata-install');
-        if (installBtn) installBtn.disabled = !!st.setupRunning || !st.eligible;
+        // Buton uygunlugu secilen aileye bagli: q36 -> eligibleQwen36 (RAM>=30 + NVIDIA/AMD), flashnext -> eligible.
+        if (installBtn) installBtn.disabled = !!st.setupRunning || !(family === 'q36' ? st.eligibleQwen36 : st.eligible);
         const stateSpan = document.getElementById('strata-install-state');
         if (stateSpan) stateSpan.textContent = st.configured ? '\u2713 Model installed' : (st.installed ? '\u23f3 Environment ready, model pending' : 'Not installed');
 
