@@ -953,6 +953,19 @@ function setupEventListeners() {
         if (typeof window.handleStrataProgress === 'function' && window.handleStrataProgress(data.message)) return;
         appendToLog('strata', data.message);
     });
+    // Indirme yuzdesi: strata-download-progress kanali kurulum kartindaki cubuga yazilir (log spam degil).
+    if (window.electronAPI.strata.onDownloadProgress) window.electronAPI.strata.onDownloadProgress((d) => {
+        const wrap = document.getElementById('strata-dl');
+        const fill = document.getElementById('strata-dl-fill');
+        const pctEl = document.getElementById('strata-dl-percent');
+        const fileEl = document.getElementById('strata-dl-file');
+        if (!wrap || !fill) return;
+        wrap.classList.remove('hidden');
+        if (fileEl) { fileEl.classList.remove('hidden'); fileEl.textContent = d.file + ' — ' + Number(d.gotGb).toFixed(2) + ' / ' + Number(d.totalGb).toFixed(2) + ' GB'; }
+        const pct = Math.max(0, Math.min(100, Number(d.pct) || 0));
+        fill.style.width = pct + '%';
+        if (pctEl) pctEl.textContent = pct + '%';
+    });
     
     // Model management
     setupModelControls();
@@ -1409,6 +1422,15 @@ async function refreshStrataStatus() {
         if (installBtn) installBtn.disabled = !!st.setupRunning || !(family === 'qwen36' ? st.eligibleQwen36 : st.eligible);
         const stateSpan = document.getElementById('strata-install-state');
         if (stateSpan) stateSpan.textContent = st.configured ? '\u2713 Model installed' : (st.installed ? '\u23f3 Environment ready, model pending' : 'Not installed');
+
+        // Kurulum bittiginde indirme cubugunu gizle + sifirla (bayat son durum gosterme).
+        if (!st.setupRunning) {
+            const dlWrap = document.getElementById('strata-dl');
+            if (dlWrap) { const f = document.getElementById('strata-dl-fill'); if (f) f.style.width = '0%'; dlWrap.classList.add('hidden'); }
+            const pctEl2 = document.getElementById('strata-dl-percent'); if (pctEl2) pctEl2.textContent = '0%';
+            const fileEl2 = document.getElementById('strata-dl-file');
+            if (fileEl2) { fileEl2.classList.add('hidden'); fileEl2.textContent = ''; }
+        }
 
         const startBtn = document.getElementById('btn-start-strata');
         if (startBtn) startBtn.disabled = !st.configured || st.running;

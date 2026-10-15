@@ -14,7 +14,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Güvenli API Maruziyeti (contextBridge.exposeInMainWorld)
 // ============================================
 // HAT-09: Renderer'in dinleyebildigi event kanallari (beyaz liste)
-const ALLOWED_EVENT_CHANNELS = ['server-log', 'server-error', 'server-stopped', 'server-running', 'wan2gp-setup-log', 'strata-setup-log'];
+const ALLOWED_EVENT_CHANNELS = ['server-log', 'server-error', 'server-stopped', 'server-running', 'wan2gp-setup-log', 'strata-setup-log', 'strata-download-progress'];
 
 contextBridge.exposeInMainWorld('electronAPI', {
 
@@ -170,6 +170,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
         /** Kurulum/kapı loglarını dinle */
         onSetupLog: (callback) => {
             ipcRenderer.on('strata-setup-log', (event, data) => callback(data));
+        },
+
+        /** Model indirme yüzdesi ({file, gotGb, totalGb, pct}) */
+        onDownloadProgress: (callback) => {
+            ipcRenderer.on('strata-download-progress', (event, data) => callback(data));
         }
     },
 

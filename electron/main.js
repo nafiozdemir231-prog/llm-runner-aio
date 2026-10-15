@@ -2221,7 +2221,9 @@ async function runWan2gpStreaming(commandArgs, send) {
         let tailOut = '';
         let tailErr = '';
         const forward = (chunk) => {
-            chunk.toString().split(/\r?\n/).forEach(line => {
+            // \r-ilerleme satirlari da ayristirilir: setup.py/pip indirme yuzdesi tek satirda \r ile akar,
+            // eskiden yeni satir gelene kadar UI'ya hic ulasmazdi.
+            chunk.toString().split(/\r\n|\r|\n/).forEach(line => {
                 if (line.trim()) send(line);
             });
         };

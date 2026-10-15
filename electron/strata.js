@@ -27,6 +27,9 @@ const FAMILY_CHOICES = {
 };
 // models.json kapı adları aileye göre (gateway bu adları servis eder; q36 upstream adı kullanır).
 const GATE_NAMES = { flashnext: ['Qwen3.8-Flash-Next', 'coder-Qwen3.8-Flash-Next'], qwen36: ['qwen3.6-35b-a3b', 'coder-qwen3.6-35b-a3b'] };
+// setup.py indirme satiri ornegi: "  Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf:  12.34 / 22.85 GB (54%)" — log yerine
+// ayri 'strata-download-progress' olayina cevrilir (yuzde + dosya); log akişi sismanlar.
+const DL_PROGRESS_RE = /^\s*(.+?):\s*([\d.]+) \/ ([\d.]+) GB \((\d+)%\)\s*$/;
 const isQwen36Config = (cfg) => !!cfg && (cfg.arch === 'qwen35moe' || (Array.isArray(cfg.args) && cfg.args.some((a) => /Qwen3\.6/i.test(String(a)))));
 
 const PARK = { '--conversation-cache-mib': '4096', '--conversation-cache-slots': '2', '--conversation-cache-min-free-mib': '4096' };
@@ -218,7 +221,12 @@ function register(deps) {
         const choice = (FAMILY_CHOICES[fam] || []).find((c) => c.size === options.size);
         if (!choice) return { success: false, error: 'Unknown model size: ' + options.size };
         setupRunning = true;
-        const send = (m) => safeSend('strata-setup-log', { message: m });
+        // Indirme yuzdeleri log'a degil strata-download-progress kanalina gider; diger satirlar log'da kalir.
+        const send = (m) => {
+            const pm = String(m).match(DL_PROGRESS_RE);
+            if (pm) safeSend('strata-download-progress', { file: pm[1].trim(), gotGb: Number(pm[2]), totalGb: Number(pm[3]), pct: Number(pm[4]) });
+            else safeSend('strata-setup-log', { message: m });
+        };
         try {
             if (!fs.existsSync(path.join(DIR, 'setup.py'))) throw new Error('Strata klasoru bulunamadi — once klon gerekli.');
             ensureLayer();
