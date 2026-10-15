@@ -1374,6 +1374,7 @@ async function refreshStrataStatus() {
         if (famSel && !strataFamilyUserSet && st.family && [...famSel.options].some(o => o.value === st.family)) famSel.value = st.family;
         const family = famSel ? famSel.value : (st.family || 'flashnext');
         state.servers.strata.family = family;
+        state.servers.strata.installedFamily = st.family || 'flashnext'; // KURULU aile: vision gibi aile-bazli ayarlar bunu kullanir
         const anyEligible = st.eligible || st.eligibleQwen36;
         const installSec = document.getElementById('strata-install-section');
         if (installSec) installSec.classList.toggle('hidden', !anyEligible);
@@ -1581,14 +1582,16 @@ async function saveStrataConfig() {
     const newVision = cfgVisionSel?.value || 'no';
     const curVision = state.servers.strata.vision || 'no';
     if (newVision !== curVision) {
-        if (!state.servers.strata.modelSize) {
+        if ((state.servers.strata.installedFamily || 'flashnext') === 'qwen36') {
+            appendToLog('strata', '[CONFIG] Vision q36 ailesinde desteklenmiyor (motor bagli degil) - degisiklik uygulanmadi.');
+        } else if (!state.servers.strata.modelSize) {
             appendToLog('strata', '[CONFIG] Vision degisikligi uygulanamadi: model boyutu tespit edilemedi.', true);
         } else if (state.servers.strata.setupRunning) {
             appendToLog('strata', '[CONFIG] Vision degisikligi bekleniyor: setup zaten calisiyor, ikinci tetikleme atlandi.');
         } else {
             if (state.servers.strata.running) await window.electronAPI.server.stop('strata').catch(() => {});
             appendToLog('strata', '[CONFIG] Vision ' + curVision + ' -> ' + newVision + ': setup yeniden calisir (indirme atlanir), sonra Start...');
-            const rs = await window.electronAPI.strata.setup({ size: state.servers.strata.modelSize, vision: newVision }).catch(e => ({ success: false, error: e.message }));
+            const rs = await window.electronAPI.strata.setup({ size: state.servers.strata.modelSize, vision: newVision, family: state.servers.strata.installedFamily || 'flashnext' }).catch(e => ({ success: false, error: e.message }));
             if (!rs.success) appendToLog('strata', '[CONFIG] Vision setup FAILED: ' + rs.error, true);
             else state.servers.strata.vision = newVision; // state'i hemen guncelle: ardindan gelen Save'ler ayni degisikligi tekrar tetiklemesin
         }
