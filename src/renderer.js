@@ -934,6 +934,7 @@ function setupEventListeners() {
     // Aile secimi: boyut listesi yeni ailenin seçenekleriyle yeniden kurulur (dataset bosaltilir, status rebuild eder).
     const stFamilySel = document.getElementById('strata-family');
     if (stFamilySel) stFamilySel.addEventListener('change', () => {
+        strataFamilyUserSet = true;
         const ms = document.getElementById('strata-model-select');
         if (ms) ms.dataset.family = '';
         refreshStrataStatus().catch(() => {});
@@ -1337,6 +1338,9 @@ async function runWan2gpUpdate() {
 // Strata (Qwen3.8-Flash-Next coklu-model gateway)
 // ============================================
 let strataBusyInFlight = false;
+// Aile secimi kullaniciya aittir: polling'de st.family (KURULU aile) select'e yazilmaz; aksi halde
+// kullanici q36'ya gecince bir sonraki status yenilemesinde flashnext'e geri duserdi. Sadece ilk kez kurulu degerle senkronlanir.
+let strataFamilyUserSet = false;
 
 /**
  * Strata durumunu sorgular: uygunluk (RAM>=48 & VRAM>=12), kurulum, config alanlari.
@@ -1353,9 +1357,10 @@ async function refreshStrataStatus() {
         // Install bolumu kurulumdan sonra da gorunur kalir (model boyutu / vision degistirilebilir).
         // q36 ayri esik: RAM >= 32 + NVIDIA/AMD kart (eligibleQwen36) — Flash-Next eşiği tutmasa bile kurulum görünür.
         const famSel = document.getElementById('strata-family');
-        const family = st.family || (famSel ? famSel.value : 'flashnext') || 'flashnext';
+        // Kurulu aile yalnizca kullanici henuz secim yapmadiysa select'e yazilir (ilk senkron / setup sonrasi).
+        if (famSel && !strataFamilyUserSet && st.family && [...famSel.options].some(o => o.value === st.family)) famSel.value = st.family;
+        const family = famSel ? famSel.value : (st.family || 'flashnext');
         state.servers.strata.family = family;
-        if (famSel && [...famSel.options].some(o => o.value === family)) famSel.value = family;
         const anyEligible = st.eligible || st.eligibleQwen36;
         const installSec = document.getElementById('strata-install-section');
         if (installSec) installSec.classList.toggle('hidden', !anyEligible);
