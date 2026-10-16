@@ -931,14 +931,6 @@ function setupEventListeners() {
     refreshStrataStatus();
     const stInstallBtn = document.getElementById('btn-strata-install');
     if (stInstallBtn) stInstallBtn.addEventListener('click', () => runStrataSetup());
-    // Aile secimi: boyut listesi yeni ailenin seçenekleriyle yeniden kurulur (dataset bosaltilir, status rebuild eder).
-    const stFamilySel = document.getElementById('strata-family');
-    if (stFamilySel) stFamilySel.addEventListener('change', () => {
-        strataFamilyUserSet = true;
-        const ms = document.getElementById('strata-model-select');
-        if (ms) ms.dataset.family = '';
-        refreshStrataStatus().catch(() => {});
-    });
     const stCalBtn = document.getElementById('btn-strata-calibrate');
     if (stCalBtn) stCalBtn.addEventListener('click', () => runStrataCalibrate());
     const stUpdBtn = document.getElementById('btn-strata-update');
@@ -1351,10 +1343,6 @@ async function runWan2gpUpdate() {
 // Strata (Qwen3.8-Flash-Next coklu-model gateway)
 // ============================================
 let strataBusyInFlight = false;
-// Aile secimi kullaniciya aittir: polling'de st.family (KURULU aile) select'e yazilmaz; aksi halde
-// kullanici q36'ya gecince bir sonraki status yenilemesinde flashnext'e geri duserdi. Sadece ilk kez kurulu degerle senkronlanir.
-let strataFamilyUserSet = false;
-
 /**
  * Strata durumunu sorgular: uygunluk (RAM>=48 & VRAM>=12), kurulum, config alanlari.
  */
@@ -1368,26 +1356,15 @@ async function refreshStrataStatus() {
         state.servers.strata.modelSize = st.modelSize || null;
 
         // Install bolumu kurulumdan sonra da gorunur kalir (model boyutu / vision degistirilebilir).
-        // q36 ayri esik: RAM >= 32 + NVIDIA/AMD kart (eligibleQwen36) — Flash-Next eşiği tutmasa bile kurulum görünür.
-        const famSel = document.getElementById('strata-family');
-        // Kurulu aile yalnizca kullanici henuz secim yapmadiysa select'e yazilir (ilk senkron / setup sonrasi).
-        if (famSel && !strataFamilyUserSet && st.family && [...famSel.options].some(o => o.value === st.family)) famSel.value = st.family;
-        const family = famSel ? famSel.value : (st.family || 'flashnext');
-        state.servers.strata.family = family;
-        state.servers.strata.installedFamily = st.family || 'flashnext'; // KURULU aile: vision gibi aile-bazli ayarlar bunu kullanir
-        const anyEligible = st.eligible || st.eligibleQwen36;
         const installSec = document.getElementById('strata-install-section');
-        if (installSec) installSec.classList.toggle('hidden', !anyEligible);
+        if (installSec) installSec.classList.toggle('hidden', !st.eligible);
         const serverFs = document.getElementById('strata-server-fieldset');
-        if (serverFs) serverFs.classList.toggle('hidden', !(anyEligible && st.repoCloned));
-        const q36Note = document.getElementById('strata-q36-note');
-        if (q36Note) q36Note.classList.toggle('hidden', family !== 'qwen36');
+        if (serverFs) serverFs.classList.toggle('hidden', !(st.eligible && st.repoCloned));
 
         const sel = document.getElementById('strata-model-select');
-        const choices = (st.families && st.families[family]) || st.choices;
-        if (sel && sel.dataset.family !== family && Array.isArray(choices)) {
+        if (sel && !sel.options.length && Array.isArray(st.choices)) {
             sel.innerHTML = '';
-            for (const c of choices) {
+            for (const c of st.choices) {
                 const opt = document.createElement('option');
                 opt.value = c.size;
                 // Strata zaten calismayacak modeli kurulumda kendisi eler; burada secenek pasif birakilmaz,
@@ -1395,17 +1372,10 @@ async function refreshStrataStatus() {
                 opt.textContent = c.label + ' — ~' + c.downloadGb + ' GB' + (c.fits ? '' : ' (≈' + c.minRamGb + ' GB RAM)');
                 sel.appendChild(opt);
             }
-            const defChoice = choices.find(c => c.fits) || choices[0];
+            const defChoice = st.choices.find(c => c.fits) || st.choices[0];
             if (defChoice) sel.value = defChoice.size;
-            sel.dataset.family = family;
         }
         if (sel && st.modelSize && [...sel.options].some(o => o.value === st.modelSize)) sel.value = st.modelSize;
-
-        // q36'da vision motor tarafindan yok sayilir -> dropdown satirlari gizlenir (config karismaz).
-        const vrInstall = document.getElementById('strata-vision')?.closest('.form-row');
-        if (vrInstall) vrInstall.classList.toggle('hidden', family === 'qwen36');
-        const vrConfig = document.getElementById('strata-config-vision-row');
-        if (vrConfig) vrConfig.classList.toggle('hidden', st.family === 'qwen36');
 
         // Vision dropdownlarini kurulu degerle senkronla (System Detection + Servers config paneli)
         const mappedVision = ['gpu', 'cpu'].includes(st.vision) ? st.vision : 'no';
@@ -1419,8 +1389,7 @@ async function refreshStrataStatus() {
         if (parSel) parSel.value = String(state.servers.strata.parallel);
 
         const installBtn = document.getElementById('btn-strata-install');
-        // Buton uygunlugu secilen aileye bagli: q36 -> eligibleQwen36 (RAM>=30 + NVIDIA/AMD), flashnext -> eligible.
-        if (installBtn) installBtn.disabled = !!st.setupRunning || !(family === 'qwen36' ? st.eligibleQwen36 : st.eligible);
+        if (installBtn) installBtn.disabled = !!st.setupRunning || !st.eligible;
         const stateSpan = document.getElementById('strata-install-state');
         if (stateSpan) stateSpan.textContent = st.configured ? '\u2713 Model installed' : (st.installed ? '\u23f3 Environment ready, model pending' : 'Not installed');
 
@@ -1438,8 +1407,7 @@ async function refreshStrataStatus() {
         const stopBtn = document.getElementById('btn-stop-strata');
         if (stopBtn) stopBtn.disabled = !st.running;
         const calBtn = document.getElementById('btn-strata-calibrate');
-        // q36 hibrit motor: kalibrasyon Flash-Next olcumleridir -> buton pasif (handler da erken cikar).
-        if (calBtn) calBtn.disabled = !st.configured || st.setupRunning || st.family === 'qwen36';
+        if (calBtn) calBtn.disabled = !st.configured || st.setupRunning;
         const updBtn = document.getElementById('btn-strata-update');
         if (updBtn) updBtn.disabled = !st.repoCloned || st.running || st.setupRunning;
 
@@ -1474,21 +1442,17 @@ async function runStrataSetup() {
     const sel = document.getElementById('strata-model-select');
     const size = sel ? sel.value : null;
     if (!size) { showNotification('Warning', 'Model boyutu secilmedi.', 'warning'); return; }
-    const family = (document.getElementById('strata-family')?.value === 'qwen36') ? 'qwen36' : 'flashnext';
-    const confirmText = family === 'qwen36'
-        ? '"Qwen3.6-35B-A3B ' + size + '" indirilsin mi?\n\n~23-38 GB indirme yapilir (models\\ klasoru). Hibrit mod: expertler mumkun oldugunca VRAM tarafinda, sigmayanlar CPU\'da; vision ve kalibrasyon bu ailede yok. Kesilirse ayni buton devam eder.'
-        : '"' + size + '" modeli indirilsin mi?\n\n~58-84 GB indirme yapilir (models\\ klasoru), kurulum 1 saati asabilir ve internet hizina baglidir. Ilerleme Sunucular > Strata > Logs altindan izlenir; kesilirse ayni buton devam eder.';
     const confirmed = await window.electronAPI.notification.confirm(
         'Strata Kurulumu',
-        confirmText
+        '"' + size + '" modeli indirilsin mi?\n\n~58-84 GB indirme yapilir (models\\ klasoru), kurulum 1 saati asabilir ve internet hizina baglidir. Ilerleme Sunucular > Strata > Logs altindan izlenir; kesilirse ayni buton devam eder.'
     );
     if (!confirmed) return;
     strataBusyInFlight = true;
     const instBtn = document.getElementById('btn-strata-install');
     const instOld = instBtn ? instBtn.textContent : '';
     if (instBtn) { instBtn.disabled = true; instBtn.textContent = '\u23f3 Installing...'; }
-    appendToLog('strata', '[SETUP] Basliyor (' + (family === 'qwen36' ? 'Qwen3.6-35B-A3B ' : '') + size + ')...');
-    const result = await window.electronAPI.strata.setup({ size, vision: family === 'qwen36' ? 'no' : (document.getElementById('strata-vision')?.value || 'no'), family }).catch(e => ({ success: false, error: e.message }));
+    appendToLog('strata', '[SETUP] Basliyor (' + size + ')...');
+        const result = await window.electronAPI.strata.setup({ size, vision: document.getElementById('strata-vision')?.value || 'no' }).catch(e => ({ success: false, error: e.message }));
     strataBusyInFlight = false;
     if (instBtn) instBtn.textContent = instOld;
     if (result.success) {
@@ -1582,16 +1546,14 @@ async function saveStrataConfig() {
     const newVision = cfgVisionSel?.value || 'no';
     const curVision = state.servers.strata.vision || 'no';
     if (newVision !== curVision) {
-        if ((state.servers.strata.installedFamily || 'flashnext') === 'qwen36') {
-            appendToLog('strata', '[CONFIG] Vision q36 ailesinde desteklenmiyor (motor bagli degil) - degisiklik uygulanmadi.');
-        } else if (!state.servers.strata.modelSize) {
+        if (!state.servers.strata.modelSize) {
             appendToLog('strata', '[CONFIG] Vision degisikligi uygulanamadi: model boyutu tespit edilemedi.', true);
         } else if (state.servers.strata.setupRunning) {
             appendToLog('strata', '[CONFIG] Vision degisikligi bekleniyor: setup zaten calisiyor, ikinci tetikleme atlandi.');
         } else {
             if (state.servers.strata.running) await window.electronAPI.server.stop('strata').catch(() => {});
             appendToLog('strata', '[CONFIG] Vision ' + curVision + ' -> ' + newVision + ': setup yeniden calisir (indirme atlanir), sonra Start...');
-            const rs = await window.electronAPI.strata.setup({ size: state.servers.strata.modelSize, vision: newVision, family: state.servers.strata.installedFamily || 'flashnext' }).catch(e => ({ success: false, error: e.message }));
+                        const rs = await window.electronAPI.strata.setup({ size: state.servers.strata.modelSize, vision: newVision }).catch(e => ({ success: false, error: e.message }));
             if (!rs.success) appendToLog('strata', '[CONFIG] Vision setup FAILED: ' + rs.error, true);
             else state.servers.strata.vision = newVision; // state'i hemen guncelle: ardindan gelen Save'ler ayni degisikligi tekrar tetiklemesin
         }
