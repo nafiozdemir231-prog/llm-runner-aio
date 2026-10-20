@@ -2217,7 +2217,7 @@ function findWan2gpPython() {
  */
 async function runWan2gpStreaming(commandArgs, send) {
     return new Promise((resolve, reject) => {
-        const child = spawn(commandArgs[0], commandArgs.slice(1), { cwd: PROJECT_DIR, windowsHide: true });
+        const child = spawn(commandArgs[0], commandArgs.slice(1), { cwd: PROJECT_DIR, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
         let tailOut = '';
         let tailErr = '';
         const forward = (chunk) => {
@@ -2243,7 +2243,7 @@ async function runWan2gpStreaming(commandArgs, send) {
 // Komut ciktisini yakalar (sonuc incelenmesi gerekince, orn. stash olusturuldu mu tespiti)
 function runWan2gpCapture(commandArgs) {
     return new Promise((resolve) => {
-        const child = spawn(commandArgs[0], commandArgs.slice(1), { cwd: PROJECT_DIR, windowsHide: true });
+        const child = spawn(commandArgs[0], commandArgs.slice(1), { cwd: PROJECT_DIR, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
         let out = '';
         let errOut = '';
         child.stdout.on('data', d => { out += d.toString(); });

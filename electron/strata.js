@@ -48,6 +48,16 @@ function parseFitReport(out) {
 
 // Secenekleri donanina gore etiketler: fitOk/lowRam/note + onerilen boyut. Kaynak setup.py --check ise onun
 // karari kullanilir; degilse yerel hesap (upstream "tight" toleransi: ihtiyactan 8 GB eksige kadar kabul).
+// '--pack .../gyro-gyro-s' veya '...Gyro-S.gguf' gibi metinleri CHOICES boyutuna cevirir (buyuk/kucuk harf, tire/cizgi farketmez).
+const normSize = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+function matchChoiceSize(raw) {
+    const n = normSize(raw);
+    if (!n) return null;
+    const hit = CHOICES.find((c) => normSize(c.size) === n) || CHOICES.find((c) => normSize(c.size).length >= 3 && n.endsWith(normSize(c.size)))
+        || CHOICES.find((c) => normSize(c.size).length >= 4 && n.includes(normSize(c.size)));
+    return hit ? hit.size : null;
+}
+
 function scoredChoices(hw, fits) {
     const totalGb = hw.ramGb + (hw.vramGb || 0);
     const intel = isIntelGpu(hw.gpuName);
@@ -213,7 +223,41 @@ function register(deps) {
         return map;
     }
 
-        ipcMain.handle('strata-status', async (event, options = {}) => {
+        // upstream tuzagi (v0.2.0-beta): dusuk-RAM modunda iq_pack'in ikinci cagrisi ailenin --compat-bf16 bayragini
+    // dusuruyor -> "... is IQ4_NL, but the engine requires BF16; use --compat-bf16" ile exit 1 (Gyro ailesi).
+    // Bizim katman: pack'te native_experts.txt var ama experts.bin yoksa ayni araci dogru bayraklarla bir kez daha calistirir.
+    async function repairLowRamPack(choice, send) {
+        const packsDir = path.join(PROJECT_DIR, 'models', 'strata', 'packs');
+        if (!fs.existsSync(packsDir)) return false;
+        const want = String((choice && choice.size) || '').toLowerCase();
+        let packDir = null;
+        for (const d of fs.readdirSync(packsDir)) {
+            const p = path.join(packsDir, d);
+            try { if (!fs.statSync(p).isDirectory()) continue; } catch { continue; }
+            if (want && !d.toLowerCase().includes(want)) continue;
+            if (fs.existsSync(path.join(p, 'native_experts.txt')) && !fs.existsSync(path.join(p, 'experts.bin'))) { packDir = p; break; }
+        }
+        if (!packDir) return false;
+        const baseName = path.basename(packDir).toLowerCase();
+        let gguf = null;
+        const modelsDir = path.join(PROJECT_DIR, 'models');
+        for (const d of fs.readdirSync(modelsDir)) {
+            if (d.toLowerCase() !== baseName) continue;
+            const folder = path.join(modelsDir, d);
+            try { const hit = fs.readdirSync(folder).find((f) => /\.gguf$/i.test(f)); if (hit) { gguf = path.join(folder, hit); break; } } catch { }
+        }
+        if (!gguf) return false;
+        send('[SETUP] upstream paketleme adimi eksikti (' + baseName + '): experts.bin yaziliyor (--compat-bf16 --experts-bin)...');
+        try {
+            await runStreaming([VENV_PY, path.join(DIR, 'tools', 'iq_pack.py'), '--gguf', gguf, '--out', packDir,
+                '--compat-bf16', '--experts-bin'], send);
+        } catch (e) { send('[SETUP] Paket onarimi basarisiz: ' + e.message); return false; }
+        const done = fs.existsSync(path.join(packDir, 'experts.bin'));
+        if (done) send('[SETUP] experts.bin hazir (' + Math.round(fs.statSync(path.join(packDir, 'experts.bin')).size / 1073741824) + ' GiB).');
+        return done;
+    }
+
+    ipcMain.handle('strata-status', async (event, options = {}) => {
         const hw = await detectHardware();
         if (fs.existsSync(DIR)) ensureLayer();
         const s = readJson(MODELS_JSON);
@@ -234,12 +278,13 @@ function register(deps) {
             else vision = v >= 0 ? 'gpu' : 'no'; // eski config: bolum yoksa bayragin varligi
             // Uretilen args'te boyut '--pack <.../packs/iq3_xxs>' olarak geciyor -> basename = CHOICES.size (kucuk harf).
             const pk = general.args.indexOf('--pack');
-            if (pk >= 0) modelSize = String(general.args[pk + 1]).replace(/[\\/]+$/, '').split(/[\\/]/).pop().toUpperCase();
-            // Gyro/Coder gibi tek dosyalik ailelerde --pack yok (--native <...Gyro-S.gguf>): args'ten boyut eslestir.
+            if (pk >= 0) modelSize = matchChoiceSize(String(general.args[pk + 1]).replace(/[\\/]+$/, '').split(/[\\/]/).pop());
+            // Gyro/Coder gibi ailelerde pack adi family-onekli ('gyro-gyro-s'): yukardaki eslestirme boyutu bulur;
+            // yine de bulunamazsa args'teki dosya adlarina bak (--native <...Gyro-S.gguf>).
             if (!modelSize) {
                 for (const a of general.args.map(String)) {
-                    const hit = CHOICES.find((c) => new RegExp('(^|[^a-z0-9])' + c.size.replace(/[-_]/g, '[-_.])') + '([^a-z0-9]|$)', 'i').test(a));
-                    if (hit) { modelSize = hit.size; break; }
+                    const hit = matchChoiceSize(a.split(/[\\/]/).pop());
+                    if (hit) { modelSize = hit; break; }
                 }
             }
         }
@@ -305,7 +350,14 @@ function register(deps) {
                 '--data-dir', path.join(PROJECT_DIR, 'models', 'strata'),
                 '--no-start'];
             if (useParallel) setupArgs.push('--parallel', String(useParallel));
-            await runStreaming(setupArgs, send);
+            try {
+                await runStreaming(setupArgs, send);
+            } catch (err) {
+                const fixed = await repairLowRamPack(choice, send);
+                if (!fixed) throw err;
+                send('[SETUP] Onarim tamam - setup tekrar calistiriliyor (tamamlanmis adimlar atlanir)...');
+                await runStreaming(setupArgs, send);
+            }
 
             // Uretilen config'ten iki kapi config'i: AYNI args (tek motor) + ayri sampling profili.
             const gen = fs.readdirSync(DIR)
@@ -572,4 +624,4 @@ function stopGateway() {
     return { success: true };
 }
 
-module.exports = { register, startGateway, stopGateway, CHOICES, parseFitReport, scoredChoices, MEMORY_TIERS, pickCalibratedSource, mergeGateConfigs, CALIB_FLAGS };
+module.exports = { register, startGateway, stopGateway, CHOICES, parseFitReport, scoredChoices, matchChoiceSize, MEMORY_TIERS, pickCalibratedSource, mergeGateConfigs, CALIB_FLAGS };
