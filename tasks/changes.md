@@ -411,3 +411,60 @@ Not: Bu makinede Strata/.venv yok -> setup.py --update atlandi; hedef PC'lerde u
 | src/lang/*.json (8 dosya) | label_strata_family + strata_q36_note çevirileri | i18n |
 
 Test: node --check PASS x2; mantık duman testi (q36 algılama, UD-Q4_K_XL çıkarımı, Arc reddi=false->reddediliyor doğru) PASS.
+
+## 2026-10-13 — q36 aile secimi polling tarafindan eziliyordu
+| File | Change | Reason |
+|------|--------|--------|
+| src/renderer.js | strataFamilyUserSet bayragi: st.family (kurulu aile) select'e yalnizca kullanici henüz secim yapmadiysa yazilir; family artik UI select degerinden okunur | Kullanici q36 secince bir sonraki refreshStrataStatus'ta select flashnext'e geri donuyordu |
+
+## 2026-10-13 — Install butonu aile uygunluguyla eslesti
+| File | Change | Reason |
+|------|--------|--------|
+| src/renderer.js | btn-strata-install disabled: !eligible yerine secilen aile uygunlugu (q36 -> st.eligibleQwen36, flashnext -> st.eligible) | 4050/32GB PC'de panel gorunur ama buton Flash-Next esigiyle pasif kaliyordu |
+
+## 2026-10-14 — q36 aile karsilastirma degeri hatasi (buton/note/vision gizleme calismiyordu)
+| File | Change | Reason |
+|------|--------|--------|
+| src/renderer.js | Bes karsilastirma `'q36'` -> `'qwen36'` (HTML option degeri 'qwen36'; not/vision satiri/install butonu/kalibrasyon pasif) | Boyut listesi aile anahtariyla ('qwen36') calisiyordu ama UI toggle'lari yanlis literal karsilastirmasiyla hic tetiklenmiyordu; buton eski eligible ile pasif kaliyordu |
+
+## 2026-10-14 — Strata model indirmede yuzde gosterimi
+| File | Change | Reason |
+|------|--------|--------|
+| electron/main.js | runWan2gpStreaming forward: satir ayirma \r\n\|\r\|\n (eskiden sadece \r?\n) | setup.py/pip yuzde satirlari \r ile tek satirda akar; yeni satir gelene kadar UI'ya ulasmiyordu |
+| electron/strata.js | DL_PROGRESS_RE + setup handler send sarmaci: "x.gguf: 12.34 / 22.85 GB (54%)" -> strata-download-progress olayi ({file,gotGb,totalGb,pct}); log sismanlamaz | Yuzde ayri widgeta, log temiz kalir |
+| electron/preload.js | ALLOWED_EVENT_CHANNELS += strata-download-progress; strata.onDownloadProgress API | Renderer'a olay tasimasi |
+| src/index.html | Install kartina progress-container (#strata-dl, #strata-dl-fill, #strata-dl-percent) + #strata-dl-file dosya satiri | Mevcut .progress-bar/.progress-fill stilleriyle gorunur cubuk |
+| src/renderer.js | onDownloadProgress dinleyici (cubuk/genislik/dosya metni); refreshStrataStatus setupRunning degilse cubugu gizle+sifirla | Kurulum bitince bayat durum gosterme |
+
+Test: .tmp/q36/pipe_test2b — gercek strata handler + cmd/bat/node \r-akisi ile 2 canli PROGRESS olayi (9%, 54%) + log satirlari ayrisik PASS. Regex birim kontrolu PASS.
+
+## 2026-10-14 — config panel vision degisikligi aile-duyarli
+| File | Change | Reason |
+|------|--------|--------|
+| src/renderer.js | installedFamily state'e kaydedildi; vision degisikligi q36'da reddedilir (mesaj) ve re-setup'a family gonderilir | q36 kurulumunda config'ten vision tetiklenirse setup flashnext boyut aramis olurdu ("Unknown model size"); Artuk guvenli |
+
+## 2026-10-15 — q36 ark calisma hatasi duzeltildi (context + gate adlari) + guard
+| File | Change | Reason |
+|------|--------|--------|
+| Strata/strata-general.json + strata-coder.json | --max-context 131072 -> 32768 (yedek: Strata/.tmp/backups/manual-2026-10-15-23-52-24) | 6 GB kartta motor "0.00 GiB of VRAM free / no host memory for the experts (19195 MiB)" ile exit 1 veriyordu; upstream own_path_context <=16.5 GB VRAM icin 32K oneriyor |
+| Strata/local/models.json | gate adlari qwen3.6-35b-a3b / coder-qwen3.6-35b-a3b (yedek ayni klasorde) | Kurulum sirasinda isim guncelleme kosmamisti; gateway Qwen3.8 adlariyla servis ediyordu |
+| electron/strata.js | config-write guard: q36 kuruluysa context ust siniri VRAM'e gore (<=16.5 -> 32K, <=24.5 -> 64K, ustu 128K) asan istek net mesajla reddedilir | Aynli hatanin UI'dan tekrarini onleme; guard canli test: 131072 RED / 32768 KABUL PASS |
+
+Canli kanit: gateway + ark baslatildi, /v1/chat/completions "qwen3.6-35b-a3b" ile cevap dondu (reasoning akisi ~15.8 tok/s). Kalibrasyon q36'da bilerek pasif (Flash-Next olcumu).
+
+## 2026-10-15 — q36 tamamen geri alindi (Strata sadece Qwen3.8-Flash-Next)
+| File | Change | Reason |
+|------|--------|--------|
+| electron/strata.js | Tum q36 mantigi silindi (family alanlari, FAMILY_CHOICES.qwen36, gate rename, calibrate skip, context guard); DL_PROGRESS_RE + yuzde kanali KORUNDU | Kullanici karari: q36 duzgun calismiyor; Strata flash-only |
+| src/renderer.js | aile select listener, strataFamilyUserSet, q36 toggle'lari, family param'lar silindi; indirme cubuk wiring korundu | Flash-only arayuz |
+| src/index.html | #strata-family + #strata-q36-note kaldirildi (#strata-dl* progress kaldi) | Arayuz sadelestirme |
+| src/lang/*.json (8) | label_strata_family + strata_q36_note silindi | Olu anahtar |
+| models/qwen36-UD-Q4_K_XL (22G), models/strata/packs/qwen36-ud-q4_k_xl, Strata/strata-general.json+coder+q36 json/log, logs/gateway-ark0.log | SILINDI; models.json adlari Qwen3.8 default (yedek: .tmp/backups/manual-2026-10-15-* ve 23-52-24) | PC temizligi - 22 GB alan acildi |
+
+Not: models/qwen3.6 llama.cpp preset modelidir, Strata ile ilgisiz — dokunulmadi. Downloader/\r-splitting iyilesmeleri flash indirmelerinde calismaya devam eder (headless dogrulama: sizeOptions IQ1_M..., panel Flash esigine tabii).
+
+## 2026-10-20 — Strata upstream v0.2.0-beta'ya guncellendi; CHOICES tablosu hizalandi
+| File | Change | Reason |
+|------|--------|--------|
+| Strata/ (git clone) | git pull --ff-only: 296b59d2 (v0.1.44.1) -> e88ee39d (v0.2.0-beta-12); katman dosyalari korundu | Upstream guncellemesi (kullanici talebi) |
+| electron/strata.js | CHOICES: IQ3_XXS minRamGb 56->60, IQ3_S 64->62; upstream surum/MIN_ENGINE (0.1.45) aciklama yorumu | setup.py MODELS ile ayni degerler (yaniltici RAM etiketi duzeltildi) |

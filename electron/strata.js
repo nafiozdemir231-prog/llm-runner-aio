@@ -6,12 +6,15 @@ const path = require('path');
 const fs = require('fs');
 
 // Surum tablosu setup.py MODELS ile hizali (download GB / onerilen minimum RAM GB).
+// Hizalama kaynagi: upstream v0.2.0-beta (Strata/main e88ee39d, 2026-10-19) — IQ3_XXS ram_gb 56->60,
+// IQ3_S 64->62. setup.py MIN_ENGINE = 0.1.45: eski engine'de 🔄 Update (setup.py --update) engine'i indirir.
+// Upstream'de bizim sunmadigimiz aileler de var (--family unsloth/gyro/nvfp4/swift); bilerek qwen+coder.
 const CHOICES = [
     { size: 'IQ1_M', label: 'Coder — yarim uzmanli, koda odakli (en dusuk yer)', downloadGb: 58.4, minRamGb: 32 },
     { size: 'Q2_0', label: 'Q2_0 — en hizli tam model', downloadGb: 66.4, minRamGb: 48 },
     { size: 'IQ2_XS', label: 'IQ2_XS — 2-bit i-quant, biraz daha iyi kalite', downloadGb: 68.0, minRamGb: 48 },
-    { size: 'IQ3_XXS', label: 'IQ3_XXS — 3-bit i-quant, daha iyi kalite', downloadGb: 75.8, minRamGb: 56 },
-    { size: 'IQ3_S', label: 'IQ3_S — en iyi kalite, en yavas', downloadGb: 83.6, minRamGb: 64 }
+    { size: 'IQ3_XXS', label: 'IQ3_XXS — 3-bit i-quant, daha iyi kalite', downloadGb: 75.8, minRamGb: 60 },
+    { size: 'IQ3_S', label: 'IQ3_S — en iyi kalite, en yavas', downloadGb: 83.6, minRamGb: 62 }
 ];
 
 // setup.py indirme satiri ornegi: "  qwen38_pack/experts.bin:  31.20 / 75.84 GB (41%)" — log yerine
