@@ -182,10 +182,11 @@
                             </div>
                         </fieldset>
 
-                        <!-- Strata Model Kurulumu (yalnız 48 GB+ RAM'de görünür) -->
+                        <!-- Strata Model Kurulumu (boyutlar bu PC'nin RAM+VRAM toplamina gore degerlendirilir) -->
                         <fieldset id="strata-install-section" class="hidden">
                             <legend data-i18n="strata_install_legend">🧠 Strata — Qwen3.8-Flash-Next (125B MoE, local)</legend>
-                            <div class="help-text" data-i18n="strata_install_help">This PC qualifies for Strata (RAM ≥ 48 GB, VRAM ≥ 12 GB). The model downloads ~58–84 GB into models\. After setup, start it from the Servers tab.</div>
+                            <div class="help-text" data-i18n="strata_install_help">Every size is checked against this PC's memory with Strata's own check (setup.py --check): the recommended size is pre-selected, sizes that do not fit show what they need. Downloads go to models\. After setup, start it from the Servers tab.</div>
+                            <div class="help-text" id="strata-fit-note"></div>
                             <div class="form-row">
                                 <label for="strata-model-select" data-i18n="label_model_size">Model size:</label>
                                 <select id="strata-model-select"></select>

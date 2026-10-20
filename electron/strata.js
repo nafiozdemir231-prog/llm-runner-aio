@@ -5,17 +5,78 @@
 const path = require('path');
 const fs = require('fs');
 
-// Surum tablosu setup.py MODELS ile hizali (download GB / onerilen minimum RAM GB).
-// Hizalama kaynagi: upstream v0.2.0-beta (Strata/main e88ee39d, 2026-10-19) — IQ3_XXS ram_gb 56->60,
-// IQ3_S 64->62. setup.py MIN_ENGINE = 0.1.45: eski engine'de 🔄 Update (setup.py --update) engine'i indirir.
-// Upstream'de bizim sunmadigimiz aileler de var (--family unsloth/gyro/nvfp4/swift); bilerek qwen+coder.
+// Surum tablosu setup.py MODELS ile hizali (v0.2.0-beta, e88ee39d): download GB + o l c i t e s i.
+// minRamGb birimi: normal boyutlarda SADECE RAM; `memTotal:true` olan Gyro kademelerinde RAM+VRAM TOPLAMI
+// (upstream MODELS[...]['mem_total']). setup.py MIN_ENGINE = 0.1.45: eski engine'de 🔄 Update onu indirir.
+// Upstream'de ayrica unsloth/nvfp4/swift aileleri var; bilerek sunmiyoruz (93-188 GB indirme / RTX 50 sartlari).
 const CHOICES = [
-    { size: 'IQ1_M', label: 'Coder — yarim uzmanli, koda odakli (en dusuk yer)', downloadGb: 58.4, minRamGb: 32 },
-    { size: 'Q2_0', label: 'Q2_0 — en hizli tam model', downloadGb: 66.4, minRamGb: 48 },
-    { size: 'IQ2_XS', label: 'IQ2_XS — 2-bit i-quant, biraz daha iyi kalite', downloadGb: 68.0, minRamGb: 48 },
-    { size: 'IQ3_XXS', label: 'IQ3_XXS — 3-bit i-quant, daha iyi kalite', downloadGb: 75.8, minRamGb: 60 },
-    { size: 'IQ3_S', label: 'IQ3_S — en iyi kalite, en yavas', downloadGb: 83.6, minRamGb: 62 }
+    { size: 'Q2_0', family: 'qwen', label: 'Q2_0 — en hizli tam model', downloadGb: 66.4, minRamGb: 48 },
+    { size: 'IQ2_XS', family: 'qwen', label: 'IQ2_XS — 2-bit i-quant, biraz daha iyi kalite', downloadGb: 68.0, minRamGb: 48 },
+    { size: 'IQ3_XXS', family: 'qwen', label: 'IQ3_XXS — 3-bit i-quant, daha iyi kalite', downloadGb: 75.8, minRamGb: 60 },
+    { size: 'IQ3_S', family: 'qwen', label: 'IQ3_S — en iyi kalite, en yavas', downloadGb: 83.6, minRamGb: 62 },
+    { size: 'IQ1_M', family: 'coder', label: 'Coder IQ1_M — yarim uzmanli, koda odakli', downloadGb: 58.4, minRamGb: 32 },
+    { size: 'Gyro-S', family: 'gyro', label: 'Gyro-S — en dusuk bellek kademesi (dusuk kalite)', downloadGb: 58.5, minRamGb: 27.6, memTotal: true },
+    { size: 'Gyro-M', family: 'gyro', label: 'Gyro-M — IQ3_XXS kalitine yakin, ~%20 az bellek', downloadGb: 92.0, minRamGb: 35.0, memTotal: true }
 ];
+
+// upstream MEMORY_TIERS ((62 qwen IQ3_S), (46 qwen IQ3_XXS), (38 swift IQ2_XS)) — esikler RAM+VRAM toplamina gore.
+// 38 kademesinde upstream swift IQ2_XS oneirir; biz sunmadigimiz icin ayni kademenin "other choice"i Gyro-M'i oneiriz
+// (upstream tier_note: "Gyro-M is the other choice, NVIDIA and AMD only"). 38 altinda eski kural: Gyro-S / kod için Coder.
+const MEMORY_TIERS = [[62, 'IQ3_S'], [46, 'IQ3_XXS'], [38, 'Gyro-M']];
+const TIER_ORDER = ['IQ3_S', 'IQ3_XXS', 'Gyro-M', 'IQ2_XS', 'Q2_0', 'Gyro-S', 'IQ1_M'];
+// Gyro kademeleri NVIDIA/AMD ister (Intel Arc motoru desteklemez).
+const isIntelGpu = (name) => /intel|arc|uhd|irislxe/i.test(String(name || ''));
+
+// setup.py --check satirlari yetkili kaynak: "  IQ3_XXS  needs ~60 GB RAM: does not fit" /
+// "  Gyro-M   needs ~35.0 GB of VRAM + RAM: fits (31 GB RAM + 6 GB VRAM)" /
+// "  IQ1_M    needs ~32 GB RAM: fits in the low-RAM mode (the GPU holds ~4% ... SSD as needed)".
+const FIT_LINE_RE = /^\s*([A-Za-z0-9_.\-]+)\s+needs ~([\d.]+) GB (RAM|of VRAM \+ RAM): (.+)$/;
+function parseFitReport(out) {
+    const map = {};
+    for (const line of String(out || '').split(/\r?\n/)) {
+        const m = FIT_LINE_RE.exec(line);
+        if (!m) continue;
+        const verdict = m[4].trim();
+        map[m[1]] = {
+            need: Number(m[2]), unit: m[3] === 'RAM' ? 'ram' : 'total', verdict,
+            ok: !/does not fit/.test(verdict) && /^(fits|tight|slow here|EXPERIMENTAL, fits)/.test(verdict),
+            lowRam: /low-RAM mode/.test(verdict)
+        };
+    }
+    return Object.keys(map).length ? map : null;
+}
+
+// Secenekleri donanina gore etiketler: fitOk/lowRam/note + onerilen boyut. Kaynak setup.py --check ise onun
+// karari kullanilir; degilse yerel hesap (upstream "tight" toleransi: ihtiyactan 8 GB eksige kadar kabul).
+function scoredChoices(hw, fits) {
+    const totalGb = hw.ramGb + (hw.vramGb || 0);
+    const intel = isIntelGpu(hw.gpuName);
+    const choices = CHOICES.map((c) => {
+        const f = fits && fits[c.size];
+        let ok, lowRam = false, note = '';
+        if (f) { ok = f.ok; lowRam = f.lowRam; }
+        else { const avail = c.memTotal ? totalGb : hw.ramGb; ok = avail >= c.minRamGb - 8; note = 'tahmini'; }
+        if (c.family === 'gyro' && intel) { ok = false; lowRam = false; note = 'Intel Arc desteklemiyor (NVIDIA/AMD gerekli)'; }
+        // Guvenlik kilidi: degerlendirme bayat/baska bir PC'den gelmis olabilir — ihtiyaci bu PC'nin belleginden
+        // 8 GB fazlaysa boyut secilemez (upstream "fits" dese bile).
+        const avail = c.memTotal ? totalGb : hw.ramGb;
+        if (ok && f && avail < f.need - 8) { ok = false; lowRam = false; note = 'bellek yetmiyor'; }
+        return { ...c, fits: !!ok, fitOk: !!ok, lowRam, note, needLabel: c.minRamGb + (c.memTotal ? ' GB RAM+VRAM' : ' GB RAM') };
+    });
+    let recommended = null;
+    for (const [floor, size] of MEMORY_TIERS) {
+        if (totalGb < floor) continue;
+        const c = choices.find((x) => x.size === size);
+        if (c && c.fitOk) { recommended = size; break; }
+    }
+    if (!recommended) {
+        // 38 GB altindaki kademede upstream'in kurali: Gyro-S (kod icin Coder IQ1_M); Gyro-M yedek secim.
+        const order = totalGb < 38 ? ['Gyro-S', 'IQ1_M', 'Gyro-M'] : TIER_ORDER;
+        const pick = order.map((size) => choices.find((x) => x.size === size)).find((c) => c && c.fitOk);
+        recommended = pick ? pick.size : null;
+    }
+    return { choices, recommended, totalGb };
+}
 
 // setup.py indirme satiri ornegi: "  qwen38_pack/experts.bin:  31.20 / 75.84 GB (41%)" — log yerine
 // ayri 'strata-download-progress' olayina cevrilir (yuzde + dosya); log akişi sismanlar.
@@ -135,7 +196,24 @@ function register(deps) {
         return r;
     }
 
-    ipcMain.handle('strata-status', async () => {
+    // Donanina gore hangi boyutun sigdigi: upstream'in kendi degerlendirmesi (setup.py --check, ~2 sn) oncelikli.
+    // Sonuc onbellekte (10 dk; basarisizsa 60 sn) — status polling'i her seferinde setup.py calistirmaz.
+    let fitCache = null;
+    async function fitReport(refresh) {
+        const TTL_OK = 10 * 60 * 1000, TTL_BAD = 60 * 1000;
+        if (fitCache) {
+            const ttl = fitCache.map ? TTL_OK : TTL_BAD;
+            if (!refresh && Date.now() - fitCache.at < ttl) return fitCache.map;
+        }
+        if (!fs.existsSync(path.join(DIR, 'setup.py')) || !fs.existsSync(VENV_PY)) { fitCache = { at: Date.now(), map: null }; return null; }
+        const r = await runCapture([VENV_PY, path.join(DIR, 'setup.py'), '--check']);
+        const map = parseFitReport(r.out);
+        fitCache = { at: Date.now(), map };
+        if (!map) console.warn('[STRATA] setup.py --check cikti cozumlenemedi (code=' + r.code + '); yerel hesap kullanilacak');
+        return map;
+    }
+
+        ipcMain.handle('strata-status', async (event, options = {}) => {
         const hw = await detectHardware();
         if (fs.existsSync(DIR)) ensureLayer();
         const s = readJson(MODELS_JSON);
@@ -157,12 +235,22 @@ function register(deps) {
             // Uretilen args'te boyut '--pack <.../packs/iq3_xxs>' olarak geciyor -> basename = CHOICES.size (kucuk harf).
             const pk = general.args.indexOf('--pack');
             if (pk >= 0) modelSize = String(general.args[pk + 1]).replace(/[\\/]+$/, '').split(/[\\/]/).pop().toUpperCase();
+            // Gyro/Coder gibi tek dosyalik ailelerde --pack yok (--native <...Gyro-S.gguf>): args'ten boyut eslestir.
+            if (!modelSize) {
+                for (const a of general.args.map(String)) {
+                    const hit = CHOICES.find((c) => new RegExp('(^|[^a-z0-9])' + c.size.replace(/[-_]/g, '[-_.])') + '([^a-z0-9]|$)', 'i').test(a));
+                    if (hit) { modelSize = hit.size; break; }
+                }
+            }
         }
         // #465: "parallel": N config anahtari (serve bunu --batch N'ye cevirir; 1 = sirayla).
         if (general && Number.isInteger(general.parallel) && general.parallel >= 2) parallel = general.parallel;
+        const fits = await fitReport(!!(options && options.refreshFit));
+        const score = scoredChoices(hw, fits);
         return {
-            // STRATA_DEV=1: test makinesinde karti RAM esigi altinda da gorunur kilar (varsayilan davranis degismez).
-            eligible: (hw.ramGb >= 48 && (hw.vramGb || 0) >= 12) || process.env.STRATA_DEV === '1',
+            // Uygunluk artik sabit esik degil: upstream'in boyut degerlendirmesinden gelir (en az bir boyut sigiyorsa
+            // Strata kurulabilir). STRATA_DEV=1 test makinesinde hepsini gorunur kilir.
+            eligible: score.choices.some((c) => c.fitOk) || process.env.STRATA_DEV === '1',
             ramGb: hw.ramGb, vramGb: hw.vramGb || 0, gpuName: hw.gpuName || '',
             repoCloned: fs.existsSync(path.join(DIR, 'setup.py')),
             installed: fs.existsSync(VENV_PY),
@@ -179,7 +267,10 @@ function register(deps) {
             vision,
             modelSize,
             parallel,
-            choices: CHOICES.map((c) => ({ ...c, fits: hw.ramGb >= c.minRamGb }))
+            totalMemoryGb: score.totalGb,
+            recommendedSize: score.recommended,
+            fitSource: fits ? 'setup.py --check' : 'yerel tahmin (venv hazir degil)',
+            choices: score.choices
         };
     });
 
@@ -187,6 +278,12 @@ function register(deps) {
         if (setupRunning) return { success: false, error: 'Setup already in progress.' };
         const choice = CHOICES.find((c) => c.size === options.size);
         if (!choice) return { success: false, error: 'Unknown model size: ' + options.size };
+        // Donanin kontrolu (upstream --check degerlendirmesi): sigmayan boyut reddedilir; STRATA_DEV=1 test icin asar.
+        const preScore = scoredChoices(await detectHardware(), await fitReport(true));
+        const preChoice = preScore.choices.find((c) => c.size === choice.size);
+        if (preChoice && !preChoice.fitOk && process.env.STRATA_DEV !== '1') {
+            return { success: false, error: 'Bu PC icin uygun degil: ' + choice.size + ' ~' + preChoice.needLabel + ' ister (bu PC: ' + Math.round(preScore.totalGb) + ' GB RAM+VRAM). Onerilen: ' + (preScore.recommended || 'yok') + '.' };
+        }
         setupRunning = true;
         // Indirme yuzdeleri log'a degil strata-download-progress kanalina gider; diger satirlar log'da kalir.
         const send = (m) => {
@@ -201,9 +298,9 @@ function register(deps) {
             // #465 paralel istek (opt-in): setup.py --parallel N -> config'e "parallel": N yazilir (2-8).
             const parallelN = Number(options.parallel);
             const useParallel = Number.isInteger(parallelN) && parallelN >= 2 ? Math.min(parallelN, 8) : null;
-            send('[SETUP] Model ' + choice.size + ' indiriliyor (~' + choice.downloadGb + ' GB) -> models\ ...' + (vision !== 'no' ? ' + vision (' + vision + ')' : '') + (useParallel ? ' + parallel ' + useParallel : ''));
+            send('[SETUP] Model ' + choice.size + ' (' + choice.family + ' ailesi) indiriliyor (~' + choice.downloadGb + ' GB) -> models\ ...' + (vision !== 'no' ? ' + vision (' + vision + ')' : '') + (useParallel ? ' + parallel ' + useParallel : '') + (preChoice && preChoice.lowRam ? ' | dusuk-RAM modu: expertlerin bir kismi SSD\'den okunur, hiz duser' : ''));
             const setupArgs = ['cmd', '/c', path.join(DIR, 'START-HERE.bat'),
-                '--yes', '--model', choice.size, '--vision', vision,
+                '--yes', '--family', choice.family, '--model', choice.size, '--vision', vision,
                 '--models-dir', path.join(PROJECT_DIR, 'models'),
                 '--data-dir', path.join(PROJECT_DIR, 'models', 'strata'),
                 '--no-start'];
@@ -230,6 +327,8 @@ function register(deps) {
                 writeBackup(path.join(DIR, name), c, backupDir);
             }
             send('[SETUP] strata-general.json + strata-coder.json yazildi (args birebir, sampling ayri). Yedek: ' + backupDir);
+            if (choice.family !== 'qwen')
+                send('[SETUP] Not: ' + choice.size + ' (' + choice.family + ' ailesi) iki kapida da ayni modeli calistirir - genel kapı temp 1.0, coder kapısı temp 0.6 sampling kullanır.');
             if (prevCalib.length && !prevCalib.every((f) => (base.args || []).map(String).includes(f)))
                 send('[SETUP] UYARI: Onceki kalibrasyon tuningi (' + prevCalib.join(', ') + ') setup ile sifirlandi - imza degisti ise (vision/context) 🎯 Calibrate tekrar calistirilmali.');
 
@@ -473,4 +572,4 @@ function stopGateway() {
     return { success: true };
 }
 
-module.exports = { register, startGateway, stopGateway, CHOICES, pickCalibratedSource, mergeGateConfigs, CALIB_FLAGS };
+module.exports = { register, startGateway, stopGateway, CHOICES, parseFitReport, scoredChoices, MEMORY_TIERS, pickCalibratedSource, mergeGateConfigs, CALIB_FLAGS };

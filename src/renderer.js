@@ -931,6 +931,13 @@ function setupEventListeners() {
     refreshStrataStatus();
     const stInstallBtn = document.getElementById('btn-strata-install');
     if (stInstallBtn) stInstallBtn.addEventListener('click', () => runStrataSetup());
+    // Boyut degisince buton uygunlugunu hemen guncelle (seçili boyut bu PC'ye sigmiyorsa pasif kalır).
+    const stModelSel = document.getElementById('strata-model-select');
+    if (stModelSel) stModelSel.addEventListener('change', () => {
+        const btn = document.getElementById('btn-strata-install');
+        const ch = (state.servers.strata.choices || []).find(c => c.size === stModelSel.value);
+        if (btn && !strataBusyInFlight) btn.disabled = !state.servers.strata.eligible || !(ch && ch.fitOk);
+    });
     const stCalBtn = document.getElementById('btn-strata-calibrate');
     if (stCalBtn) stCalBtn.addEventListener('click', () => runStrataCalibrate());
     const stUpdBtn = document.getElementById('btn-strata-update');
@@ -1346,14 +1353,16 @@ let strataBusyInFlight = false;
 /**
  * Strata durumunu sorgular: uygunluk (RAM>=48 & VRAM>=12), kurulum, config alanlari.
  */
-async function refreshStrataStatus() {
+async function refreshStrataStatus(refreshFit) {
     try {
-        const st = await window.electronAPI.strata.status();
+        const st = await window.electronAPI.strata.status({ refreshFit: !!refreshFit });
         state.servers.strata.installed = !!st.installed;
         state.servers.strata.eligible = !!st.eligible;
 
         state.servers.strata.vision = st.vision || null;
         state.servers.strata.modelSize = st.modelSize || null;
+        state.servers.strata.choices = Array.isArray(st.choices) ? st.choices : [];
+        state.servers.strata.totalMemoryGb = Number(st.totalMemoryGb) || 0;
 
         // Install bolumu kurulumdan sonra da gorunur kalir (model boyutu / vision degistirilebilir).
         const installSec = document.getElementById('strata-install-section');
@@ -1361,19 +1370,29 @@ async function refreshStrataStatus() {
         const serverFs = document.getElementById('strata-server-fieldset');
         if (serverFs) serverFs.classList.toggle('hidden', !(st.eligible && st.repoCloned));
 
+        // Donanin ozeti + upstream'in onerdigi boyut (setup.py --check kaynakli).
+        const fitNote = document.getElementById('strata-fit-note');
+        if (fitNote) {
+            fitNote.textContent = 'Bu PC: ' + Math.round(st.ramGb) + ' GB RAM + ' + Math.round(st.vramGb || 0)
+                + ' GB VRAM = ' + Math.round(st.totalMemoryGb || 0) + ' GB toplam · '
+                + (st.recommendedSize ? 'önerilen: ' + st.recommendedSize : 'bu PC’de çalışacak boyut yok')
+                + ' · değerlendirme: ' + (st.fitSource || '');
+        }
+
         const sel = document.getElementById('strata-model-select');
         if (sel && !sel.options.length && Array.isArray(st.choices)) {
             sel.innerHTML = '';
             for (const c of st.choices) {
                 const opt = document.createElement('option');
                 opt.value = c.size;
-                // Strata zaten calismayacak modeli kurulumda kendisi eler; burada secenek pasif birakilmaz,
-                // yalnizca RAM onerisi etikete eklenir.
-                opt.textContent = c.label + ' — ~' + c.downloadGb + ' GB' + (c.fits ? '' : ' (≈' + c.minRamGb + ' GB RAM)');
+                // Boyut etiketi donanin durumunu soyler: sigmiyorsa ihtiyaci, dusuk-RAM modunda calisacaksa onu.
+                opt.textContent = c.label + ' \u2014 ~' + c.downloadGb + ' GB'
+                    + (c.fitOk ? (c.lowRam ? ' (düşük-RAM modu: SSD’den okur)' : '') : ' (≈' + c.needLabel + ' gerekir)')
+                    + (c.size === st.recommendedSize ? '  [\u00f6nerilen]' : '');
                 sel.appendChild(opt);
             }
-            const defChoice = st.choices.find(c => c.fits) || st.choices[0];
-            if (defChoice) sel.value = defChoice.size;
+            const def = st.choices.find(c => c.size === st.recommendedSize && c.fitOk) || st.choices.find(c => c.fitOk) || st.choices[0];
+            if (def) sel.value = def.size;
         }
         if (sel && st.modelSize && [...sel.options].some(o => o.value === st.modelSize)) sel.value = st.modelSize;
 
@@ -1389,7 +1408,17 @@ async function refreshStrataStatus() {
         if (parSel) parSel.value = String(state.servers.strata.parallel);
 
         const installBtn = document.getElementById('btn-strata-install');
-        if (installBtn) installBtn.disabled = !!st.setupRunning || !st.eligible;
+        // Buton secili boyuta bagli: bu PC’ye sigmayan boyut seçilemez (imleçte sebep g\u00f6r\u00fcnr).
+        const chosen = state.servers.strata.choices.find(c => c.size === (sel ? sel.value : null));
+        if (installBtn) {
+            installBtn.disabled = !!st.setupRunning || !st.eligible || !(chosen && chosen.fitOk);
+            installBtn.title = !st.eligible ? 'Bu PC’de hiçbir Strata boyutu çalışmıyor'
+                : (chosen && !chosen.fitOk)
+                    ? (chosen.note === 'Intel Arc desteklemiyor (NVIDIA/AMD gerekli)'
+                        ? chosen.note
+                        : '\u2248' + chosen.needLabel + ' gerekir; bu PC: ~' + Math.round(state.servers.strata.totalMemoryGb) + ' GB RAM+VRAM')
+                    : '';
+        }
         const stateSpan = document.getElementById('strata-install-state');
         if (stateSpan) stateSpan.textContent = st.configured ? '\u2713 Model installed' : (st.installed ? '\u23f3 Environment ready, model pending' : 'Not installed');
 
@@ -1444,7 +1473,8 @@ async function runStrataSetup() {
     if (!size) { showNotification('Warning', 'Model boyutu secilmedi.', 'warning'); return; }
     const confirmed = await window.electronAPI.notification.confirm(
         'Strata Kurulumu',
-        '"' + size + '" modeli indirilsin mi?\n\n~58-84 GB indirme yapilir (models\\ klasoru), kurulum 1 saati asabilir ve internet hizina baglidir. Ilerleme Sunucular > Strata > Logs altindan izlenir; kesilirse ayni buton devam eder.'
+        '"' + size + '" modeli indirilsin mi?\n\n~' + ((state.servers.strata.choices.find(c => c.size === size) || {}).downloadGb || '?') + ' GB indirme yapilir (models\\ klasoru), kurulum 1 saati asabilir ve internet hizina baglidir. Ilerleme Sunucular > Strata > Logs altindan izlenir; kesilirse ayni buton devam eder.'
+        + ((state.servers.strata.choices.find(c => c.size === size) || {}).lowRam ? '\n\nBu PC düşük-RAM modunda çalışacak: expert’lerin bir kısmı SSD’den okunur, hız düşer.' : '')
     );
     if (!confirmed) return;
     strataBusyInFlight = true;
@@ -1452,7 +1482,7 @@ async function runStrataSetup() {
     const instOld = instBtn ? instBtn.textContent : '';
     if (instBtn) { instBtn.disabled = true; instBtn.textContent = '\u23f3 Installing...'; }
     appendToLog('strata', '[SETUP] Basliyor (' + size + ')...');
-        const result = await window.electronAPI.strata.setup({ size, vision: document.getElementById('strata-vision')?.value || 'no' }).catch(e => ({ success: false, error: e.message }));
+    const result = await window.electronAPI.strata.setup({ size, vision: document.getElementById('strata-vision')?.value || 'no' }).catch(e => ({ success: false, error: e.message }));
     strataBusyInFlight = false;
     if (instBtn) instBtn.textContent = instOld;
     if (result.success) {
@@ -1462,7 +1492,7 @@ async function runStrataSetup() {
         appendToLog('strata', '[SETUP] FAILED: ' + result.error, true);
         showNotification('Error', 'Strata kurulumu basarisiz: ' + result.error, 'error');
     }
-    await refreshStrataStatus();
+    await refreshStrataStatus(true);
 }
 
 async function runStrataCalibrate() {
@@ -1502,7 +1532,7 @@ async function runStrataUpdate() {
         appendToLog('strata', '[UPDATE] FAILED: ' + result.error, true);
         showNotification('Error', 'Strata guncelleme basarisiz: ' + result.error, 'error');
     }
-    await refreshStrataStatus();
+    await refreshStrataStatus(true);
 }
 
 /**

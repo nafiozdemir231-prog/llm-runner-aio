@@ -144,8 +144,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Strata (Qwen3.8-Flash-Next çoklu-model gateway, port 1235)
     // ============================================
     strata: {
-        /** Durum: uygunluk (RAM>=48/VRAM>=12), kurulu mu, çalışıyor mu, port/host, model seçenekleri */
-        status: () => ipcRenderer.invoke('strata-status'),
+        /** Durum: donanina gore uygun boyutlar (setup.py --check), kurulu mu, çalışıyor mu, port/host, model seçenekleri */
+        status: (options) => ipcRenderer.invoke('strata-status', options || {}),
 
         /** Model kurulumu/indirmesi (START-HERE.bat --yes --model <size>, modeller models\ klasörüne) */
         setup: (options) => ipcRenderer.invoke('strata-setup', options),
