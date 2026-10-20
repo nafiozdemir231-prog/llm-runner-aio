@@ -10,13 +10,13 @@ const fs = require('fs');
 // (upstream MODELS[...]['mem_total']). setup.py MIN_ENGINE = 0.1.45: eski engine'de 🔄 Update onu indirir.
 // Upstream'de ayrica unsloth/nvfp4/swift aileleri var; bilerek sunmiyoruz (93-188 GB indirme / RTX 50 sartlari).
 const CHOICES = [
-    { size: 'Q2_0', family: 'qwen', label: 'Q2_0 — en hizli tam model', downloadGb: 66.4, minRamGb: 48 },
-    { size: 'IQ2_XS', family: 'qwen', label: 'IQ2_XS — 2-bit i-quant, biraz daha iyi kalite', downloadGb: 68.0, minRamGb: 48 },
-    { size: 'IQ3_XXS', family: 'qwen', label: 'IQ3_XXS — 3-bit i-quant, daha iyi kalite', downloadGb: 75.8, minRamGb: 60 },
-    { size: 'IQ3_S', family: 'qwen', label: 'IQ3_S — en iyi kalite, en yavas', downloadGb: 83.6, minRamGb: 62 },
-    { size: 'IQ1_M', family: 'coder', label: 'Coder IQ1_M — yarim uzmanli, koda odakli', downloadGb: 58.4, minRamGb: 32 },
-    { size: 'Gyro-S', family: 'gyro', label: 'Gyro-S — en dusuk bellek kademesi (dusuk kalite)', downloadGb: 58.5, minRamGb: 27.6, memTotal: true },
-    { size: 'Gyro-M', family: 'gyro', label: 'Gyro-M — IQ3_XXS kalitine yakin, ~%20 az bellek', downloadGb: 92.0, minRamGb: 35.0, memTotal: true }
+    { size: 'Q2_0', family: 'qwen', label: 'Q2_0 — fastest full model', downloadGb: 66.4, minRamGb: 48 },
+    { size: 'IQ2_XS', family: 'qwen', label: 'IQ2_XS — 2-bit i-quant, slightly better quality', downloadGb: 68.0, minRamGb: 48 },
+    { size: 'IQ3_XXS', family: 'qwen', label: 'IQ3_XXS — 3-bit i-quant, better quality', downloadGb: 75.8, minRamGb: 60 },
+    { size: 'IQ3_S', family: 'qwen', label: 'IQ3_S — best quality, slowest', downloadGb: 83.6, minRamGb: 62 },
+    { size: 'IQ1_M', family: 'coder', label: 'Coder IQ1_M — half the experts, code-focused', downloadGb: 58.4, minRamGb: 32 },
+    { size: 'Gyro-S', family: 'gyro', label: 'Gyro-S — smallest memory tier (lower quality)', downloadGb: 58.5, minRamGb: 27.6, memTotal: true },
+    { size: 'Gyro-M', family: 'gyro', label: 'Gyro-M — near IQ3_XXS quality, ~20% less memory', downloadGb: 92.0, minRamGb: 35.0, memTotal: true }
 ];
 
 // upstream MEMORY_TIERS ((62 qwen IQ3_S), (46 qwen IQ3_XXS), (38 swift IQ2_XS)) — esikler RAM+VRAM toplamina gore.
@@ -53,15 +53,15 @@ function scoredChoices(hw, fits) {
     const intel = isIntelGpu(hw.gpuName);
     const choices = CHOICES.map((c) => {
         const f = fits && fits[c.size];
-        let ok, lowRam = false, note = '';
+        let ok, lowRam = false, note = '', noteKey = '';
         if (f) { ok = f.ok; lowRam = f.lowRam; }
         else { const avail = c.memTotal ? totalGb : hw.ramGb; ok = avail >= c.minRamGb - 8; note = 'tahmini'; }
-        if (c.family === 'gyro' && intel) { ok = false; lowRam = false; note = 'Intel Arc desteklemiyor (NVIDIA/AMD gerekli)'; }
+        if (c.family === 'gyro' && intel) { ok = false; lowRam = false; noteKey = 'strata_fit_intel'; }
         // Guvenlik kilidi: degerlendirme bayat/baska bir PC'den gelmis olabilir — ihtiyaci bu PC'nin belleginden
         // 8 GB fazlaysa boyut secilemez (upstream "fits" dese bile).
         const avail = c.memTotal ? totalGb : hw.ramGb;
         if (ok && f && avail < f.need - 8) { ok = false; lowRam = false; note = 'bellek yetmiyor'; }
-        return { ...c, fits: !!ok, fitOk: !!ok, lowRam, note, needLabel: c.minRamGb + (c.memTotal ? ' GB RAM+VRAM' : ' GB RAM') };
+        return { ...c, fits: !!ok, fitOk: !!ok, lowRam, note, noteKey, needLabel: c.minRamGb + (c.memTotal ? ' GB RAM+VRAM' : ' GB RAM') };
     });
     let recommended = null;
     for (const [floor, size] of MEMORY_TIERS) {
@@ -269,7 +269,7 @@ function register(deps) {
             parallel,
             totalMemoryGb: score.totalGb,
             recommendedSize: score.recommended,
-            fitSource: fits ? 'setup.py --check' : 'yerel tahmin (venv hazir degil)',
+            fitCheckOk: !!fits,
             choices: score.choices
         };
     });

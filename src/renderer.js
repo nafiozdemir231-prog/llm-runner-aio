@@ -1350,6 +1350,13 @@ async function runWan2gpUpdate() {
 // Strata (Qwen3.8-Flash-Next coklu-model gateway)
 // ============================================
 let strataBusyInFlight = false;
+
+// Strata arayuz metinleri: aktif dilde (state.languages) anahtar varsa o kullanilir, yoksa Ingilizce fallback.
+// {need} / {ram} gibi yer tutucular replace ile dolar; cevrilemeyen bir sey kalmaz.
+function stT(key, vars, fallback) {
+    const raw = (state.languages && state.languages[key]) || fallback || '';
+    return String(raw).replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] !== undefined ? String(vars[k]) : m));
+}
 /**
  * Strata durumunu sorgular: uygunluk (RAM>=48 & VRAM>=12), kurulum, config alanlari.
  */
@@ -1370,13 +1377,14 @@ async function refreshStrataStatus(refreshFit) {
         const serverFs = document.getElementById('strata-server-fieldset');
         if (serverFs) serverFs.classList.toggle('hidden', !(st.eligible && st.repoCloned));
 
-        // Donanin ozeti + upstream'in onerdigi boyut (setup.py --check kaynakli).
+        // Donanim ozeti + upstream'in onerdigi boyut (kaynak: setup.py --check, yoksa yerel tahmin).
         const fitNote = document.getElementById('strata-fit-note');
         if (fitNote) {
-            fitNote.textContent = 'Bu PC: ' + Math.round(st.ramGb) + ' GB RAM + ' + Math.round(st.vramGb || 0)
-                + ' GB VRAM = ' + Math.round(st.totalMemoryGb || 0) + ' GB toplam · '
-                + (st.recommendedSize ? 'önerilen: ' + st.recommendedSize : 'bu PC’de çalışacak boyut yok')
-                + ' · değerlendirme: ' + (st.fitSource || '');
+            fitNote.textContent = stT('strata_fit_note', {
+                ram: Math.round(st.ramGb), vram: Math.round(st.vramGb || 0), total: Math.round(st.totalMemoryGb || 0),
+                rec: st.recommendedSize || stT('strata_fit_none', null, 'no size runs on this PC'),
+                src: st.fitCheckOk ? 'setup.py --check' : stT('strata_fit_source_local', null, 'local estimate')
+            }, 'This PC: {ram} GB RAM + {vram} GB VRAM = {total} GB total');
         }
 
         const sel = document.getElementById('strata-model-select');
@@ -1385,10 +1393,12 @@ async function refreshStrataStatus(refreshFit) {
             for (const c of st.choices) {
                 const opt = document.createElement('option');
                 opt.value = c.size;
-                // Boyut etiketi donanin durumunu soyler: sigmiyorsa ihtiyaci, dusuk-RAM modunda calisacaksa onu.
-                opt.textContent = c.label + ' \u2014 ~' + c.downloadGb + ' GB'
-                    + (c.fitOk ? (c.lowRam ? ' (düşük-RAM modu: SSD’den okur)' : '') : ' (≈' + c.needLabel + ' gerekir)')
-                    + (c.size === st.recommendedSize ? '  [\u00f6nerilen]' : '');
+                // Boyut etiketi donanim durumunu soyler; metinler aktif dilde (strata_desc_*, strata_fit_*).
+                opt.textContent = stT('strata_desc_' + c.size, null, c.label) + ' \u2014 ~' + c.downloadGb + ' GB'
+                    + (c.fitOk
+                        ? (c.lowRam ? ' ' + stT('strata_fit_low_ram', null, '(low-RAM mode: reads from SSD)') : '')
+                        : ' (' + stT('strata_fit_need', { need: c.needLabel }, '\u2248' + c.needLabel + ' required') + ')')
+                    + (c.size === st.recommendedSize ? '  ' + stT('strata_fit_recommended', null, '[recommended]') : '');
                 sel.appendChild(opt);
             }
             const def = st.choices.find(c => c.size === st.recommendedSize && c.fitOk) || st.choices.find(c => c.fitOk) || st.choices[0];
@@ -1408,15 +1418,16 @@ async function refreshStrataStatus(refreshFit) {
         if (parSel) parSel.value = String(state.servers.strata.parallel);
 
         const installBtn = document.getElementById('btn-strata-install');
-        // Buton secili boyuta bagli: bu PC’ye sigmayan boyut seçilemez (imleçte sebep g\u00f6r\u00fcnr).
+        // Buton secili boyuta bagli: bu PC'ye sigmayan boyut secilemez (imlecte sebep, aktif dilde).
         const chosen = state.servers.strata.choices.find(c => c.size === (sel ? sel.value : null));
         if (installBtn) {
             installBtn.disabled = !!st.setupRunning || !st.eligible || !(chosen && chosen.fitOk);
-            installBtn.title = !st.eligible ? 'Bu PC’de hiçbir Strata boyutu çalışmıyor'
+            installBtn.title = !st.eligible
+                ? stT('strata_btn_no_size', null, 'No Strata size runs on this PC')
                 : (chosen && !chosen.fitOk)
-                    ? (chosen.note === 'Intel Arc desteklemiyor (NVIDIA/AMD gerekli)'
-                        ? chosen.note
-                        : '\u2248' + chosen.needLabel + ' gerekir; bu PC: ~' + Math.round(state.servers.strata.totalMemoryGb) + ' GB RAM+VRAM')
+                    ? (chosen.noteKey
+                        ? stT(chosen.noteKey, null, chosen.note || '')
+                        : stT('strata_btn_need_mem', { need: '\u2248' + chosen.needLabel, total: Math.round(state.servers.strata.totalMemoryGb) }, chosen.needLabel + ' required'))
                     : '';
         }
         const stateSpan = document.getElementById('strata-install-state');
@@ -1471,10 +1482,11 @@ async function runStrataSetup() {
     const sel = document.getElementById('strata-model-select');
     const size = sel ? sel.value : null;
     if (!size) { showNotification('Warning', 'Model boyutu secilmedi.', 'warning'); return; }
+    const ch = state.servers.strata.choices.find(c => c.size === size) || {};
     const confirmed = await window.electronAPI.notification.confirm(
-        'Strata Kurulumu',
-        '"' + size + '" modeli indirilsin mi?\n\n~' + ((state.servers.strata.choices.find(c => c.size === size) || {}).downloadGb || '?') + ' GB indirme yapilir (models\\ klasoru), kurulum 1 saati asabilir ve internet hizina baglidir. Ilerleme Sunucular > Strata > Logs altindan izlenir; kesilirse ayni buton devam eder.'
-        + ((state.servers.strata.choices.find(c => c.size === size) || {}).lowRam ? '\n\nBu PC düşük-RAM modunda çalışacak: expert’lerin bir kısmı SSD’den okunur, hız düşer.' : '')
+        stT('strata_setup_title', null, 'Strata Setup'),
+        stT('strata_confirm_body', { size, gb: ch.downloadGb || '?' }, 'Download the "' + size + '" model? (~' + (ch.downloadGb || '?') + ' GB)')
+        + (ch.lowRam ? stT('strata_confirm_lowram', null, '\n\nThis PC will run in low-RAM mode: part of the experts is read from the SSD.') : '')
     );
     if (!confirmed) return;
     strataBusyInFlight = true;
